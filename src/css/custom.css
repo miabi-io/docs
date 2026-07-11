@@ -1,0 +1,27 @@
+/**
+ * Miabi docs theme. Primary palette derives from the Miabi brand purple (#9333ea).
+ */
+
+:root {
+  --ifm-color-primary: #9333ea;
+  --ifm-color-primary-dark: #7e22ce;
+  --ifm-color-primary-darker: #6b21a8;
+  --ifm-color-primary-darkest: #581c87;
+  --ifm-color-primary-light: #a855f7;
+  --ifm-color-primary-lighter: #c084fc;
+  --ifm-color-primary-lightest: #d8b4fe;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme='dark'] {
+  --ifm-color-primary: #c084fc;
+  --ifm-color-primary-dark: #b066fb;
+  --ifm-color-primary-darker: #a855f7;
+  --ifm-color-primary-darkest: #9333ea;
+  --ifm-color-primary-light: #cd9bfc;
+  --ifm-color-primary-lighter: #d8b4fe;
+  --ifm-color-primary-lightest: #ede0ff;
+  --ifm-background-color: #0d1424;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
