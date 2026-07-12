@@ -43,17 +43,17 @@ If you want a build with **zero enterprise code** (the deny-all stub), build it 
 | Per-workspace quota overrides | — | ✓ |
 | Private template registry | — | ✓ |
 | Workspace-owned build runners | ✓ unlimited | ✓ unlimited |
-| Platform-shared runner pool | one | unlimited |
+| Platform-shared runner pool | ✓ unlimited | ✓ unlimited |
+| GPU workloads (NVIDIA passthrough) | ✓ | ✓ |
 | White-label branding | brand | full |
 | Restricted (force non-root) security profile | — | ✓ |
-| HA control plane · cross-region DR | — | ✓ |
 
 :::tip
-The Community edition includes the entire core platform — deploying apps, custom domains, automatic TLS, managed databases, backups, monitoring, the marketplace, and the built-in container registry (local storage) — plus **unlimited nodes**, **unlimited workspace-owned build runners** and **one platform-shared runner**, one SSO provider, the audit log, and brand-level white-labeling. Most individual developers, startups, and homelabs never need anything beyond it.
+The Community edition includes the entire core platform — deploying apps, custom domains, automatic TLS, managed databases, backups, monitoring, the marketplace, and the built-in container registry (local storage) — plus **unlimited nodes**, **unlimited workspace-owned build runners** and an **unlimited platform-shared runner pool**, one SSO provider, the audit log, and brand-level white-labeling. Most individual developers, startups, and homelabs never need anything beyond it.
 :::
 
 :::note
-Enterprise is about identity, governance, scale storage, and resilience: multiple SSO providers with SAML and SCIM, custom roles and per-resource policies, audit export and SIEM streaming, quota overrides, S3/MinIO storage for the container registry, a private template registry, an unlimited platform-shared runner pool, full white-labeling, a restricted security profile, and HA/DR. (A license can also set an explicit node cap; by default both editions are uncapped.)
+Enterprise is about identity, governance, and scale storage: multiple SSO providers with SAML and SCIM, custom roles and per-resource policies, audit export and SIEM streaming, quota overrides, S3/MinIO storage for the container registry, a private template registry, full white-labeling, and a restricted security profile. (A license can also set an explicit node cap; by default both editions are uncapped.)
 :::
 
 ## Where to go next

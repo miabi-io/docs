@@ -1,7 +1,7 @@
 ---
 sidebar_position: 2
 title: Installation
-description: Install Miabi on a fresh Linux host with the one-line installer or Docker Compose
+description: Install Miabi on any Linux host with the one-line installer or Docker Compose
 ---
 
 # Installation
@@ -20,25 +20,23 @@ A small VPS (2 vCPU / 2 GB RAM) is enough to get started. Databases and apps you
 consume additional resources on top of the control plane.
 :::
 
+:::note No fresh server required
+Miabi does **not** need a clean, dedicated host. It runs alongside whatever Docker workloads are
+already on the machine — the control plane only manages the containers, volumes, and networks it
+creates (plus any you explicitly adopt). If you already have containers running, you can
+[import them](/docs/nodes/docker-import) into Miabi and take over their lifecycle **without
+downtime** — they keep running and simply start showing up in the console. And you don't have to use
+the installer script: the [manual Docker Compose path](#manual-install-with-docker-compose) gives you
+the exact same stack.
+:::
+
 ## One-line install (recommended)
 
-On a fresh host, run:
+On your host, run:
 
 ```bash
 curl -fsSL https://github.com/miabi-io/miabi/releases/latest/download/install.sh | sudo bash
 ```
-
-:::caution During the beta
-`releases/latest` skips pre-releases, and every Miabi release so far is one — so the URL above
-returns **404** until the first stable release is cut. Until then, use either a specific tag or the
-`main` branch (which installs `:latest` images rather than pinned ones):
-
-```bash
-curl -fsSL https://github.com/miabi-io/miabi/releases/download/v1.0.0-beta.4/install.sh | sudo bash
-# or
-curl -fsSL https://raw.githubusercontent.com/miabi-io/miabi/main/deploy/install.sh | sudo bash
-```
-:::
 
 This installs Docker if needed, fetches the production Compose file and Goma config into
 `/opt/miabi`, and generates secrets in `.env`. It prompts for your domain and ACME email and writes
@@ -70,9 +68,16 @@ directly (or delete it) to change a value you set on a previous run.
 
 ## Manual install with Docker Compose
 
+Prefer to skip the installer script? You can bring up the identical stack by hand with plain Docker
+Compose — nothing about Miabi requires the one-line installer, and this path runs equally well on a
+host that already has other containers on it.
+
 ```bash
 git clone https://github.com/miabi-io/miabi && cd miabi/deploy
 cp .env.example .env
+# Create the shared app network with a roomy CIDR (Compose references it as
+# external; the one-line install.sh does this for you). See Networks & Subnets.
+docker network create --driver bridge --subnet 10.63.0.0/16 miabi
 docker compose up -d
 docker compose logs -f miabi
 ```

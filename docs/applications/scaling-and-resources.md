@@ -25,6 +25,13 @@ Limits protect the host and your other apps from a single noisy service. Set the
 Start conservative and watch real usage in [Monitoring](/docs/operations/monitoring), then adjust. Over-allocating memory wastes capacity; under-allocating risks restarts under load.
 :::
 
+## GPUs
+
+An app can also request **NVIDIA GPUs** for accelerated workloads (inference, training, transcoding).
+GPU access is gated by the workspace's plan and by which devices a platform admin has enabled on the
+node, so the GPU controls appear in an app's settings only when its plan allows them. See
+[GPUs](/docs/applications/gpus) for the full setup.
+
 ## Replicas
 
 Increase the **replica count** to run several identical containers of your app at once. More replicas mean:
@@ -32,14 +39,12 @@ Increase the **replica count** to run several identical containers of your app a
 - **More throughput** — requests are spread across containers.
 - **Higher availability** — if one container fails, others keep serving.
 
-Running more than one replica requires [cluster mode](/docs/nodes/cluster-mode), where the app runs
-as a replicated service. Inside the cluster, replicas are reachable by the app's service alias on
-the workspace overlay network, and Swarm load-balances east-west traffic across them.
-
-:::caution
-Public ingress does **not** yet balance across replicas. Goma routes external traffic to a
-single-container app; wiring ingress to a replicated service's virtual IP is not implemented.
-:::
+Running more than one replica requires [cluster mode](/docs/nodes/cluster-mode). When it is on, apps
+deploy as replicated **swarm services** by default (you can opt a specific app back to a single
+container). Swarm load-balances east-west traffic across the replicas by the app's service alias,
+and **public ingress reaches them too** — the central gateway fronts the service's virtual IP over
+a shared ingress overlay, wherever the scheduler placed the tasks. The app's detail page shows the
+**real nodes** its replicas are running on.
 
 ## Single-node vs. multi-node
 
@@ -51,7 +56,11 @@ How replicas are placed depends on your deployment:
 Miabi keeps the `Server`/node model from the start, so an app you scale today on a single host can spread across nodes later with no rework. See [Nodes overview](/docs/nodes/overview) for how multi-node placement works.
 
 :::note
-Stateful workloads need care when scaling. Make sure persistent data lives on [volumes](/docs/storage/volumes) and that your app tolerates running as multiple replicas before raising the count.
+Stateful workloads need care when scaling. A replicated service can only safely share storage that
+every node can reach — a **shared (RWX) volume** (NFS/CIFS) or a host-path bind present on all nodes;
+a node-local volume is refused above one replica. In cluster mode Miabi automatically keeps an app
+that holds node-local storage as a single **container** pinned to its node, rather than a migratable
+service. See [Volumes](/docs/storage/volumes).
 :::
 
 ## Applying changes

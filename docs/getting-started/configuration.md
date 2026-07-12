@@ -44,6 +44,17 @@ removes a protection:
 | `MIABI_SECURITY_ENFORCEMENT` | `true` | Stop a platform admin from raw-stopping or removing a Miabi-managed container from the admin node view. Set `false` only as a break-glass escape hatch |
 | `MIABI_UPDATE_CHECK` | `true` | Daily check for a newer Miabi release, surfaced as an admin notice. Notify-only — Miabi never upgrades itself. See [Upgrades](/docs/administration/upgrades) |
 
+### GPUs
+
+Off by default. See [GPUs](/docs/applications/gpus) for the full workflow.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MIABI_GPU_ENABLED` | `false` | Master switch for GPU support. When off, nodes are never probed and the GPU UI is hidden |
+| `MIABI_NVIDIA_RUNTIME` | `nvidia` | The container runtime name that signals the NVIDIA Container Toolkit is installed |
+| `MIABI_GPU_PROBE_IMAGE` | `nvidia/cuda:12.4.1-base-ubuntu22.04` | One-shot image the device-inventory probe runs `nvidia-smi` in. Point at a mirror for air-gapped fleets |
+| `MIABI_GPU_INVENTORY_MINUTES` | `30` | How often nodes are re-inventoried for GPUs |
+
 ## Database & cache
 
 | Variable | Default | Description |
@@ -205,6 +216,7 @@ them all empty to manage the registry from the UI. See [Registry](/docs/registry
 |----------|---------|-------------|
 | `MIABI_NODE_GATEWAY_IMAGE` | `jkaninda/goma-gateway:latest` | Goma image deployed on edge-gateway nodes. The shipped compose drives this from `GOMA_IMAGE` so it always matches the local gateway |
 | `MIABI_CONTROL_URL` | falls back to `MIABI_API_URL` | Public URL remote nodes reach the control plane at |
+| `MIABI_NETWORK_CIDR` | `10.63.0.0/16` | CIDR of the shared `miabi` reverse-proxy bridge (gateway + routed app/database containers). `install.sh` pre-creates it as an **external** network with this subnet so it isn't capped by Docker's default pool; must not overlap `MIABI_NETWORK_POOL_CIDR` or your LAN |
 | `MIABI_NETWORK_POOL_CIDR` | `10.64.0.0/12` | Address pool workspace networks are carved from |
 | `MIABI_NETWORK_SUBNET_PREFIX` | `24` | Prefix length per workspace network (a `/12` pool ⇒ 4096 networks) |
 | `MIABI_HOST_PORT_MIN` | `1024` | Lowest host port Miabi may allocate |
