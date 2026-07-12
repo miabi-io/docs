@@ -54,10 +54,10 @@ The supported path is to **re-run the installer**: it stamps the release's exact
 # 1. Back up first (see /docs/storage/backups)
 
 # 2. Re-run the installer — it rewrites MIABI_IMAGE / GOMA_IMAGE / RUNNER_IMAGE
-curl -fsSL https://github.com/miabi-io/miabi/releases/latest/download/install.sh | sudo bash
+curl -fsSL https://get.miabi.io | sudo bash
 
 # ...or pin an exact release
-curl -fsSL https://github.com/miabi-io/miabi/releases/latest/download/install.sh \
+curl -fsSL https://get.miabi.io \
   | sudo MIABI_VERSION=v1.4.0 bash
 
 # 3. Watch the logs for the migration confirmation

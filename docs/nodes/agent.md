@@ -34,27 +34,60 @@ Exposing the Docker socket is equivalent to root on the host. Run the agent only
 
 ## Installing and running the agent
 
-After you create the node in the console, Miabi shows the exact command for that node. The typical flow on the remote host:
+The agent is configured through **environment variables** (with equivalent CLI flags for the bare
+binary — see [Binary](#binary)). The two required values are:
 
-```bash
-# Download the agent binary (see the command shown in the console for the pinned URL)
-curl -fsSL https://get.miabi.io/agent | sh
+| Variable | Description |
+|----------|-------------|
+| `MIABI_CONTROL_URL` | Your control plane's base URL, e.g. `https://miabi.example.com` |
+| `MIABI_NODE_TOKEN` | The node's join token (`mbn_…`), shown once when you added the node |
 
-# Run it with the join token and your control-plane URL
-miabi-agent join \
-  --server wss://your-control-plane.example.com \
-  --token <JOIN_TOKEN>
-```
-
-For a long-lived install, run it as a service (systemd unit or a container). When run as a container, mount the Docker socket so the agent can reach the engine:
+After you create the node in the console, Miabi shows the exact `docker run` command for that node —
+copy it and run it on the host. It looks like this:
 
 ```bash
 docker run -d --name miabi-agent --restart unless-stopped \
   -v /var/run/docker.sock:/var/run/docker.sock \
-  ghcr.io/miabi-io/agent:latest join \
-  --server wss://your-control-plane.example.com \
-  --token <JOIN_TOKEN>
+  -e MIABI_CONTROL_URL=https://miabi.example.com \
+  -e MIABI_NODE_TOKEN=mbn_xxxxxxxx \
+  miabi/agent:latest
 ```
+
+### Install script
+
+The install script does the same thing with a preflight check and status verification. It **does not
+install Docker** — it checks that Docker is present and running, then starts the agent and confirms
+it stayed up:
+
+```bash
+curl -fsSL https://get.miabi.io/agent | \
+  MIABI_CONTROL_URL=https://miabi.example.com MIABI_NODE_TOKEN=mbn_xxxxxxxx bash
+```
+
+You can also pass the values as flags (`--control-url`, `--token`), override the image with
+`--image` / `MIABI_AGENT_IMAGE`, or skip control-plane TLS verification for a self-signed panel with
+`--insecure` / `MIABI_AGENT_INSECURE_SKIP_VERIFY=true`. Run with no values on an interactive shell
+and it prompts for them.
+
+### Binary
+
+If you run the agent as a bare binary (e.g. under a systemd unit), pass the same environment:
+
+```bash
+MIABI_CONTROL_URL=https://miabi.example.com \
+MIABI_NODE_TOKEN=mbn_xxxxxxxx \
+./miabi-agent
+```
+
+Or use the equivalent flags — each defaults to its environment variable, and a flag wins when both are set:
+
+```bash
+./miabi-agent \
+  --control-url https://miabi.example.com \
+  --token mbn_xxxxxxxx
+```
+
+`--insecure` (env `MIABI_AGENT_INSECURE_SKIP_VERIFY`) skips control-plane TLS verification for a self-signed panel.
 
 :::tip
 Run the agent under a process supervisor (systemd `Restart=always` or `--restart unless-stopped`) so it reconnects automatically after reboots or transient network drops.
