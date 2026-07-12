@@ -24,6 +24,8 @@ Your username is also the directory-friendly handle Miabi keys off for the built
 
 If you forget your password, choose **Forgot password** on the login screen. Miabi emails a single-use, time-limited reset link. Following it lets you set a new password; existing sessions can be invalidated as part of the reset.
 
+Self-service reset is a boot-time control: operators can disable it with `MIABI_PASSWORD_RESET_ENABLED=false` (a restart is required to change it). When disabled, the **Forgot password** option is hidden and reset requests are silently ignored.
+
 ## JWT sessions
 
 A successful login issues a **JWT** (JSON Web Token) that represents your session. The token is signed by the server and carries your identity and a unique token ID (`jti`). Because JWTs are stateless, Miabi can verify a session without a database lookup on every request.

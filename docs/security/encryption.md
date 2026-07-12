@@ -1,7 +1,7 @@
 ---
 sidebar_position: 5
 title: Encryption
-description: Per-workspace encryption keys, what's encrypted at rest, MIABI_ENCRYPTION_KEY, key rotation, and crypto-shred.
+description: Per-workspace encryption keys, what's encrypted at rest, MIABI_ENCRYPTION_KEY, GOMA_CONFIG_ENCRYPTION_KEY, key rotation, and crypto-shred.
 ---
 
 # Encryption
@@ -45,6 +45,18 @@ export MIABI_ENCRYPTION_KEY="<a-strong-random-key>"
 :::caution
 Treat `MIABI_ENCRYPTION_KEY` as the master secret for the entire instance. Generate it from a strong random source, store it in a secret manager, and back it up securely. **If you lose it, encrypted data cannot be decrypted.** Never commit it to source control or print it in logs.
 :::
+
+## `GOMA_CONFIG_ENCRYPTION_KEY`
+
+Separate and optional. When set, Miabi **encrypts** the sensitive parts of the config it hands to **Goma Gateway** — middleware rules and TLS material — and each gateway **decrypts** it with the same key before applying. Empty (the default) leaves that gateway config unencrypted.
+
+Because encryption and decryption happen on opposite sides, the **same value must be set on both** Miabi and the Goma gateway. In the Docker Compose stack that means setting `GOMA_CONFIG_ENCRYPTION_KEY` in your `.env` — it is passed to both the `miabi` and `gateway` services. For the remote edge gateways Miabi provisions on managed nodes, Miabi injects the key automatically, so a mismatch can't happen there.
+
+```bash
+export GOMA_CONFIG_ENCRYPTION_KEY="<a-strong-random-key>"
+```
+
+This is independent of `MIABI_ENCRYPTION_KEY` (which protects secrets in Miabi's own database). If the key is lost or the two sides disagree, a gateway can't decrypt its config — Miabi re-renders it on the next gateway deploy once the keys match again.
 
 ## Key rotation
 
