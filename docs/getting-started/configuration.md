@@ -44,6 +44,17 @@ removes a protection:
 | `MIABI_SECURITY_ENFORCEMENT` | `true` | Stop a platform admin from raw-stopping or removing a Miabi-managed container from the admin node view. Set `false` only as a break-glass escape hatch |
 | `MIABI_UPDATE_CHECK` | `true` | Daily check for a newer Miabi release, surfaced as an admin notice. Notify-only — Miabi never upgrades itself. See [Upgrades](/docs/administration/upgrades) |
 
+### GPUs
+
+Off by default. See [GPUs](/docs/applications/gpus) for the full workflow.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MIABI_GPU_ENABLED` | `false` | Master switch for GPU support. When off, nodes are never probed and the GPU UI is hidden |
+| `MIABI_NVIDIA_RUNTIME` | `nvidia` | The container runtime name that signals the NVIDIA Container Toolkit is installed |
+| `MIABI_GPU_PROBE_IMAGE` | `nvidia/cuda:12.4.1-base-ubuntu22.04` | One-shot image the device-inventory probe runs `nvidia-smi` in. Point at a mirror for air-gapped fleets |
+| `MIABI_GPU_INVENTORY_MINUTES` | `30` | How often nodes are re-inventoried for GPUs |
+
 ## Database & cache
 
 | Variable | Default | Description |

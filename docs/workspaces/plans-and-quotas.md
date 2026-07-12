@@ -37,7 +37,7 @@ Because the check happens at creation, you never end up with a half-provisioned 
 
 ## Capability gates
 
-Beyond raw counts, a plan can gate **features**. Examples include custom TLS certificates, privileged host mounts, shell access into containers, shared (NFS/CIFS) storage, connecting DNS providers, and [custom container labels](/docs/applications/container-labels). Advanced security capabilities such as multiple SSO providers, SAML 2.0, and SCIM provisioning are gated to higher editions. See [Community vs Enterprise](/docs/editions/community-vs-enterprise) for the full breakdown.
+Beyond raw counts, a plan can gate **features**. Examples include custom TLS certificates, privileged host mounts, shell access into containers, shared (NFS/CIFS) storage, connecting DNS providers, [custom container labels](/docs/applications/container-labels), and [GPU access](/docs/applications/gpus) (with a separate **GPUs** quota counting the units a workspace's running apps may hold). Advanced security capabilities such as multiple SSO providers, SAML 2.0, and SCIM provisioning are gated to higher editions. See [Community vs Enterprise](/docs/editions/community-vs-enterprise) for the full breakdown.
 
 When a feature is gated off, the corresponding controls are disabled in the console and the API returns a structured error explaining which capability is required. A platform admin can also override a capability for a single workspace.
 

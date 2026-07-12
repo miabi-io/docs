@@ -25,6 +25,13 @@ Limits protect the host and your other apps from a single noisy service. Set the
 Start conservative and watch real usage in [Monitoring](/docs/operations/monitoring), then adjust. Over-allocating memory wastes capacity; under-allocating risks restarts under load.
 :::
 
+## GPUs
+
+An app can also request **NVIDIA GPUs** for accelerated workloads (inference, training, transcoding).
+GPU access is gated by the workspace's plan and by which devices a platform admin has enabled on the
+node, so the GPU controls appear in an app's settings only when its plan allows them. See
+[GPUs](/docs/applications/gpus) for the full setup.
+
 ## Replicas
 
 Increase the **replica count** to run several identical containers of your app at once. More replicas mean:

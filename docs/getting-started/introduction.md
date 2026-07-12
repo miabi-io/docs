@@ -42,8 +42,12 @@ bill or the vendor lock-in.
 
 ## The north-star flow
 
-Install on a fresh server → create a workspace → create an application → connect a domain →
+Install on any Linux server → create a workspace → create an application → connect a domain →
 deploy → receive automatic SSL → scale and manage. Everything in Miabi ladders up to this.
+
+Miabi doesn't need a clean, dedicated box — it installs alongside your existing Docker workloads,
+and you can [import containers you already run](/docs/nodes/docker-import) to manage them from the
+console **without downtime**.
 
 ## Key features
 
