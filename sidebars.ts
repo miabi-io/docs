@@ -74,6 +74,13 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
+      label: 'Secrets',
+      items: [
+        'secrets/overview',
+      ],
+    },
+    {
+      type: 'category',
       label: 'Marketplace',
       items: [
         'marketplace/overview',
