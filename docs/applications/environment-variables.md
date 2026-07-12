@@ -23,7 +23,7 @@ Use plain variables for non-sensitive configuration and secrets for anything tha
 
 ## The workspace secret vault
 
-Secrets live in a **workspace secret vault**, shared across the apps in that [workspace](/docs/workspaces/overview). Define a secret once and reference it from any application that needs it — rotate it in one place and every consumer picks up the new value on its next deploy.
+Secrets live in a **workspace secret vault**, shared across the apps in that [workspace](/docs/workspaces/overview). Define a secret once and reference it from any application with `${{ secrets.NAME }}` — rotate it in one place and every consumer picks up the new value on its next deploy. See [Secrets](/docs/secrets/overview) for managing the vault, including custom vs. managed secrets.
 
 All secret values are **encrypted at rest** and are never logged or returned in plain text. See [Encryption](/docs/security/encryption) for how Miabi protects them.
 
