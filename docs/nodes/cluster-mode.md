@@ -29,11 +29,13 @@ Miabi **auto-detects** Swarm state, so if a host is already part of a swarm it i
 ## What cluster mode gives you
 
 - **Encrypted overlay networks.** Cross-node service traffic runs over overlay networks with encryption enabled, so workloads on different hosts communicate securely.
-- **Service deployments.** Applications deploy as swarm **services** rather than single containers, enabling replicas, rolling updates, and rescheduling across nodes.
+- **Service deployments by default.** With cluster mode on, applications deploy as replicated swarm **services** rather than single containers — enabling replicas, rolling updates, and rescheduling across nodes. You can opt a specific app back to a single container, and Miabi automatically keeps **stateful** apps (those holding node-local storage) as node-pinned containers so their data is never left behind.
+- **Cluster ingress.** Public traffic reaches a clustered app's tasks **wherever the scheduler placed them**: the central gateway fronts the service's virtual IP over a shared ingress overlay that survives gateway restarts. The app's detail page shows the **real nodes** its replicas run on.
+- **Images across the swarm.** Built images are pushed to the [internal registry](/docs/registry/overview) and their pull credentials are distributed to worker nodes, so a Git-built app deploys and rolls back on any node.
 - **Self-healing placement.** If a node goes away, the orchestrator reschedules eligible services onto healthy nodes.
 
 :::note
-Stateful workloads (databases, volumes) remain bound to the node holding their data. Cluster mode improves placement and networking for stateless and replicated services; it does not automatically move persistent data.
+Cluster mode improves placement and networking for stateless and replicated services; it does **not** automatically move persistent data. A replicated service can share storage across nodes only via a **shared (RWX) volume** (NFS/CIFS) or a host-path bind present on every node — see [Volumes](/docs/storage/volumes). An app backed by node-local storage stays a single, node-pinned container.
 :::
 
 ## When to use it

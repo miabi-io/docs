@@ -205,6 +205,7 @@ them all empty to manage the registry from the UI. See [Registry](/docs/registry
 |----------|---------|-------------|
 | `MIABI_NODE_GATEWAY_IMAGE` | `jkaninda/goma-gateway:latest` | Goma image deployed on edge-gateway nodes. The shipped compose drives this from `GOMA_IMAGE` so it always matches the local gateway |
 | `MIABI_CONTROL_URL` | falls back to `MIABI_API_URL` | Public URL remote nodes reach the control plane at |
+| `MIABI_NETWORK_CIDR` | `10.63.0.0/16` | CIDR of the shared `miabi` reverse-proxy bridge (gateway + routed app/database containers). `install.sh` pre-creates it as an **external** network with this subnet so it isn't capped by Docker's default pool; must not overlap `MIABI_NETWORK_POOL_CIDR` or your LAN |
 | `MIABI_NETWORK_POOL_CIDR` | `10.64.0.0/12` | Address pool workspace networks are carved from |
 | `MIABI_NETWORK_SUBNET_PREFIX` | `24` | Prefix length per workspace network (a `/12` pool ⇒ 4096 networks) |
 | `MIABI_HOST_PORT_MIN` | `1024` | Lowest host port Miabi may allocate |

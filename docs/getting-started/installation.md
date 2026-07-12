@@ -28,18 +28,6 @@ On a fresh host, run:
 curl -fsSL https://github.com/miabi-io/miabi/releases/latest/download/install.sh | sudo bash
 ```
 
-:::caution During the beta
-`releases/latest` skips pre-releases, and every Miabi release so far is one — so the URL above
-returns **404** until the first stable release is cut. Until then, use either a specific tag or the
-`main` branch (which installs `:latest` images rather than pinned ones):
-
-```bash
-curl -fsSL https://github.com/miabi-io/miabi/releases/download/v1.0.0-beta.4/install.sh | sudo bash
-# or
-curl -fsSL https://raw.githubusercontent.com/miabi-io/miabi/main/deploy/install.sh | sudo bash
-```
-:::
-
 This installs Docker if needed, fetches the production Compose file and Goma config into
 `/opt/miabi`, and generates secrets in `.env`. It prompts for your domain and ACME email and writes
 them to `.env` — the gateway config (`goma.yml`) reads those values from the environment, so **you
@@ -73,6 +61,9 @@ directly (or delete it) to change a value you set on a previous run.
 ```bash
 git clone https://github.com/miabi-io/miabi && cd miabi/deploy
 cp .env.example .env
+# Create the shared app network with a roomy CIDR (Compose references it as
+# external; the one-line install.sh does this for you). See Networks & Subnets.
+docker network create --driver bridge --subnet 10.63.0.0/16 miabi
 docker compose up -d
 docker compose logs -f miabi
 ```

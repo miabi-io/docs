@@ -29,6 +29,27 @@ join it, keeping unexposed apps off the public path. See
 [Reverse proxy](/docs/networking/reverse-proxy-and-traefik).
 :::
 
+## The shared gateway network
+
+The gateway and every routed app/database container share one bridge network —
+`miabi` by default (`MIABI_PROXY_NETWORK`). Because *all* exposed containers on the host pile onto
+this single network, it needs plenty of address space, so it is treated differently from the
+per-workspace networks above:
+
+- **Created up front as an external network.** `install.sh` runs `docker network create` for it
+  before the stack starts, and the Compose files reference it as `external: true`. This gives it a
+  **controllable, roomy CIDR** (`MIABI_NETWORK_CIDR`, default `10.63.0.0/16` — ~65k addresses)
+  instead of a slice of Docker's small default pool, and it **survives `docker compose down`**
+  rather than being recreated.
+- **Distinct from the workspace pool.** Its CIDR must not overlap `MIABI_NETWORK_POOL_CIDR` (the
+  `10.64.0.0/12` pool below) or your LAN. The default `10.63.0.0/16` sits just outside the pool.
+
+If you run Compose by hand instead of `install.sh`, create it first:
+
+```bash
+docker network create --driver bridge --subnet 10.63.0.0/16 miabi
+```
+
 ## Managed subnet allocation
 
 Docker's built-in address pools are small and shared across every network on a host. A platform

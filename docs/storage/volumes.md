@@ -37,6 +37,34 @@ Name volumes after the data they hold, not the app — it keeps things readable 
 several volumes, or when you later reuse a volume.
 :::
 
+## Volume types & shared storage
+
+When you create a volume you pick its **type**, which decides where the data lives and whether a
+replicated [cluster](/docs/nodes/cluster-mode) app can share it across nodes:
+
+| Type | Access | Backed by | Use for |
+|------|--------|-----------|---------|
+| **Local** (default) | Node-local (RWO) | A Docker volume on one node | Single-container / single-node apps |
+| **NFS** | Shared (RWX) | An NFS export, via Docker's built-in driver | Storage shared by a replicated service across nodes |
+| **CIFS / SMB** | Shared (RWX) | A CIFS/SMB share (credentials encrypted at rest) | The same, on Windows / NAS shares |
+| **Host path** | Shared (RWX) | A bind to an operator-managed path under `/mnt/*` | A NAS you've mounted at the same path on every node |
+
+- **Local** volumes live on one node. A replicated service is refused above one replica on a local
+  volume (each node would otherwise get its own empty copy) — Miabi instead keeps such an app as a
+  single node-pinned container.
+- **NFS / CIFS** let Miabi mount a network share with no external plugin (it uses Docker's local
+  driver with mount options). Provide the server + export (NFS) or share + credentials (CIFS); the
+  swarm mounts the **same share on every node** a task lands on. Shared storage is a plan capability.
+- **Host path** binds a directory you (the operator) have mounted at the **same path on every
+  node** — e.g. a NAS at `/mnt/nas/app`. Nothing is stored in Miabi (no credentials), and a
+  replicated service binds it on each node. The path must be under `/mnt/`, and creating one
+  requires a **privileged** workspace.
+
+:::tip
+For a replicated service, back it with a **shared (RWX)** volume or a cluster-wide host path — a
+plain local volume can't follow a task that Swarm reschedules onto another node.
+:::
+
 ## Mounting a volume in an app
 
 Volumes are attached to applications through a **mount path** — the directory inside the
