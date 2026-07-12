@@ -35,22 +35,24 @@ the exact same stack.
 On your host, run:
 
 ```bash
-curl -fsSL https://github.com/miabi-io/miabi/releases/latest/download/install.sh | sudo bash
+curl -fsSL https://get.miabi.io | sudo bash
 ```
 
-This installs Docker if needed, fetches the production Compose file and Goma config into
+`https://get.miabi.io` serves the latest release's installer (it's the same script published on
+[GitHub Releases](https://github.com/miabi-io/miabi/releases/latest), if you prefer to fetch it from
+there). It installs Docker if needed, fetches the production Compose file and Goma config into
 `/opt/miabi`, and generates secrets in `.env`. It prompts for your domain and ACME email and writes
 them to `.env` — the gateway config (`goma.yml`) reads those values from the environment, so **you
 never hand-edit `goma.yml`**.
 
-The installer published with each release is **stamped**: it pins the exact `MIABI_IMAGE`,
-`GOMA_IMAGE`, and `RUNNER_IMAGE` tags that release was tested with, and fetches `compose.yaml` from
-the same tag. Re-running it is how you upgrade.
+The installer is **stamped**: it pins the exact `MIABI_IMAGE`, `GOMA_IMAGE`, and `RUNNER_IMAGE` tags
+that release was tested with, and fetches `compose.yaml` from the same tag. Re-running it is how you
+upgrade.
 
 Answering prompts over a pipe is unreliable, so prefer passing the values:
 
 ```bash
-curl -fsSL https://github.com/miabi-io/miabi/releases/latest/download/install.sh \
+curl -fsSL https://get.miabi.io \
   | sudo MIABI_DOMAIN=miabi.example.com MIABI_ACME_EMAIL=you@example.com bash
 ```
 

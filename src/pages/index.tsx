@@ -10,8 +10,7 @@ import styles from './index.module.css';
 
 const GITHUB_URL = 'https://github.com/miabi-io/miabi';
 
-const INSTALL_EXAMPLE = `curl -fsSL https://raw.githubusercontent.com/miabi-io/miabi/main/deploy/install.sh \\
-  | sudo bash`;
+const INSTALL_EXAMPLE = `curl -fsSL https://get.miabi.io | sudo bash`;
 
 const INSTALL_NOTE = `# Then open your domain and register —
 # the first account becomes the platform admin.
