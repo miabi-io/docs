@@ -43,6 +43,7 @@ removes a protection:
 | `MIABI_PLAN_ENFORCEMENT` | `true` | Enforce per-workspace [plan quotas and capability gates](/docs/workspaces/plans-and-quotas). Set `false` to make every quota check pass and every gate open |
 | `MIABI_SECURITY_ENFORCEMENT` | `true` | Stop a platform admin from raw-stopping or removing a Miabi-managed container from the admin node view. Set `false` only as a break-glass escape hatch |
 | `MIABI_UPDATE_CHECK` | `true` | Daily check for a newer Miabi release, surfaced as an admin notice. Notify-only — Miabi never upgrades itself. See [Upgrades](/docs/administration/upgrades) |
+| `MIABI_PASSWORD_RESET_ENABLED` | `true` | Allow self-service password reset (the "forgot password" flow). A critical auth control, so it is fixed at boot — set `false` to disable it, and **restart** to apply. Not editable at runtime |
 
 ### GPUs
 
@@ -178,7 +179,7 @@ emails are **silently skipped** — nothing fails, they simply never arrive.
 |----------|---------|-------------|
 | `MIABI_KEY_AUTO_ROTATE` | `false` | Enable the per-workspace encryption-key rotation cron |
 | `MIABI_KEY_ROTATE_MONTHS` | `6` | Max age of an active key before rotation (re-encrypts the workspace's secrets) |
-| `GOMA_CONFIG_ENCRYPTION_KEY` | — | Injected into every edge gateway so Goma encrypts sensitive config (middleware rules, TLS material) at rest |
+| `GOMA_CONFIG_ENCRYPTION_KEY` | — | Encrypts sensitive gateway config (middleware rules, TLS material) at rest: Miabi encrypts, Goma decrypts. Set the **same value on both** the `miabi` and `gateway` services (Miabi injects it into remote edge gateways automatically). Empty = off. See [Encryption](/docs/security/encryption) |
 
 ## Builds & runners
 
