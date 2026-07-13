@@ -25,17 +25,34 @@ releases, and the authoritative command reference live on GitHub:
 
 ## Install
 
+**Homebrew** (macOS and Linux):
+
 ```bash
-# Go toolchain
+brew install miabi-io/tap/miabi
+```
+
+:::note
+Homebrew 6 requires third-party taps to be trusted. The one-liner above handles it; if you tap first,
+run `brew trust miabi-io/tap` before `brew install miabi`.
+:::
+
+**Go:**
+
+```bash
 go install github.com/miabi-io/miabi-cli@latest   # installs the `miabi` binary
 ```
 
 Or grab a **prebuilt binary** for Linux, macOS, or Windows from the
-[releases page](https://github.com/miabi-io/miabi-cli/releases/latest). There's also a container
-image for CI that needs no local install:
+[releases page](https://github.com/miabi-io/miabi-cli/releases/latest).
+
+**Docker** — no install at all, which is handy in CI:
 
 ```bash
 docker run --rm -e MIABI_URL -e MIABI_TOKEN miabi/miabi-cli:latest whoami
+
+# deploy from a pipeline — exits non-zero if the rollout fails
+docker run --rm -e MIABI_URL -e MIABI_TOKEN \
+  miabi/miabi-cli:latest apps deploy web --tag "$GIT_SHA" --wait
 ```
 
 ## Authenticate
@@ -93,7 +110,7 @@ argument**, or use the app bound with `miabi use`.
 | Command | What it does |
 |---|---|
 | `miabi login` · `miabi whoami` | Store URL + token; show identity, scopes, and active context. |
-| `miabi workspace list \| show \| switch <name-or-id>` | List, show, or set the active workspace. |
+| `miabi workspace ls \| show \| switch <name-or-id>` | List, show, or set the active workspace (alias: `ws`). |
 | `miabi use [app] \| --clear` | Bind (or show/clear) the default app. |
 | `miabi apps ls` | List the workspace's applications (marks the bound app). |
 | `miabi apps create <name> (--image <img> [--tag] \| --git-repo <url> [--git-ref]) [--port] [--use]` | Create an app from an image or Git source. |
@@ -104,8 +121,10 @@ argument**, or use the app bound with `miabi use`.
 | `miabi apps logs [app] [--follow] [--tail N] [--deployment <n>]` | Runtime logs (or a deployment's build logs with `--deployment`); `--follow` streams. |
 | `miabi apps deployments [app]` | Deploy history — the `NUMBER` column addresses a deployment. |
 | `miabi apps releases [app]` | List an app's releases (by `VERSION`). |
-| `miabi apps env set [app] KEY=VALUE [--secret]` | Set an environment variable (or a secret ref). |
-| `miabi apps env import [app] --file .env [--secret]` | Bulk-import variables from a file. |
+| `miabi apps env ls [app]` | List the app's env vars (secret values are masked). |
+| `miabi apps env set [app] KEY=VALUE [--secret]` | Set an environment variable. |
+| `miabi apps env set [app] KEY --from-file <f> [--secret]` | Set the value from a file (or `-` for stdin) — keeps it out of your shell history. |
+| `miabi apps env import [app] --from-file .env [--secret]` | Bulk-import variables from a file (`-` = stdin). |
 | `miabi apps rm [app] [--yes]` | Delete an application. |
 | `miabi db …` | Manage database instances + logical databases (see below). |
 | `miabi secrets …` | Manage the workspace secret vault (see below). |
