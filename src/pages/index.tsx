@@ -29,15 +29,12 @@ function HomepageHeader() {
         </span>
 
         <Heading as="h1" className={styles.heroTitle}>
-          The Self-Hosted{' '}
-          <span className={styles.gradientText}>PaaS for Docker</span>
+          Deploy Apps{' '}
+          <span className={styles.gradientText}>Not Infrastructure</span>
         </Heading>
 
         <p className={styles.heroSubtitle}>
-          Your own Heroku, on your own server. Push an app — from a Git repo, a
-          Docker image, or a marketplace template — and Miabi handles build,
-          deploy, domains, automatic SSL, databases, scaling, backups, and
-          monitoring. All from one web interface, in minutes.
+          Deploy from a Git repository, a Docker image, or a marketplace template. Miabi handles builds, domains, automatic SSL, databases, backups, scaling, and monitoring.
         </p>
 
         <div className={styles.buttons}>
