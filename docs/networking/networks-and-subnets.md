@@ -23,6 +23,24 @@ You can also create **additional networks** to further segment traffic (for exam
 group of apps). Attach apps to them alongside the always-present default. Custom networks count
 against your plan's network quota; the default network does not.
 
+### Bridge on one node, overlay across a cluster
+
+The default network's **driver** depends on whether [cluster mode](/docs/nodes/cluster-mode) is on,
+and this is what decides whether a workspace can span hosts at all:
+
+| | Driver | Reach |
+|---|---|---|
+| **Single node / no cluster** | `bridge` | Node-local. Recreated on each node with the same name and subnet, but as **disconnected islands** — an app on one node cannot reach a database on another, and Miabi refuses to attach them. |
+| **Cluster mode** | `overlay` | Spans every node, attachable and **encrypted**. An app on one node reaches a database on another **by name**, with no published ports. |
+
+Because every app and database already joins the workspace default, that one change is the whole
+mechanism for cross-node connectivity — nothing else has to be reconfigured, and no connection string
+changes (they address a database by its alias, not by its network).
+
+Enabling cluster mode converts existing workspaces for you. Containers are **not** restarted: each is
+attached to the overlay, carrying its DNS aliases across, and then detached from the bridge. See
+[Applying it to existing workspaces](/docs/nodes/cluster-mode#applying-it-to-existing-workspaces).
+
 :::note
 The reverse-proxy (gateway) network is separate: only apps exposed by a [route](/docs/networking/routing-and-middlewares)
 join it, keeping unexposed apps off the public path. See
