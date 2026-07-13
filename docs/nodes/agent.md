@@ -16,6 +16,11 @@ The agent has one job — let the control plane drive Docker on the remote host.
 - Authenticates with a [join token](/docs/nodes/adding-a-node) during enrollment.
 - Relays Docker API calls (pull, create, start, stop, inspect, prune…) to the **local Docker socket**.
 - Reports node status, container state, and resource usage back over the same tunnel.
+- **Says which node it is.** On connect it reads its own Docker `/info` — over the socket it already
+  has — and reports the host's name and, in [cluster mode](/docs/nodes/cluster-mode), its **swarm node
+  id**. The control plane cannot work that out for itself, and without it a service's replica cannot
+  be traced back to the node running it, so its logs and metrics become unreachable. The node is the
+  authority on which node it is.
 
 It runs no scheduling logic of its own — all decisions live in the control plane. That keeps the agent tiny and easy to audit.
 
@@ -65,13 +70,24 @@ curl -fsSL https://get.miabi.io/agent | \
 ```
 
 You can also pass the values as flags (`--control-url`, `--token`), override the image with
-`--image` / `MIABI_AGENT_IMAGE`, or skip control-plane TLS verification for a self-signed panel with
-`--insecure` / `MIABI_AGENT_INSECURE_SKIP_VERIFY=true`. Run with no values on an interactive shell
-and it prompts for them.
+`--image` / `MIABI_AGENT_IMAGE`, or point it at your certificate authority with `--ca-cert` /
+`MIABI_CA_CERT` (see [Private certificate authorities](#private-certificate-authorities)). Run with
+no values on an interactive shell and it prompts for them.
 
 ### Binary
 
-If you run the agent as a bare binary (e.g. under a systemd unit), pass the same environment:
+Pre-built binaries are published for **Linux and macOS** (amd64 and arm64) on each
+[release](https://github.com/miabi-io/agent/releases). Use them to run the agent as a host process —
+under systemd or launchd — on a node where you would rather not add a container to supervise the
+containers.
+
+:::note
+There is no Windows build, deliberately. The agent reaches Docker over a **unix socket** or **TCP**,
+and Windows serves its daemon on a **named pipe** — a Windows binary would build cleanly and then
+fail to find Docker on every machine it ran on.
+:::
+
+Pass the same environment:
 
 ```bash
 MIABI_CONTROL_URL=https://miabi.example.com \
@@ -87,11 +103,79 @@ Or use the equivalent flags — each defaults to its environment variable, and a
   --token mbn_xxxxxxxx
 ```
 
-`--insecure` (env `MIABI_AGENT_INSECURE_SKIP_VERIFY`) skips control-plane TLS verification for a self-signed panel.
-
 :::tip
 Run the agent under a process supervisor (systemd `Restart=always` or `--restart unless-stopped`) so it reconnects automatically after reboots or transient network drops.
 :::
+
+## Private certificate authorities
+
+If your control plane serves a **self-signed** or **private-CA** certificate, the agent will refuse
+to connect:
+
+```
+agent disconnected  error="tls: failed to verify certificate:
+                          x509: certificate signed by unknown authority"
+```
+
+This is the single most common agent failure, and the reason is worth stating plainly: **the host may
+trust your CA, but the agent container does not.** The container ships its own certificate bundle,
+which has never heard of your authority. `curl` works on the node and fails inside a container — same
+machine, different trust store.
+
+There are two ways out, and they are **not** equivalent:
+
+| | What the agent does |
+|---|---|
+| **`MIABI_CA_CERT`** | Trusts **this** authority. Verification still happens, anchored on your CA — a forged certificate is still rejected. |
+| `--insecure` | Trusts **any** certificate. No verification at all. Anyone able to intercept the connection can impersonate a control plane that drives Docker on this node. |
+
+**Prefer the first.** `--insecure` (env `MIABI_AGENT_INSECURE_SKIP_VERIFY=true`) exists as a last
+resort for someone who cannot get their CA onto the node.
+
+### Supplying the CA
+
+`MIABI_CA_CERT` accepts three forms, and the agent works out which:
+
+**A file path** — usually the best option. The node already trusts the CA; mount the file it already
+has, and it stays correct when the CA is rotated on the hosts:
+
+```bash
+docker run -d --name miabi-agent --restart unless-stopped \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v /etc/pki/ca-trust/source/anchors/my-ca.crt:/etc/pki/ca-trust/source/anchors/my-ca.crt:ro \
+  -e MIABI_CONTROL_URL=https://miabi.example.com \
+  -e MIABI_NODE_TOKEN=mbn_xxxxxxxx \
+  -e MIABI_CA_CERT=/etc/pki/ca-trust/source/anchors/my-ca.crt \
+  miabi/agent:latest
+```
+
+**Base64** — a flat, transport-safe token. A certificate is multi-line, and an environment variable
+is a poor place for newlines: they survive some transports and not others, and a PEM whose line
+breaks were eaten is not a PEM at all.
+
+```bash
+-e MIABI_CA_CERT="$(base64 -w0 < my-ca.crt)"
+```
+
+**The PEM itself**, inline, for a hand-run agent.
+
+The CA is **added** to the system trust pool, not swapped for it — an agent trusting a private CA can
+still verify a public certificate later.
+
+:::caution
+Trusting a CA does **not** skip the hostname check. A certificate that does not name the address the
+agent dials will still be rejected (`cannot validate certificate for <host>`), however well its
+authority is trusted. Issue a certificate whose SANs include your control plane's hostname.
+:::
+
+### In a cluster
+
+When you deploy agents from **Nodes → Manage cluster nodes**, the dialog offers the same three
+choices — trust a CA file already on the nodes, paste a certificate, or skip verification — and
+Miabi can fetch the certificate your control plane currently serves so you do not have to find it.
+Whichever is in force stays visible on the Nodes page, so a workaround taken once to get a
+self-signed certificate working cannot quietly become permanent. See
+[Cluster mode](/docs/nodes/cluster-mode#manage-cluster-nodes).
 
 ## Verifying the connection
 

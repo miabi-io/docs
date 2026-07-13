@@ -33,7 +33,20 @@ Because remote nodes connect over an outbound tunnel, a node behind NAT or a fir
 
 By design, the **plain single-node** experience stays trivial. With one or more nodes running standalone Docker, Miabi deploys plain containers and routes traffic to them — nothing to configure.
 
-When you want orchestration across multiple hosts — encrypted overlay networking, service-based deployments, and rescheduling — you can opt into **[cluster mode](/docs/nodes/cluster-mode)**, which Miabi builds on auto-detected Docker Swarm. Cluster mode is entirely optional; standalone nodes remain fully supported.
+Standalone nodes are **islands**: an app can reach a database on the same node, and Miabi refuses to attach it to one on a different node, because the workspace network is node-local and the name would not resolve.
+
+When you want apps and databases to reach each other **across hosts** — over an encrypted overlay, with service-based deployments and rescheduling — opt into **[cluster mode](/docs/nodes/cluster-mode)**, which Miabi builds on auto-detected Docker Swarm. It is entirely optional; standalone nodes remain fully supported.
+
+## Managed and unmanaged nodes
+
+A node is **managed** when Miabi has a Docker connection to it — the local socket, or a connected [agent](/docs/nodes/agent). That connection is what powers metrics, resource stats, the in-console shell, and housekeeping.
+
+In [cluster mode](/docs/nodes/cluster-mode) a node can be in the swarm **without** an agent. It runs tasks perfectly well — Swarm ships them to it directly — but Miabi cannot see inside it:
+
+- **Logs, uptime, status and placement still work** (the manager reports them).
+- **Metrics, stats and the shell do not.** Docker offers no manager-side equivalent, so an app scheduled there shows no resource usage and offers no shell.
+
+Miabi labels such nodes **unmanaged** and can install the agent on all of them for you — see [Manage cluster nodes](/docs/nodes/cluster-mode#manage-cluster-nodes).
 
 ## Managing nodes
 
