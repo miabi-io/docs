@@ -14,6 +14,28 @@ Every service in the shipped Compose files reads that single `.env` via Docker C
 directive, so the workflow is: **rename `.env.example` → `.env`, fill in the values, and
 `docker compose up`** — no per-service edits.
 
+:::caution If you installed with the installer, there is no `.env`
+A stack install (the [one-liner](/docs/getting-started/installation) or `docker run … install`)
+keeps its configuration in the manifest at **`/etc/miabi/stack.yaml`**, and passes it to the
+containers itself. Creating a `.env` file there changes nothing — nothing reads it.
+
+Set these variables under the manifest's `env:` block instead, then apply them:
+
+```bash
+sudo vi /etc/miabi/stack.yaml     # env: { MIABI_LOG_LEVEL: debug, … }
+miabi-stack install               # re-converges; recreates only what actually changed
+```
+
+Use `install`, **not** `restart`. An env var is part of a container's spec, and a spec can only be
+changed by recreating the container — `restart` restarts the ones you already have, so an edited
+manifest would appear to do nothing (it prints a note when it spots this). Re-running `install` on a
+live stack is safe and idempotent: it leaves containers whose spec is unchanged alone.
+
+The variable names and meanings below are the same either way; only where you write them differs.
+Miabi owns a handful of keys in that file (the database URL, the secrets, the domain) and rejects
+attempts to override them from `env:` — see [The manifest](/docs/getting-started/installation#the-manifest).
+:::
+
 ## Core
 
 | Variable | Default | Description |
@@ -26,12 +48,30 @@ directive, so the workflow is: **rename `.env.example` → `.env`, fill in the v
 | `MIABI_CORS_ORIGINS` | `*` | Comma-separated allowed origins; a `*` wildcard is rejected in production |
 | `MIABI_ADMIN_EMAIL` | `admin@example.com` | Login of the platform admin seeded on first boot |
 | `MIABI_ADMIN_PASSWORD` | — | **Required in production.** Password for the seeded platform admin. Miabi refuses to start outside dev while this is empty or left at its built-in default |
+| `MIABI_LOG_LEVEL` | — | How chatty Miabi's own logs are: `debug`, `info`, `warn`, `error`. Empty follows the environment — `debug` in dev, `info` in production |
+| `TZ` | `UTC` | Timezone for log timestamps and scheduled jobs. Any zoneinfo name (`Europe/Paris`, `America/New_York`) |
 
 :::caution
 Generate strong random values for `MIABI_JWT_SECRET` and `MIABI_ENCRYPTION_KEY` with
 `openssl rand -hex 32`. Keep `.env` at `chmod 600` and out of version control. See
 [Encryption](/docs/security/encryption) for how secrets are protected at rest.
 :::
+
+### Log level
+
+A value Miabi does not recognize is a **startup error**, not a silent fallback to `info` — otherwise
+a typo would leave you watching for logs that were never going to appear.
+
+`off` is deliberately not offered. The logging library cannot honour it for the calls Miabi actually
+makes: it would silence part of the logging and leave the rest running, which is more confusing than
+useful. Use `error` for near-silence.
+
+### Timezone
+
+On a [stack install](/docs/getting-started/installation) `TZ` applies to the **whole** stack — Miabi,
+PostgreSQL, Redis and the gateway — so their log timestamps agree. Setting it on the control plane
+alone would put Miabi's logs in a different timezone from every container it manages, which is the
+worst way to read a timeline across them.
 
 ## Enforcement switches
 

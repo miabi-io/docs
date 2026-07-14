@@ -1,7 +1,7 @@
 ---
 sidebar_position: 3
 title: Upgrades
-description: How to upgrade a Miabi instance — automatic migrations, the docker compose procedure, and why downgrades aren't supported.
+description: How to upgrade a Miabi instance — automatic migrations, the stack and Compose procedures, rollback, and why downgrades aren't supported.
 ---
 
 # Upgrades
@@ -20,7 +20,9 @@ Because both happen automatically, upgrading is just a matter of starting the ne
 ## Update notifications
 
 Once a day, Miabi asks GitHub whether a newer release exists and shows platform admins a dismissible
-notice with a link to the release notes. **It only notifies — Miabi never upgrades itself.**
+notice with a link to the release notes. **The check only notifies — nothing upgrades on its own.**
+An upgrade is always something you ask for, whether by re-running the installer (Compose) or by
+running `miabi update` (stack).
 
 The check is channel-aware: a pre-release build is offered newer pre-releases and stable releases; a
 stable build is never nudged onto a pre-release. Dismissing a notice hides it until the *next*
@@ -42,10 +44,94 @@ Admins can read the cached result at `GET /api/v1/admin/update`.
 
 ## Upgrade procedure
 
-1. **Back up the database** (and any volumes you care about).
-2. *(Optional)* Pin the new image version in your `.env` so the upgrade is explicit and repeatable.
-3. Pull the new image and recreate the containers.
-4. Watch the logs until you see the migrations confirmation.
+How you upgrade depends on who owns the containers. Miabi labels every one of them, so it always
+knows — and refuses to act on a stack it does not own.
+
+- **Installer / `docker run`** (what `get.miabi.io` builds) → `miabi update`. Miabi replaces its own
+  container, rolling back if the new one does not come up.
+- **Compose**, if you set it up yourself → `docker compose pull && docker compose up -d`.
+
+If you are not sure which you have, ask:
+
+```bash
+docker inspect miabi --format '{{index .Config.Labels "io.miabi.managed-by"}}'
+# miabi   → stack install
+# compose → compose install
+```
+
+## Upgrading
+
+```bash
+MIABI_TAG=1.4.0 miabi-stack update
+```
+
+…or, without the wrapper:
+
+```bash
+docker run --rm -it \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v /etc/miabi:/etc/miabi \
+  miabi/miabi:1.4.0 update
+```
+
+The tag you invoke is the version you get. Miabi pulls the image, replaces the running control plane
+and waits for it to come back healthy.
+
+**It can replace its own container** because the updater is a *different* container — an ephemeral
+one that exits when it is done. That is the whole reason Miabi owns its containers rather than
+letting Compose own them.
+
+### If the new version does not come up
+
+The rollout is not a blind cutover:
+
+1. For components that can safely run a second copy (the gateway), the new image is started under a
+   throwaway name first, watched, and only promoted once it is **healthy** — a gateway that boots but
+   serves nothing never reaches the live one.
+2. The previous image is remembered before anything is replaced.
+3. If the new container never becomes healthy, the previous image is **restored automatically** and
+   the manifest is reverted, so `stack.yaml` never claims a version that is not running.
+
+```
+verifying
+rolling-back  miabi did not become healthy within 1m30s
+rolled-back   … rolled back to miabi/miabi:1.3.0, which is running
+```
+
+:::caution A rollback is recovery, not undo
+Restoring the previous **image** does not undo a schema **migration** the new version already
+applied. Miabi's migrations are additive, so an older binary against a newer schema generally works —
+but the supported recovery path for a genuinely bad upgrade is still to restore the pre-upgrade
+backup. See [Downgrades](#downgrades-are-not-supported) below.
+:::
+
+### Restarting without upgrading
+
+A restart re-reads what is on disk — most usefully the gateway's `goma.yml`, which Goma does **not**
+hot-reload (it watches its providers directory, not its base config):
+
+```bash
+miabi-stack restart miabi-gateway     # or `miabi-stack restart` for the whole stack
+```
+
+The config is validated before anything is stopped, so a broken edit cannot take the gateway down.
+A restart cannot apply a *manifest* change — that needs `miabi install`, which recreates — and it
+says so rather than leaving the edit looking ignored.
+
+### Changing anything else
+
+Everything else — the gateway version, the registry, `TZ`, the log level — lives in
+`/etc/miabi/stack.yaml`. Edit it and re-run:
+
+```bash
+miabi-stack install
+```
+
+The converge is idempotent: components whose configuration did not change are left alone, and only
+what actually changed is recreated. Bumping PostgreSQL is therefore something you ask for by name,
+not a side effect of upgrading the panel.
+
+## Upgrading a Compose install (if you set one up yourself)
 
 The supported path is to **re-run the installer**: it stamps the release's exact image tags into
 `.env` and brings the stack up.
