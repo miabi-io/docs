@@ -21,9 +21,16 @@ so an admin always already exists.
 | `MIABI_ADMIN_EMAIL` | `admin@example.com` | Login of the seeded platform admin |
 | `MIABI_ADMIN_PASSWORD` | — | **Required in production.** Miabi refuses to start outside dev while this is empty or left at its built-in default |
 
-The one-line installer generates a password, writes it to `/opt/miabi/.env`, and prints it once at
-the end of the run. Sign in with those credentials; every self-service sign-up afterwards is an
-ordinary user until invited into a workspace.
+The one-line installer generates a password, prints it once at the end of the run, and stores it in
+`/etc/miabi/stack.yaml` — the **only** copy, so back that file up. Sign in with those credentials;
+every self-service sign-up afterwards is an ordinary user until invited into a workspace.
+
+On a stack install you never set those two variables yourself: Miabi derives them and writes them
+into the manifest, which is what it feeds the container. The login is whichever email you installed
+with — `admin_email` and `acme_email` fall back to each other, so supplying either is enough, and
+only if you supply neither does it become `admin@<domain>` (see
+[Installation](/docs/getting-started/installation#install-options)). The `admin@example.com` default
+above is what the *container* falls back to when nothing sets it, which is the Compose path.
 
 :::tip
 Treat this account as a privileged operations identity. Change the generated password after first

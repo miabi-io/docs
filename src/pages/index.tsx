@@ -10,10 +10,11 @@ import styles from './index.module.css';
 
 const GITHUB_URL = 'https://github.com/miabi-io/miabi';
 
-const INSTALL_EXAMPLE = `curl -fsSL https://get.miabi.io | sudo bash`;
+const INSTALL_EXAMPLE = `curl -fsSL https://get.miabi.io | sudo MIABI_DOMAIN=miabi.example.com \\
+  MIABI_ADMIN_EMAIL=you@example.com bash`;
 
-const INSTALL_NOTE = `# Then open your domain and register —
-# the first account becomes the platform admin.
+const INSTALL_NOTE = `# Then open your domain and sign in as the
+# admin — the installer prints the password.
 # Create a workspace, deploy an app, attach a
 # domain, and get automatic SSL. No Docker
 # commands, no CLI required.`;
