@@ -1,5 +1,5 @@
 ---
-sidebar_position: 4
+sidebar_position: 6
 title: Log Storage
 description: A shared store that externalizes execution logs out of the database, with retention, size caps, and full-log download.
 ---

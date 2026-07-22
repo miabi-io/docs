@@ -13,7 +13,11 @@ Compose create them, or let Miabi create them itself — see [the two modes](#ho
 ## Requirements
 
 - A Linux host with a public IP and a domain pointing at it.
-- Docker Engine 24+ and the Docker Compose v2 plugin (the installer adds Docker if missing).
+- **Docker Engine 25+** (the installer adds Docker if missing). 25.0 is the minimum Miabi
+  supports — see [Supported Docker Engine versions](#supported-docker-engine-versions).
+  The Compose v2 plugin is needed *only* if you take the
+  [manual Compose path](#manual-install-with-docker-compose); the installer script drives the
+  Docker API directly and never shells out to `docker compose`.
 - Ports **80** and **443** open — Goma terminates TLS and serves ACME challenges.
 
 :::tip
@@ -30,6 +34,21 @@ downtime** — they keep running and simply start showing up in the console. And
 the installer script: the [manual Docker Compose path](#manual-install-with-docker-compose) gives you
 the exact same stack.
 :::
+
+## Supported Docker Engine versions
+
+Miabi requires **Docker Engine 25.0 or newer** on the control-plane host and on every node.
+25.0 is the floor of the versions Miabi tests — its CI runs the engine integration suite on
+Docker **25, 26, 27 and 28**.
+
+Miabi talks to the daemon through the **Moby SDK** (`github.com/moby/moby/client`), the
+supported successor to the deprecated `github.com/docker/docker` (which stopped at v28 and no
+longer receives security fixes). The Moby client will not negotiate with very old daemons.
+
+A node running an older engine shows an **Upgrade** warning in **Admin → Nodes** so you can
+see — and fix — which hosts are affected. Upgrade Docker on those hosts (see
+[Install Docker Engine](https://docs.docker.com/engine/install/)); the warning clears on the
+next cluster refresh.
 
 ## How Miabi runs
 
@@ -134,10 +153,10 @@ web_url: https://miabi.example.com
 control_url: https://miabi.example.com   # where nodes and agents dial back
 acme_email: you@example.com              # Let's Encrypt contact
 images:
-  miabi: miabi/miabi:1.4.0
+  miabi: miabi/miabi:1.6.0
   postgres: postgres:17-alpine
   redis: redis:7-alpine
-  gateway: jkaninda/goma-gateway:0.11.0
+  gateway: jkaninda/goma-gateway:0.12.0
 registry:
   enabled: true
   host: registry.miabi.example.com
@@ -272,6 +291,39 @@ Nothing is created when this happens.
 :::
 
 Use `-it` for the confirmation prompt; add `--yes` and drop `-it` when scripting it.
+
+### Running the installer container as non-root
+
+The command above runs the installer container as **root** — the simplest thing that works, and the
+same privilege level as the `sudo` on the one-line script. If you'd rather not, the image ships a
+non-root `miabi` account (uid/gid **10001**); run as it by adding two flags:
+
+```bash
+docker run --rm -it \
+  --user 10001:10001 \
+  --group-add "$(stat -c '%g' /var/run/docker.sock)" \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v /etc/miabi:/etc/miabi \
+  miabi/miabi:1.4.0 install --domain miabi.example.com --admin-email you@example.com
+```
+
+- `--user 10001:10001` runs as the image's non-root account instead of root.
+- `--group-add "$(stat -c '%g' /var/run/docker.sock)"` adds the **host's** docker group — the group
+  that owns `/var/run/docker.sock`. Without it a non-root user cannot read the socket and the install
+  fails at once with a permission error. It is the same reason the Compose path keeps `group_add`.
+
+:::caution The host `/etc/miabi` must be writable by uid 10001
+Unlike the Compose path — where a fresh **named volume** inherits `10001:10001` from the image — a
+`docker run` bind-mounts a **host directory**, whose ownership Docker does not change. Create it
+owned by the non-root account first, or the installer cannot write the manifest:
+
+```bash
+sudo install -d -o 10001 -g 10001 /etc/miabi
+```
+:::
+
+This is the `docker run` equivalent of the Compose [Running unprivileged](#running-unprivileged)
+section: both run as uid/gid 10001 and grant the host's Docker GID.
 
 ### The tag you invoke is the version you get
 
