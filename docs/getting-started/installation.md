@@ -1,7 +1,7 @@
 ---
 sidebar_position: 2
 title: Installation
-description: Install Miabi on any Linux host — with Docker Compose, or letting Miabi manage its own stack
+description: Install Miabi on any Linux host — with Docker Compose, or let Miabi manage its own stack
 ---
 
 # Installation
@@ -41,14 +41,6 @@ Miabi requires **Docker Engine 25.0 or newer** on the control-plane host and on 
 25.0 is the floor of the versions Miabi tests — its CI runs the engine integration suite on
 Docker **25, 26, 27 and 28**.
 
-Miabi talks to the daemon through the **Moby SDK** (`github.com/moby/moby/client`), the
-supported successor to the deprecated `github.com/docker/docker` (which stopped at v28 and no
-longer receives security fixes). The Moby client will not negotiate with very old daemons.
-
-A node running an older engine shows an **Upgrade** warning in **Admin → Nodes** so you can
-see — and fix — which hosts are affected. Upgrade Docker on those hosts (see
-[Install Docker Engine](https://docs.docker.com/engine/install/)); the warning clears on the
-next cluster refresh.
 
 ## How Miabi runs
 
