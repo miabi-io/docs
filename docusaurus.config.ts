@@ -48,6 +48,19 @@ const config: Config = {
       } satisfies Preset.Options,
     ],
   ],
+  themes: [
+    [
+      '@easyops-cn/docusaurus-search-local',
+      {
+        hashed: true, // cache-bust the index when content changes
+        indexBlog: false, // blog is disabled above
+        docsRouteBasePath: '/docs',
+        highlightSearchTermsOnTargetPage: true,
+        searchResultLimits: 10,
+        explicitSearchResultPath: true,
+      },
+    ],
+  ],
 
   themeConfig: {
     image: 'img/miabi-social-card.png',
