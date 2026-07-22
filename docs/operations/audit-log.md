@@ -1,5 +1,5 @@
 ---
-sidebar_position: 2
+sidebar_position: 4
 title: Audit Log
 description: An append-only record of every mutating action, queryable per workspace.
 ---

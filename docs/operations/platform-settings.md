@@ -1,5 +1,5 @@
 ---
-sidebar_position: 3
+sidebar_position: 5
 title: Platform Settings
 description: Typed, cached key/value configuration managed by the platform admin.
 ---

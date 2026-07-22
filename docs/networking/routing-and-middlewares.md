@@ -47,9 +47,33 @@ Common examples:
 - **Rate limiting** — cap requests per client to protect a backend.
 - **Headers** — add, rewrite, or strip request/response headers (CORS, security headers,
   etc.).
+- **Access control** — allow or deny by client IP/CIDR, User-Agent, or **country (GeoIP)**.
 
 Define a middleware once in the workspace, then attach it to one or more routes. Updating
 the middleware updates every route that uses it.
+
+### Geo access control
+
+The **Country access policy (GeoIP)** middleware allows or denies requests by the client's
+country:
+
+- **Allowlist** (`ALLOW`) — only the listed countries reach the app.
+- **Blocklist** (`DENY`) — the listed countries are rejected; everyone else passes.
+
+Countries are [ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) codes
+(`US`, `FR`, `DE`, …). Private and internal traffic is never geo-fenced, and when a country
+can't be resolved the request is allowed by default (turn off **Allow unknown country** for
+fail-closed). You can also inject the resolved country to the backend via a header (e.g.
+`X-Country-Code`) for localization.
+
+Geo rules need a **GeoIP database on the gateway**, which Miabi does not install for you:
+put a `.mmdb` country database at `/etc/miabi/country.mmdb` and restart the gateway — see
+[GeoIP database](/docs/operations/analytics#geoip-database) for where to get one and which
+licenses apply. Without it, no request resolves to a country, so **every** geo rule falls
+through to the fail-open/closed setting — worth knowing before you rely on one to block
+traffic.
+See the Goma [Geo Block middleware](https://goma.jkaninda.dev/middlewares/geo-block)
+reference for the full rule schema.
 
 :::tip
 Stack middlewares to compose behavior — for example, rate limiting *and* an auth check on
