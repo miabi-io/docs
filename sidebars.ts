@@ -125,6 +125,8 @@ const sidebars: SidebarsConfig = {
       label: 'Monitoring & Operations',
       items: [
         'operations/monitoring',
+        'operations/analytics',
+        'operations/alerts',
         'operations/log-storage',
         'operations/audit-log',
         'operations/platform-settings',
