@@ -17,15 +17,39 @@ minutes, **without touching a single Docker command or CLI**.
 > [Goma Gateway](https://github.com/jkaninda/goma-gateway) and
 > [Posta](https://github.com/goposta/posta).
 
+## The gap it fills
+
+Between a single `docker-compose.yml` and a full Kubernetes platform sits an awkward middle.
+Compose has no rolling updates (restart a service and it is down until the new container is up), no
+canary releases, no rollback, and no GitOps. Kubernetes has all of it — and asks for YAML, Helm, an
+ingress controller, a service mesh just to split traffic, Argo CD or Flux for GitOps, and usually
+someone whose job is keeping that running.
+
+Miabi lives in that middle. It gives you the parts you actually wanted from Kubernetes —
+zero-downtime rolling updates, canary releases, declarative reconciliation, multi-tenancy, quotas —
+on plain Docker, on one VPS today and multiple nodes when you need them.
+
 ## Who it's for
 
-Individual developers, startups, small hosting providers, homelabs, SaaS builders, and managed
-service providers — anyone who wants the convenience of a managed platform without the recurring
-bill or the vendor lock-in.
+- **Solo developers & homelabs** — one VPS, many side projects. Git-push deploys and automatic SSL,
+  instead of hand-rolling an nginx config and a certbot renewal for each one.
+- **Startups & small teams** — you outgrew Compose and don't want Kubernetes to become someone's
+  full-time job. Separate staging and production workspaces, team access, managed databases, and
+  deploys you can roll back.
+- **Hosting providers & agencies** — many clients on shared infrastructure, every tenant isolated:
+  apps, databases, networks, domains, secrets, users, and per-workspace quotas.
+
+More broadly: anyone who wants the convenience of a managed platform without the recurring bill or
+the vendor lock-in.
 
 ## Why Miabi
 
 - **No CLI required.** Deploy, scale, and manage everything from the web console.
+- **Ship safely without a service mesh.** Zero-downtime rolling updates and canary releases are
+  built in — old containers keep serving until the new release is healthy, and traffic shifts to a
+  new version gradually. No Istio, no Linkerd.
+- **GitOps without a second platform.** Declare your stack in YAML and `miabi apply` reconciles it
+  (dry-run, diff, prune), or push to Git to deploy — no Argo CD or Flux to install and operate.
 - **API first.** Every feature is a documented REST + OpenAPI endpoint; the web console is just a
   consumer. Anything you can do in the UI, you can automate.
 - **Multi-tenant from day one.** Workspaces own every resource — apps, databases, domains,
@@ -62,6 +86,7 @@ console **without downtime**.
 | **Multi-node & clustering** | Remote Docker hosts via an outbound agent tunnel; optional Docker Swarm cluster mode; housekeeping; Docker import |
 | **CI/CD & GitOps** | Pipeline-as-code, dedicated [build runners](/docs/cicd/runners), declarative GitOps reconciliation, git-push deploy, signed webhooks and notifications |
 | **Monitoring & operations** | Container CPU/memory/disk metrics with retained history, Prometheus client, externalized [log storage](/docs/operations/log-storage), append-only audit log |
+| **Workspace analytics** | HTTP traffic, latency percentiles (p50/p95/p99), and cookieless [web analytics](/docs/operations/analytics) per workspace and app — derived from the gateway, so there is nothing to instrument |
 | **Identity & teams** | Auth with JWT sessions and revocation, API tokens, 2FA, OAuth/OIDC SSO, workspaces, organizations, RBAC, plans and quotas |
 | **Security & compliance** | Secrets encrypted at rest with per-workspace keys, non-root container security profiles, SSRF-guarded webhooks; and on Enterprise, SAML/SCIM, custom roles, per-resource policies, and [SIEM streaming](/docs/security/siem) |
 | **Automation** | REST + OpenAPI for everything, a [CLI](/docs/cicd/cli), and an official [Terraform / OpenTofu provider](https://github.com/miabi-io/terraform-provider-miabi) |
