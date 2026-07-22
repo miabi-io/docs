@@ -29,13 +29,19 @@ function HomepageHeader() {
           Open Source &amp; Self-Hosted
         </span>
 
+        <p className={styles.heroKicker}>
+          Docker Compose isn’t enough. Kubernetes is overkill.
+        </p>
+
         <Heading as="h1" className={styles.heroTitle}>
-          Deploy Apps{' '}
-          <span className={styles.gradientText}>Not Infrastructure</span>
+          The self-hosted PaaS for{' '}
+          <span className={styles.gradientText}>shipping apps, not infrastructure</span>
         </Heading>
 
         <p className={styles.heroSubtitle}>
-          Deploy from a Git repository, a Docker image, or a marketplace template. Miabi handles builds, domains, automatic SSL, databases, backups, scaling, and monitoring.
+          Miabi deploys apps from a Git repo or Docker image onto servers you own — with automatic
+          SSL, managed databases, backups, scaling, and monitoring. The simplicity of Heroku, on
+          your own infrastructure, with no vendor lock-in.
         </p>
 
         <div className={styles.buttons}>
@@ -62,7 +68,7 @@ function HomepageHeader() {
         <div className={styles.stats}>
           {[
             {value: 'API-First', label: 'Every feature is an API'},
-            {value: 'Docker', label: 'Single & multi-node'},
+            {value: 'No Kubernetes', label: 'One VPS to multi-node'},
             {value: 'Multi-Tenant', label: 'Workspaces + RBAC'},
             {value: 'AGPL-3.0', label: 'Open core'},
           ].map((stat) => (
@@ -158,6 +164,11 @@ const FEATURES: FeatureItem[] = [
     title: 'Monitoring & Operations',
     description: 'Container CPU/memory/disk metrics with retained history, a Prometheus client, and an append-only audit log.',
     link: '/docs/operations/monitoring',
+  },
+  {
+    title: 'Workspace Analytics',
+    description: 'HTTP traffic, latency percentiles, and cookieless web analytics for every app — derived from the gateway, so there is nothing to instrument.',
+    link: '/docs/operations/analytics',
   },
   {
     title: 'Workspaces & Teams',

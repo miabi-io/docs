@@ -64,13 +64,24 @@
   box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.18);
 }
 
+/* Names the gap Miabi fills before the pitch lands — mirrors the website hero. */
+.heroKicker {
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--ifm-color-primary);
+  margin-bottom: 0.9rem;
+}
+
 .heroTitle {
   font-size: clamp(2.4rem, 5vw, 4rem);
   line-height: 1.08;
   font-weight: 800;
   letter-spacing: -0.02em;
   margin-bottom: 1.25rem;
-  max-width: 18ch;
+  /* Wide enough for the full "shipping apps, not infrastructure" headline; at the
+     old 18ch it broke into a four-line column. */
+  max-width: 24ch;
 }
 
 .gradientText {
