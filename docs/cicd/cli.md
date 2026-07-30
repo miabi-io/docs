@@ -170,6 +170,21 @@ miabi secrets usage API_KEY                   # apps referencing it
 miabi secrets rm API_KEY [--yes]
 ```
 
+### AI agents
+
+`miabi mcp` runs a [Model Context Protocol](https://modelcontextprotocol.io) server, so an AI agent
+(Claude Desktop, Claude Code, Cursor, …) can inspect and operate your panel. Each tool call becomes
+one authenticated API request, so the agent inherits your token, workspace, and RBAC — no model runs
+inside `miabi`.
+
+```bash
+claude mcp add miabi -- miabi mcp                 # read-only
+claude mcp add miabi -- miabi mcp --allow-write   # also deploy, restart, roll back
+```
+
+See **[AI Agents (MCP)](/docs/cicd/mcp)** for the tool catalog, transports, and how to scope what an
+agent is allowed to do.
+
 ### Common flags
 
 - `--wait` — block on the deploy and **exit non-zero** when it ends `failed` (CI gating).
@@ -214,6 +229,7 @@ status to gate a pipeline on the rollout.
 
 ## Related
 
+- [AI agents (MCP)](/docs/cicd/mcp) — expose the panel to Claude, Cursor, or any MCP client via `miabi mcp`.
 - [API tokens](/docs/security/api-tokens) — create the token the CLI authenticates with.
 - [GitOps](/docs/cicd/gitops) — the declarative counterpart driven by `miabi apply` / `miabi delete`.
 - [Secrets](/docs/secrets/overview) — the vault managed by `miabi secrets`.

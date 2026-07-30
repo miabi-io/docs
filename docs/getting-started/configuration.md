@@ -232,14 +232,20 @@ emails are **silently skipped** — nothing fails, they simply never arrive.
 
 ## Built-in registry
 
-Every one of these is a **one-way override**: a non-empty value pins that setting and the UI can no
-longer change it. `MIABI_REGISTRY_ENABLED=false` is *not* an off switch — it is simply ignored. Leave
-them all empty to manage the registry from the UI. See [Registry](/docs/registry/administration).
+`MIABI_REGISTRY_ENABLED` and `MIABI_REGISTRY_HOST` are the **only** source for whether the registry
+runs and what hostname it answers on: the UI shows both read-only, and a change takes a **restart**.
+The registry hostname is what every stored image reference is anchored to, and matching a reference
+against it is how Miabi decides which workspace owns an image — so it cannot move under a running
+platform. An invalid host refuses to boot.
+
+The remaining variables are **one-way overrides**: a non-empty value pins that setting and the UI can
+no longer change it; leave them empty to manage those from the UI. See
+[Registry](/docs/registry/administration).
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `MIABI_REGISTRY_ENABLED` | `false` | Force the built-in OCI registry on |
-| `MIABI_REGISTRY_HOST` | — | Registry hostname. Empty ⇒ `registry.<MIABI_EXTERNAL_BASE_DOMAIN>`; with neither, image distribution fails |
+| `MIABI_REGISTRY_ENABLED` | `false` | Run the built-in OCI registry. The only on/off switch; restart to change |
+| `MIABI_REGISTRY_HOST` | — | Registry hostname; restart to change. Empty ⇒ `registry.<MIABI_EXTERNAL_BASE_DOMAIN>`; with neither, image distribution fails. Must be a bare DNS hostname with an optional port (no scheme, no path, not a single label) |
 | `MIABI_REGISTRY_STORAGE` | — | `filesystem` or `s3` (S3 is an Enterprise feature) |
 | `MIABI_REGISTRY_IMAGE` | — | Override the registry image (default `registry:3`) |
 | `MIABI_REGISTRY_AUTH_URL` | `http://miabi:9000` | Where the gateway reaches Miabi's registry auth endpoint |

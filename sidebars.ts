@@ -113,6 +113,7 @@ const sidebars: SidebarsConfig = {
       label: 'CI/CD & GitOps',
       items: [
         'cicd/cli',
+        'cicd/mcp',
         'cicd/pipelines',
         'cicd/runners',
         'cicd/gitops',

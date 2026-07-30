@@ -10,14 +10,28 @@ The built-in [container registry](/docs/registry/overview) is managed by a **pla
 
 ## Enabling the registry
 
-Toggle **Enable the registry** and save. Miabi then:
+Enablement and the registry hostname are **environment-only, boot-time settings**. Set them and restart Miabi:
+
+```bash
+MIABI_REGISTRY_ENABLED=true
+MIABI_REGISTRY_HOST=registry.example.com   # optional; defaults to registry.<external-base-domain>
+```
+
+Point DNS for that hostname at the gateway. On startup Miabi then:
 
 1. runs the registry container on the gateway network, and
 2. seeds its gateway route + middlewares (TLS redirect, authentication, and namespace rewrite) automatically.
 
+:::info Why these two are not editable in the UI
+The registry hostname is what every image reference the platform stores is anchored to, and matching a reference against it is how Miabi decides which workspace owns an image. Changing it while apps are running would strand the references recorded on past deployments and releases. Both fields are shown read-only on the settings page, with the value each one resolved to.
+
+An invalid `MIABI_REGISTRY_HOST` (a scheme, a path, a wildcard, or a single-label name like `registry`) **refuses to boot** rather than starting with a value nothing matches.
+:::
+
+The remaining settings are editable from **Admin → Container Registry** and apply without a restart:
+
 | Setting | Description |
 |---------|-------------|
-| **Host** | Public hostname for `docker login` (e.g. `registry.example.com`). Defaults to `registry.<external-base-domain>` when blank. Point DNS at the gateway. |
 | **Storage driver** | `Local volume` (filesystem) or `S3 / MinIO`. |
 | **Per-workspace quota (MB)** | Caps each workspace namespace's total image size (`0` = unlimited). |
 | **Enable tag deletion & garbage collection** | Allows deleting tags and reclaiming space. |
@@ -53,16 +67,24 @@ To let other nodes pull **Git-built** images (so deploys and rollbacks work acro
 MIABI_REGISTRY_PLATFORM_TOKEN=<a long random secret>
 ```
 
-With the registry enabled, a successful Git build is tagged and pushed as `registry.<domain>/<workspace-name>/<app-name>:<deployment-number>`, and a `:v<release-version>` tag is added once the deployment succeeds; both are recorded on the release. On deploy, a node that lacks the image pulls it from the registry. The push is **best-effort** — if it fails, the image stays node-local and the deploy proceeds, so single-node installs are unchanged.
+With the registry enabled, a successful Git build is tagged and pushed as `registry.<domain>/ws_<workspace-id>/<app-name>:<deployment-number>`, and a `:v<release-version>` tag is added once the deployment succeeds; both are recorded on the release. On deploy, a node that lacks the image pulls it from the registry. The push is **best-effort** — if it fails, the image stays node-local and the deploy proceeds, so single-node installs are unchanged.
+
+The recorded reference uses the immutable `ws_<id>` namespace rather than the workspace name you push to by hand, so a workspace rename cannot break a rollback to an older deployment. Both forms address the same storage.
+
+### Cross-workspace images are refused
+
+A node pulls a distributed image with the **platform credential**, which is accepted for every workspace namespace — that is what lets a runner push on any tenant's behalf. So the image reference itself is checked: an app may only reference the built-in registry under **its own workspace's namespace**, whether written as `registry.<domain>/<your-workspace>/…` or `registry.<domain>/ws_<your-id>/…`.
+
+Naming another workspace's namespace is rejected when the app is saved and again at deploy time. Images in other registries (Docker Hub, GHCR, a private registry) are unaffected — those are pulled with the workspace's own [registry credential](/docs/registry/overview).
 
 ## Configuration (environment)
 
-Any `MIABI_REGISTRY_*` value set in the environment is **authoritative on boot** and overrides the Settings UI (the same convention as `MIABI_EXTERNAL_BASE_DOMAIN`).
+`MIABI_REGISTRY_ENABLED` and `MIABI_REGISTRY_HOST` are the **only** source for enablement and the hostname — the UI shows them read-only, and a change takes a restart. Any other `MIABI_REGISTRY_*` value set in the environment is **authoritative on boot** and overrides the Settings UI (the same convention as `MIABI_EXTERNAL_BASE_DOMAIN`).
 
 | Variable | Purpose |
 |----------|---------|
-| `MIABI_REGISTRY_ENABLED` | Run the registry (default `false`). |
-| `MIABI_REGISTRY_HOST` | Public host; defaults to `registry.<external-base-domain>`. |
+| `MIABI_REGISTRY_ENABLED` | Run the registry (default `false`). Restart to change. |
+| `MIABI_REGISTRY_HOST` | Public host; defaults to `registry.<external-base-domain>`. Restart to change. |
 | `MIABI_REGISTRY_STORAGE` | `filesystem` or `s3`. |
 | `MIABI_REGISTRY_IMAGE` | Override the registry image (default `registry:3`). |
 | `MIABI_REGISTRY_AUTH_URL` | Address the gateway uses to reach Miabi's auth endpoint (falls back to `MIABI_CONTROL_URL`). |

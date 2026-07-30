@@ -42,6 +42,7 @@ If you want a build with **zero enterprise code** (the deny-all stub), build it 
 | SIEM streaming + retention | — | ✓ |
 | Per-workspace quota overrides | — | ✓ |
 | Private template registry | — | ✓ |
+| CLI + MCP server for AI agents (`miabi mcp`) | ✓ | ✓ |
 | Workspace-owned build runners | ✓ unlimited | ✓ unlimited |
 | Platform-shared runner pool | ✓ unlimited | ✓ unlimited |
 | GPU workloads (NVIDIA passthrough) | ✓ | ✓ |
