@@ -155,7 +155,8 @@ registry:
 gateway:
   config: goma.yml          # bind-mounted into Goma, read-only
   env:
-    GOMA_LOG_LEVEL: info    # debug | trace | info | warn | error | off
+    GOMA_LOG_LEVEL: info          # debug | trace | info | warn | error | off
+    GOMA_ANALYTICS_ENABLED: "true" # emit the Workspace Analytics event stream
     MY_UPSTREAM: https://internal.example.com
 host_proc: true
 env:
@@ -202,9 +203,14 @@ base config):
 miabi-stack restart miabi-gateway
 ```
 
-`gateway.env` is the gateway's environment: `GOMA_LOG_LEVEL` (seeded), plus anything your config
-interpolates. `TZ` is **not** here — it is stack-wide (top-level `env:`) and already reaches the
-gateway, so the whole stack's log timestamps agree.
+`gateway.env` is the gateway's environment: `GOMA_LOG_LEVEL` and `GOMA_ANALYTICS_ENABLED` (both
+seeded), plus anything your config interpolates. `TZ` is **not** here — it is stack-wide (top-level
+`env:`) and already reaches the gateway, so the whole stack's log timestamps agree.
+
+`GOMA_ANALYTICS_ENABLED` is seeded to `true` because Miabi's analytics consumer runs by default;
+without the gateway emitting its event stream, every [Workspace
+Analytics](/docs/operations/analytics) dashboard would sit empty. Set it to `"false"` to turn the
+stream off — it is a seeded default, not a managed variable, so your value stands.
 
 ```yaml
 gateway:
