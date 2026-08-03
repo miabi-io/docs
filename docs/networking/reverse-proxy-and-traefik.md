@@ -57,6 +57,7 @@ own ACME certificates, so use its resolver for wildcard domains.
 | **Rolling deployments** | ❌ | Requires Goma — see below |
 | **Canary deployments** | ❌ | Requires Goma — see below |
 | **Built-in container registry** | ❌ | Requires Goma — see below |
+| **Workspace Analytics** | ❌ | Requires Goma — see below |
 | Recreate deployments | ✅ | Use this strategy on Traefik |
 
 ### Rolling and canary deployments require Goma
@@ -79,9 +80,25 @@ password = API key) and scope the repository path to that workspace. Traefik is 
 callback, so on a Traefik stack keep the built-in registry **off** (`MIABI_REGISTRY_ENABLED=false`,
 the default) and use an external registry (Docker Hub, GHCR, …) instead.
 
+### Workspace Analytics requires Goma
+
+[Workspace Analytics](/docs/operations/analytics) is a rollup of a **per-request event stream that
+only Goma publishes**: Goma writes one event per request to a Redis stream, and Miabi's consumer folds
+those into minute buckets. Traefik emits no such stream, and there is no fallback — requests to your
+apps never pass through the Miabi control plane, so it has nothing of its own to count.
+
+The consequence is absence, not degradation: **every** panel — Traffic, Performance, Web Analytics,
+and the live-visitor count — stays empty on a Traefik stack. GeoIP country data is part of the same
+pipeline (Goma resolves the country at the edge), so it is unavailable too.
+
+Set `MIABI_ANALYTICS_ENABLED=false` so no consumer runs waiting on a stream nothing writes, and use
+Traefik's own [metrics and access logs](https://doc.traefik.io/traefik/observability/metrics/overview/)
+for traffic visibility instead.
+
 ## Which should I choose?
 
 - **Choose Goma (default)** if you want automatic routing, managed wildcard certificates,
-  zero-downtime rolling/canary deploys, or the built-in registry. This is the recommended path.
+  zero-downtime rolling/canary deploys, the built-in registry, or Workspace Analytics. This is the
+  recommended path.
 - **Choose Traefik** if you already run Traefik as your edge and prefer label-based routing, and you
   can accept manual per-app labels and the Recreate deploy strategy.

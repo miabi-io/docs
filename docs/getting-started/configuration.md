@@ -232,30 +232,34 @@ emails are **silently skipped** — nothing fails, they simply never arrive.
 
 ## Built-in registry
 
-`MIABI_REGISTRY_ENABLED` and `MIABI_REGISTRY_HOST` are the **only** source for whether the registry
-runs and what hostname it answers on: the UI shows both read-only, and a change takes a **restart**.
-The registry hostname is what every stored image reference is anchored to, and matching a reference
-against it is how Miabi decides which workspace owns an image — so it cannot move under a running
-platform. An invalid host refuses to boot.
+Whether the registry runs, what hostname it answers on, and where it stores blobs come **only** from
+the environment: the UI shows all of them read-only, and a change takes a **restart**. The registry
+hostname is what every stored image reference is anchored to, and matching a reference against it is
+how Miabi decides which workspace owns an image; the storage driver is where every pushed blob
+physically lives. Neither can move under a running platform. An invalid host refuses to boot.
 
-The remaining variables are **one-way overrides**: a non-empty value pins that setting and the UI can
-no longer change it; leave them empty to manage those from the UI. See
+The `s3` driver requires the `registry_s3` entitlement, checked **at startup** (and before each
+garbage collection). Without a license, or with `s3` and no bucket, the registry is **not started**
+and the reason is logged and shown on the settings page.
+
+The remaining variables are **one-way overrides**: a non-empty value pins that setting on boot. Only
+the per-workspace quota and the delete/GC switch are editable in the UI. See
 [Registry](/docs/registry/administration).
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `MIABI_REGISTRY_ENABLED` | `false` | Run the built-in OCI registry. The only on/off switch; restart to change |
 | `MIABI_REGISTRY_HOST` | — | Registry hostname; restart to change. Empty ⇒ `registry.<MIABI_EXTERNAL_BASE_DOMAIN>`; with neither, image distribution fails. Must be a bare DNS hostname with an optional port (no scheme, no path, not a single label) |
-| `MIABI_REGISTRY_STORAGE` | — | `filesystem` or `s3` (S3 is an Enterprise feature) |
+| `MIABI_REGISTRY_STORAGE` | `filesystem` | `filesystem` or `s3`; restart to change. `s3` is an Enterprise feature, verified at startup |
 | `MIABI_REGISTRY_IMAGE` | — | Override the registry image (default `registry:3`) |
 | `MIABI_REGISTRY_AUTH_URL` | `http://miabi:9000` | Where the gateway reaches Miabi's registry auth endpoint |
 | `MIABI_REGISTRY_PLATFORM_TOKEN` | — | Pin the platform token (otherwise derived from the master encryption key) |
-| `MIABI_REGISTRY_S3_ENDPOINT` | — | S3 endpoint URL (set it for MinIO; leave empty for Amazon S3) |
-| `MIABI_REGISTRY_S3_BUCKET` | — | S3 bucket |
-| `MIABI_REGISTRY_S3_REGION` | — | S3 region |
-| `MIABI_REGISTRY_S3_ACCESS_KEY` | — | S3 access key |
-| `MIABI_REGISTRY_S3_SECRET_KEY` | — | S3 secret key (encrypted at rest) |
-| `MIABI_REGISTRY_S3_FORCE_PATH_STYLE` | `false` | Path-style addressing (MinIO and most S3-compatible stores) |
+| `MIABI_REGISTRY_S3_ENDPOINT` | — | S3 endpoint URL (set it for MinIO; leave empty for Amazon S3); restart to change |
+| `MIABI_REGISTRY_S3_BUCKET` | — | S3 bucket — required when `MIABI_REGISTRY_STORAGE=s3`; restart to change |
+| `MIABI_REGISTRY_S3_REGION` | — | S3 region; restart to change |
+| `MIABI_REGISTRY_S3_ACCESS_KEY` | — | S3 access key; restart to change |
+| `MIABI_REGISTRY_S3_SECRET_KEY` | — | S3 secret key (encrypted at rest); restart to change |
+| `MIABI_REGISTRY_S3_FORCE_PATH_STYLE` | `false` | Path-style addressing (MinIO and most S3-compatible stores); restart to change |
 
 ## Nodes, networks & port forwarding
 

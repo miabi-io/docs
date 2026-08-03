@@ -19,8 +19,11 @@ nothing extra to deploy.
   switcher; the rest of the UI re-scopes instantly.
 - **Sidebar navigation** — grouped by resource type: Applications, Domains, Databases, Volumes,
   Backups, Marketplace, Nodes, Pipelines, Monitoring, and Settings.
-- **Dashboard** — an at-a-glance overview of the workspace: app health, recent deployments,
-  resource usage, and recent activity.
+- **Dashboard** — an at-a-glance overview of the workspace, roughly in the order you care about
+  it: anything failing (as a banner you can act on), quick actions for the things you start most,
+  the app/database/stack counts, a [**Traffic** card](/docs/operations/analytics#on-the-workspace-dashboard)
+  with the last 24 hours of requests and who is on the site right now, live CPU/memory/network,
+  and then the inventory — applications, stacks, and a running feed of workspace activity.
 
 ![Sidebar navigation](/img/screenshots/web-console-nav.png)
 

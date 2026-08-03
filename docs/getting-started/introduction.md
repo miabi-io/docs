@@ -86,7 +86,7 @@ console **without downtime**.
 | **Multi-node & clustering** | Remote Docker hosts via an outbound agent tunnel; optional Docker Swarm cluster mode; housekeeping; Docker import |
 | **CI/CD & GitOps** | Pipeline-as-code, dedicated [build runners](/docs/cicd/runners), declarative GitOps reconciliation, git-push deploy, signed webhooks and notifications |
 | **Monitoring & operations** | Container CPU/memory/disk metrics with retained history, Prometheus client, externalized [log storage](/docs/operations/log-storage), append-only audit log |
-| **Workspace analytics** | HTTP traffic, latency percentiles (p50/p95/p99), and cookieless [web analytics](/docs/operations/analytics) per workspace and app — derived from the gateway, so there is nothing to instrument |
+| **Workspace analytics** | HTTP traffic, latency percentiles (p50/p95/p99), live visitors, and cookieless [web analytics](/docs/operations/analytics) per workspace and app — derived from the gateway, so there is nothing to instrument |
 | **Identity & teams** | Auth with JWT sessions and revocation, API tokens, 2FA, OAuth/OIDC SSO, workspaces, organizations, RBAC, plans and quotas |
 | **Security & compliance** | Secrets encrypted at rest with per-workspace keys, non-root container security profiles, SSRF-guarded webhooks; and on Enterprise, SAML/SCIM, custom roles, per-resource policies, and [SIEM streaming](/docs/security/siem) |
 | **Automation** | REST + OpenAPI for everything, a [CLI](/docs/cicd/cli), and an official [Terraform / OpenTofu provider](https://github.com/miabi-io/terraform-provider-miabi) |
