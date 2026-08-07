@@ -28,7 +28,8 @@ steps:
     run: "npm ci && npm test"
   - name: build
     uses: build                # builds the checked-out source, pushes it, captures the digest
-    dockerfile: Dockerfile
+    dockerfile: docker/Dockerfile   # optional; default "Dockerfile"
+    context: .                      # optional; default the repository root
   - name: scan
     image: aquasec/trivy:latest
     continue-on-error: true    # report vulnerabilities without blocking the deploy
@@ -57,7 +58,51 @@ Each step is either a **container step** (`image` + `run`) or a **built-in** (`u
 
 ### `uses: build`
 
-Turns the checked-out workspace into an image — a **Dockerfile** build (`dockerfile:` sets the path, default `Dockerfile`) or **Cloud Native Buildpacks** when no Dockerfile is present — pushes it to the [built-in registry](/docs/registry/overview), captures the digest, and records an [Image](/docs/registry/overview) with build provenance (which runner produced it).
+Turns the checked-out workspace into an image — a **Dockerfile** build or **Cloud Native Buildpacks** when no Dockerfile is present — pushes it to the [built-in registry](/docs/registry/overview), captures the digest, and records an [Image](/docs/registry/overview) with build provenance (which runner produced it).
+
+Three optional keys configure a Dockerfile build:
+
+| Key | Default | Description |
+|---|---|---|
+| `dockerfile` | `Dockerfile` | Path to the Dockerfile, relative to the repository root. |
+| `context` | the repository root | Build context directory, relative to the repository root. |
+| `build-args` | — | `ARG` values passed to the build (`docker build --build-arg`). |
+
+`dockerfile` and `context` are **independent**, exactly as in `docker build -f <dockerfile> <context>`. A monorepo commonly keeps its Dockerfile under `docker/` while still building from the root:
+
+```yaml
+  - name: build
+    uses: build
+    dockerfile: docker/Dockerfile
+```
+
+…or builds one service out of a subdirectory, with a Dockerfile that lives inside it:
+
+```yaml
+  - name: build
+    uses: build
+    dockerfile: services/api/Dockerfile
+    context: services/api
+    build-args:
+      APP_ENV: production
+      VERSION: "1.4.0"
+```
+
+Both paths must stay inside the repository — an absolute path or one that climbs out with `..` is rejected when the pipeline is saved, not at build time.
+
+:::warning `build-args` are not secrets
+A build argument is recorded in the image's own history, so anyone who can pull the image can read it back. Use them for versions, feature flags and build targets — never for tokens, keys or passwords. For credentials a build genuinely needs, use a [container step](#container-steps--image--run) with the run's environment instead, or fetch them inside the build from a service that authenticates the runner.
+:::
+
+Build-arg names must be usable from a Dockerfile — letters, digits and underscores, not starting with a digit. Docker itself accepts `APP ENV` or `APP=ENV` and then produces an `ARG` nothing can reference, so Miabi rejects those names up front.
+
+:::info Version requirements
+`dockerfile` works on any runner. `context` and `build-args` need **Miabi `<MIABI_VERSION>`** with a runner on **`<RUNNER_VERSION>`** or newer. Until both are in place, a pipeline using either is refused when you save it, with a message naming the key — rather than being accepted and silently ignored.
+:::
+
+#### Buildpacks
+
+When no Dockerfile is found at the resolved path, the runner falls back to Cloud Native Buildpacks. Buildpack builds need a **docker-backed runner** (`MIABI_RUNNER_BUILDER=docker`); the rootless BuildKit backend builds Dockerfiles only.
 
 ### `uses: deploy`
 
