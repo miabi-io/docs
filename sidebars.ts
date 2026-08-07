@@ -117,6 +117,7 @@ const sidebars: SidebarsConfig = {
         'cicd/pipelines',
         'cicd/runners',
         'cicd/gitops',
+        'cicd/manifest-reference',
         'cicd/git-push-deploy',
         'cicd/webhooks-and-notifications',
       ],

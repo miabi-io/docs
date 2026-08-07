@@ -33,6 +33,20 @@ For production, pin a specific tag or a digest rather than `latest`. This makes 
 
 For private images, add **container-registry credentials** to the workspace. These are stored encrypted at rest (see [Encryption](/docs/security/encryption)) and can be reused across applications. Miabi supports any standard Docker registry, including Docker Hub, GitHub Container Registry, GitLab Registry, and self-hosted registries.
 
+Rather than pasting the token into the credential, you can point it at a [secret](/docs/secrets/overview) with `${{ secrets.NAME }}`. Miabi then reads the value from the vault on every pull, so rotating that secret rotates every credential using it — no edit, no redeploy of the credential.
+
+Credentials are declarative too. A [manifest](/docs/cicd/manifest-reference#registry) can declare the credential and select it per application:
+
+```yaml
+apiVersion: miabi.io/v1
+kind: Application
+metadata: { name: api }
+spec:
+  image: ghcr.io/acme/api
+  tag: v1.4.0
+  registry: ghcr        # a Registry resource, or a credential already in the workspace
+```
+
 ## Updating the image
 
 To ship a new version, update the tag or digest in the application's source settings and redeploy. Miabi pulls the new image and rolls it out with a [zero-downtime](/docs/applications/releases-and-rollbacks) rolling switch, just like a Git deploy. Each pull becomes a new release you can roll back to.

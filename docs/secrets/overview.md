@@ -69,6 +69,18 @@ ones:
 This keeps credentials in the vault — encrypted, versioned, and rotatable — while ensuring a managed
 value and its owner can never drift apart.
 
+## Where secrets can be referenced
+
+Beyond application and job environments, a secret can back:
+
+- **Registry and Git credentials.** Instead of pasting a token into the credential, point it at a
+  secret with `${{ secrets.NAME }}`. The value is read from the vault at every pull or clone, so
+  rotating the secret rotates every credential referencing it. Both credential forms are in the
+  add/edit dialog under **Use a secret**.
+- **Declarative manifests.** `{{ .secrets.NAME }}` resolves at apply time in an app's `env` and in a
+  `Registry` password — and a [`Secret` resource](/docs/cicd/manifest-reference#secret) can declare
+  or generate the value in the same bundle, so a manifest never has to carry one.
+
 ## Who can do what
 
 - **View** the secret list (names, descriptions, versions) — any workspace member with read access.
@@ -79,6 +91,7 @@ value and its owner can never drift apart.
 ## Related
 
 - [Environment Variables & Secrets](/docs/applications/environment-variables) — referencing secrets from app config.
+- [Manifest reference](/docs/cicd/manifest-reference#secret) — declaring and referencing secrets declaratively.
 - [Jobs](/docs/applications/jobs) — one-off tasks that can also reference secrets.
 - [Databases](/docs/databases/overview) — where managed credential secrets come from.
 - [Encryption](/docs/security/encryption) — how secret values are protected at rest.

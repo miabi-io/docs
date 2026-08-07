@@ -35,6 +35,14 @@ in the [full example](#full-example-a-posta-project) below).
 
 Manifests are the source of truth: edit the file, and the change flows into Miabi.
 
+Nine kinds are available — `Application`, `Stack`, `Database`, `Volume`, `Secret`, `Registry`,
+`Route`, `Domain` and `Project`. The [manifest reference](/docs/cicd/manifest-reference) documents
+every field of each; this page covers how they are reconciled.
+
+Ordering is automatic. Dependencies are created before their dependants and torn down after them, so
+one bundle can declare a volume, a database, the app that uses both, and the route in front of it,
+and converge in a single pass.
+
 ## Pull-based reconciliation
 
 In the pull model, you connect a **Git source** (a repository and path holding your manifests). Miabi then **continuously reconciles** desired state from that source:
@@ -48,6 +56,32 @@ This makes Git your single source of truth and your audit log: a commit is a cha
 :::tip
 Keep your manifests in their own repository or a dedicated directory, and protect it with reviews. Every merged change becomes a tracked, revertible deployment.
 :::
+
+### Source options
+
+A Git source points at a repository, a **ref** (branch, tag or commit) and a **path** (the
+subdirectory holding the manifests — every `.yaml`/`.yml` file under it is parsed into one bundle).
+Four switches decide how far reconciliation goes:
+
+| Option | Default | Effect |
+|---|---|---|
+| **Sync policy** | `manual` | `auto` reconciles on every detected change; `manual` syncs only when you ask. |
+| **Prune** | off | Delete managed resources that disappear from Git. Without it, removals are ignored. |
+| **Self-heal** | off | Re-apply when live state drifts from Git, not only when Git changes. |
+| **Allow empty** | off | Permit a manifest set with no resources to prune everything the source owns. |
+
+Prune only ever deletes resources this engine created, and only those owned by *this* source — so a
+hand-created app, a console-provisioned database, or a sibling project's resources can never be
+removed by your manifests. A missing path is always an error rather than an empty desired state, so a
+wrong path can't be read as "delete everything".
+
+:::warning
+An empty manifest set with prune enabled is refused unless **Allow empty** is set. That is the guard
+that stops a wiped directory from tearing down a workspace.
+:::
+
+Deleting a source can optionally cascade, tearing down exactly the resources that source created and
+leaving everything else untouched.
 
 ## One-shot apply
 
@@ -104,6 +138,29 @@ spec:
         version: "8-alpine"
         placement: dedicated
 
+    # Miabi generates these on the first apply and stores them encrypted — the
+    # values never appear in this file or in Git. They are created before the
+    # app that references them, and left untouched on every later apply, so
+    # re-applying never rotates a running deployment's keys or locks you out.
+    - apiVersion: miabi.io/v1
+      kind: Secret
+      metadata: { name: posta-jwt }
+      spec:
+        generate: true
+        length: 48
+    - apiVersion: miabi.io/v1
+      kind: Secret
+      metadata: { name: posta-encryption-key }
+      spec:
+        generate: true
+        length: 32               # Posta requires exactly 32 bytes
+    - apiVersion: miabi.io/v1
+      kind: Secret
+      metadata: { name: posta-admin-password }
+      spec:
+        generate: true
+        length: 24               # reveal it in the vault to sign in the first time
+
     # The Posta server: HTTP API + web UI on :9000 with the worker embedded.
     - apiVersion: miabi.io/v1
       kind: Application
@@ -129,17 +186,18 @@ spec:
           POSTA_REDIS_ADDR: "{{ .databases.posta-redis.host }}:{{ .databases.posta-redis.port }}"
           POSTA_REDIS_PASSWORD: "{{ .databases.posta-redis.password }}"
 
-          # Security — CHANGE THESE before applying. Stored encrypted (secretEnv).
-          POSTA_JWT_SECRET: "change-me-to-a-long-random-string"
-          POSTA_ENCRYPTION_KEY: "change-me-to-a-32-byte-secret!!!"   # exactly 32 bytes
+          # Security — resolved from the generated secrets above, so nothing
+          # sensitive is written here.
+          POSTA_JWT_SECRET: "{{ .secrets.posta-jwt }}"
+          POSTA_ENCRYPTION_KEY: "{{ .secrets.posta-encryption-key }}"
+
+          # The first admin account. Set the email to yours; the password is
+          # generated — reveal it once from the vault to sign in.
           POSTA_ADMIN_EMAIL: admin@example.com
-          POSTA_ADMIN_PASSWORD: "change-me"
+          POSTA_ADMIN_PASSWORD: "{{ .secrets.posta-admin-password }}"
         secretEnv:            # these keys are stored encrypted at rest
           - POSTA_DB_PASSWORD
           - POSTA_REDIS_PASSWORD
-          - POSTA_JWT_SECRET
-          - POSTA_ENCRYPTION_KEY
-          - POSTA_ADMIN_PASSWORD
         resources:
           memory: 512Mi
           cpu: "1"
@@ -173,22 +231,41 @@ database's live connection details into an app's environment, so you never hardc
 {{ .databases.<name>.password }}   {{ .databases.<name>.name }}   {{ .databases.<name>.uri }}
 ```
 
-Keys listed under `secretEnv` are stored **encrypted at rest**. (The `{{ .inputs.* }}` and
-`{{ .secrets.* }}` helpers are [marketplace-template](/docs/marketplace/creating-a-template) only —
-in raw manifests you provide values directly and mark private ones as `secretEnv`.)
+Keys listed under `secretEnv` are stored **encrypted at rest**.
+
+You can also pull values from the [secret vault](/docs/secrets/overview) rather than writing them
+into the file — `{{ .secrets.<name> }}` resolves at apply time, and a `Secret` declared in the same
+bundle is created first, so a bundle can generate its own credentials:
+
+```yaml
+- apiVersion: miabi.io/v1
+  kind: Secret
+  metadata: { name: posta-jwt }
+  spec:
+    generate: true        # Miabi generates a strong value; it never appears in the file
+    length: 48
+# …then, in the application's env:
+#   POSTA_JWT_SECRET: "{{ .secrets.posta-jwt }}"
+```
+
+(`{{ .inputs.* }}` is [marketplace-template](/docs/marketplace/creating-a-template) only.)
 
 ### Apply it
 
 Preview the plan first with a dry run, then converge:
 
 ```bash
-# Preview — shows what would be created/updated/removed, changes nothing
-POST /api/v1/workspaces/{workspace}/apply
-{ "manifests": "<the YAML above>", "dry_run": true }
+miabi apply -f posta.yaml --dry-run   # print the plan; change nothing
+miabi apply -f posta.yaml             # converge the workspace to it
+miabi apply -f posta.yaml --prune     # …and remove managed resources no longer declared
+miabi delete -f posta.yaml            # the inverse: delete exactly what the bundle names
+```
 
-# Converge the workspace to the manifest
+Or over HTTP:
+
+```http
 POST /api/v1/workspaces/{workspace}/apply
-{ "manifests": "<the YAML above>" }
+{ "manifests": "<the YAML above>", "dry_run": true, "prune": false, "delete": false }
 ```
 
 Ordering is handled for you: databases come up before the app that references them, and the domain
@@ -201,8 +278,23 @@ Start with `dry_run: true` to read the plan, apply once to bootstrap, then conne
 for continuous reconciliation. The same file drives all three.
 :::
 
+## What converges
+
+The plan compares the manifest against a live snapshot, and only fields that can be mapped back
+unambiguously take part — so a converged resource never shows phantom drift:
+
+- **Diffed:** image, tag, digest, registry credential, command, resource caps, non-secret env,
+  container labels, and per-port exposure.
+- **Not diffed:** create-time structure — the ports themselves, mounts, and stack membership.
+- **Never diffed:** secret values (an existing `Secret` is always in sync), and `secretEnv` values,
+  which appear in a plan as `(secret)`.
+
+The [manifest reference](/docs/cicd/manifest-reference#what-converges-and-what-doesnt) covers this
+per kind.
+
 ## Related
 
+- [Manifest reference](/docs/cicd/manifest-reference) — every kind and field.
 - [Creating a marketplace template](/docs/marketplace/creating-a-template) — the same resources,
   packaged as a versioned, one-click template with user inputs.
 - [Pipelines](/docs/cicd/pipelines)
