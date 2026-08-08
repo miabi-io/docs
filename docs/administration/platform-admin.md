@@ -22,7 +22,7 @@ so an admin always already exists.
 | `MIABI_ADMIN_PASSWORD` | — | **Required in production.** Miabi refuses to start outside dev while this is empty or left at its built-in default |
 
 The one-line installer generates a password, prints it once at the end of the run, and stores it in
-`/etc/miabi/stack.yaml` — the **only** copy, so back that file up. Sign in with those credentials;
+`/etc/miabi/miabi.yaml` — the **only** copy, so back that file up. Sign in with those credentials;
 every self-service sign-up afterwards is an ordinary user until invited into a workspace.
 
 On a stack install you never set those two variables yourself: Miabi derives them and writes them

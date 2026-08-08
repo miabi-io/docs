@@ -51,6 +51,60 @@ spec:
 
 To ship a new version, update the tag or digest in the application's source settings and redeploy. Miabi pulls the new image and rolls it out with a [zero-downtime](/docs/applications/releases-and-rollbacks) rolling switch, just like a Git deploy. Each pull becomes a new release you can roll back to.
 
+## Switching between image and Git
+
+An application's source is not fixed at creation. Open **Settings → Source → Edit source** and pick
+the other type: an image app can start building from a repository, and a Git app can switch to
+pulling a prebuilt image.
+
+Everything else about the app is kept — its domains, environment variables, secrets, volumes,
+databases, routes and deployment history all survive. Only the source changes.
+
+Three things happen when you switch, and the UI says so before you confirm:
+
+- **The old source's fields are cleared.** Moving to an image drops the repository, branch and build
+  settings; moving to Git drops the image, tag and registry credential. They are not kept as
+  leftovers — an app that still carried a `git_repo` after moving to an image would read as though
+  it built from that repo, and the stale value would come back the moment anyone switched back.
+- **A repository pipeline is removed.** If the app adopted a `pipelines.yaml` from its old
+  repository, that pipeline is bound to a repo the app no longer builds from, so it goes.
+- **A redeploy is required.** The running container was built from the old source, so the app is
+  marked for redeploy and keeps serving the old container until you deploy.
+
+:::note Managed applications
+An app installed from the [Marketplace](/docs/marketplace/overview) or managed by
+[GitOps](/docs/cicd/gitops) has its source owned elsewhere. The UI hides **Edit source**, and the
+API refuses the change with `409 Conflict` — through the CLI and Terraform too. A GitOps app would
+have the edit reverted on the next sync, and a marketplace app would lose the upgrade path its
+template provides; in both cases the change silently does not stick, which is worse than being told
+no. Change it through a marketplace upgrade or in the Git manifest.
+:::
+
+### From the CLI
+
+```bash
+miabi apps set-source web --image nginx --tag 1.27
+miabi apps set-source web --git-repo https://github.com/org/web --git-ref main
+```
+
+The source type is inferred from the flags, and a genuine switch asks for confirmation (`--yes`
+skips it). Passing both `--image` and `--git-repo` is refused rather than resolved by precedence —
+a request carrying both has no obvious intent.
+
+### From Terraform
+
+`source_type` is no longer `ForceNew`, so changing it is an in-place update rather than a
+destroy-and-recreate:
+
+```hcl
+resource "miabi_application" "api" {
+  name         = "api"
+  source_type  = "git"          # was "image"
+  git_repo     = "https://github.com/org/api"
+  git_ref      = "main"
+}
+```
+
 ## When to use image vs. Git
 
 | Use a **Docker image** when… | Use **[Git](/docs/applications/deploy-from-git)** when… |

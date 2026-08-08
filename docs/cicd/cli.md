@@ -6,9 +6,9 @@ description: Drive Miabi from the terminal or CI with the miabi command-line too
 
 # CLI
 
-The **`miabi` CLI** is the imperative command-line client for Miabi. It's a **pure consumer of the
-public HTTP API** — the same API the web console uses — so anything you can do in the console you can
-script from a terminal or a CI pipeline. Its headline job is the deploy flow:
+The **`miabi` CLI** is the imperative command-line client for Miabi. Almost all of it is a **pure
+consumer of the public HTTP API** — the same API the web console uses — so anything you can do in the
+console you can script from a terminal or a CI pipeline. Its headline job is the deploy flow:
 
 ```bash
 miabi apps deploy web --tag "$GIT_SHA" --wait
@@ -125,6 +125,8 @@ argument**, or use the app bound with `miabi use`.
 | `miabi apps env set [app] KEY=VALUE [--secret]` | Set an environment variable. |
 | `miabi apps env set [app] KEY --from-file <f> [--secret]` | Set the value from a file (or `-` for stdin) — keeps it out of your shell history. |
 | `miabi apps env import [app] --from-file .env [--secret]` | Bulk-import variables from a file (`-` = stdin). |
+| `miabi apps set-source [app] (--image <img> \| --git-repo <url>)` | Switch the app between a prebuilt image and a Git build, or edit its current source. Keeps domains, env, volumes and history. |
+| `miabi apps resync-pipeline [app]` | Reload the repository's `pipelines.yaml` — adopts one if the app has none, re-syncs it if it does. |
 | `miabi apps rm [app] [--yes]` | Delete an application. |
 | `miabi db …` | Manage database instances + logical databases (see below). |
 | `miabi secrets …` | Manage the workspace secret vault (see below). |
@@ -193,6 +195,36 @@ agent is allowed to do.
 - `-w, --workspace <name-or-id>` — override the active/bound workspace for one command.
 - `--no-color` — plain output (also auto-disabled off a TTY or when `NO_COLOR` is set).
 - `--verbose` — log every HTTP request to stderr.
+
+## Managing the host
+
+One group of commands is the exception to "pure API client": **`setup`, `upgrade` and `stack …` act
+on the machine they run on**, through its Docker socket, and never touch the HTTP API. They are what
+installs and operates a Miabi host — see
+[Installation](/docs/getting-started/installation) and [Upgrades](/docs/administration/upgrades).
+
+| Command | What it does |
+|---|---|
+| `miabi setup [--domain <host>] [--version <x.y.z>] [--image <ref>] [--yes]` | Install the stack on this host, or converge an existing install. Idempotent. Defaults to the latest published release. |
+| `miabi upgrade [component] [--version <x.y.z>] [--image <ref>] [--yes]` | Roll the stack forward, rolling back automatically if the new image never becomes healthy. `--version` swaps only the tag (keeping a private registry); `--image` replaces the whole reference. |
+| `miabi stack status` | What is running, its health, and any drift from the manifest. |
+| `miabi stack restart [component] [--yes]` | Restart in place so containers re-read their on-disk config. |
+| `miabi stack uninstall [--volumes] [--yes]` | Remove the stack's containers; `--volumes` also destroys the database. |
+| `miabi stack migrate-config` | Rename the legacy `/etc/miabi/stack.yaml` to `/etc/miabi/miabi.yaml`. |
+
+They all need **root** (they write `/etc/miabi` and use the Docker socket) and a Linux or macOS
+Docker host. `-f, --file` points at a manifest other than `/etc/miabi/miabi.yaml`.
+
+`setup` and `upgrade` install the latest published Miabi release, resolved from GitHub when the
+command runs — the CLI does not carry a platform version, because it releases on its own cadence.
+`MIABI_RELEASE_API` points that lookup at a mirror for a host with no route to GitHub, and
+`--version`/`--image` skip it entirely.
+
+`--version` accepts `1.8.0` or `v1.8.0` and swaps only the tag on the component's current
+reference, so a private registry and non-Miabi components (the gateway) keep working;
+`--image` replaces the reference outright. Pinning matters: a floating tag such as `latest`
+warns, because a failed rollout has no distinct previous image to roll back to. See
+[Upgrades](/docs/administration/upgrades).
 
 ## In CI/CD
 

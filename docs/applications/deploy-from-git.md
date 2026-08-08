@@ -51,6 +51,32 @@ Builds run under a **platform-wide** time limit so a runaway build can't occupy 
 These are platform settings, not per-application ones — an app has no build-memory or build-time
 field. The `CPU` and `Memory` limits on an application cap its **running container**, not its build.
 
+## Re-syncing the repository pipeline
+
+If your repository carries a `pipelines.yaml`, Miabi adopts it when the app is created and deploys
+run through it. Two cases leave the app out of step with the file, and **Settings → Source →
+Re-sync** fixes both:
+
+- **You added the file after creating the app** (or the app only just became a Git app). Re-sync
+  adopts it, and deploys start running through the pipeline.
+- **You edited the file.** Miabi re-reads it on each run, so this is only needed to pick the change
+  up *now* — for instance to confirm the document still parses before your next deploy.
+
+Re-sync reports what it did: adopted, updated, or already up to date. A repository with no pipeline
+file is not an error — the app simply keeps building directly.
+
+From the CLI:
+
+```bash
+miabi apps resync-pipeline web
+```
+
+## Switching to a prebuilt image
+
+A Git app can switch to pulling a prebuilt image without being recreated — see
+[Switching between image and Git](/docs/applications/deploy-from-image#switching-between-image-and-git).
+Note that switching away from Git removes any pipeline adopted from the repository.
+
 ## Redeploying
 
 Trigger a new build manually from the **Deployments** tab at any time, or set up automatic deploys so a push to your branch builds and ships a release with no manual step. See [Git push-to-deploy](/docs/cicd/git-push-deploy) and [Pipelines](/docs/cicd/pipelines).
