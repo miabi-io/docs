@@ -54,7 +54,7 @@ its own components, including its own container, and roll back a bad image.
 :::info Why not Compose?
 Compose owns what Compose created. A container Miabi recreated out-of-band would be silently
 reverted by the next `docker compose up -d` — so a Compose-managed Miabi could never truthfully
-update itself. Changing the owner is what makes `miabi update` possible.
+update itself. Changing the owner is what makes `miabi upgrade` possible.
 
 Compose is still fully supported if you want to drive it yourself: see
 [Manual install with Docker Compose](#manual-install-with-docker-compose). The installer simply no
@@ -68,8 +68,9 @@ curl -fsSL https://get.miabi.io | sudo MIABI_DOMAIN=miabi.example.com \
   MIABI_ADMIN_EMAIL=you@example.com bash
 ```
 
-It installs Docker if missing, then hands off to Miabi, which creates the network, the volumes and
-the four containers, writes `/etc/miabi/stack.yaml`, and prints the admin password.
+It installs Docker if missing, installs the `miabi` CLI to `/usr/local/bin`, then runs
+`miabi setup` — which creates the network, the volumes and the four containers, writes
+`/etc/miabi/miabi.yaml`, and prints the admin password.
 
 That one address becomes both your admin login *and* your Let's Encrypt contact — see [One email is
 enough](#install-options).
@@ -90,23 +91,28 @@ To migrate: back up, `docker compose down`, re-run with `MIABI_FORCE_STACK=1`, r
 
 ## What the installer leaves behind
 
-There is **no new binary to install**. The installer *is* the Miabi image — its entrypoint is the
-`miabi` binary — so all it does under the hood is [one `docker run`](#install-with-docker-run-no-script),
-which you can just as well run yourself.
-
-It also drops a small `miabi-stack` wrapper so you don't have to retype that command:
+`/usr/local/bin/miabi` — the [Miabi CLI](/docs/cicd/cli). It is one tool for two jobs: the panel's
+API client you already knew, and the manager of the stack on this host.
 
 ```bash
-miabi-stack status                     # what is running, and its health
-miabi-stack restart                    # restart the stack, or one component
-MIABI_TAG=1.5.0 miabi-stack update     # roll forward to a newer release (rolls back on failure)
-miabi-stack uninstall                  # keeps your data; add --volumes to destroy it
+sudo miabi stack status                # what is running, and its health
+sudo miabi stack restart               # restart the stack, or one component
+sudo miabi upgrade                     # roll forward to a newer release (rolls back on failure)
+sudo miabi stack uninstall             # keeps your data; add --volumes to destroy it
 ```
 
-:::note
-It is named `miabi-stack`, not `miabi`, because `miabi` is already the [Miabi CLI](/docs/cicd/cli) —
-the API client you install with Homebrew, which has its own `status`, `import` and `upgrade`
-commands meaning entirely different things.
+`setup` and `upgrade` sit at the top level because they are the host's lifecycle; everything else
+is namespaced under `stack`. All of them need root — they write `/etc/miabi` and talk to the Docker
+socket — and they only work on the machine they run on.
+
+:::note Upgrading from an earlier install
+The `miabi-stack` wrapper earlier releases installed is **gone**. Replace it in any runbook or cron
+job: `miabi-stack install` → `miabi setup`, `miabi-stack update` → `miabi upgrade`, everything else
+→ `miabi stack <verb>`. Re-running the installer removes it.
+
+Your manifest also moves. Miabi reads `/etc/miabi/miabi.yaml` now; if yours is still at
+`/etc/miabi/stack.yaml` the CLI detects it and tells you to run `sudo miabi stack migrate-config`,
+which renames it.
 :::
 
 ### Install options
@@ -123,8 +129,11 @@ commands meaning entirely different things.
 | `MIABI_REGISTRY_HOST` | `--registry-host` | Its hostname (default `registry.<domain>`). Needs its own DNS record — it gets its own certificate. |
 | — | `--goma-config` | Gateway config file, relative to the manifest's directory (default `goma.yml`). |
 | `MIABI_NO_HOST_PROC` | `--no-host-proc` | Do **not** bind the host's `/proc`. See below. |
-| `MIABI_ETC` | `--file` | Where the manifest lives (default `/etc/miabi/stack.yaml`). |
+| `MIABI_CONFIG_FILE` | `--file` | Where the manifest lives (default `/etc/miabi/miabi.yaml`). `MIABI_ETC` sets its directory. |
 | `MIABI_FORCE_STACK` | — | Install even though a Compose stack is present. See the caution above. |
+| `MIABI_CLI_VERSION` | — | Which `miabi` CLI release to install (default: pinned in the script). |
+| `MIABI_CLI_BASE_URL` | — | Fetch the CLI from a mirror instead of the GitHub release — an internal artifact store for an air-gapped install. Must serve the same archive and `checksums.txt` names. |
+| `MIABI_RELEASE_API` | GitHub's API | Where `miabi setup`/`upgrade` look up the latest platform version when neither `--version` nor `--image` is given. Point it at a mirror serving GitHub's releases JSON, or pass `--version` to skip the lookup. |
 
 :::tip One email is enough
 `acme_email` (the Let's Encrypt contact) and `admin_email` (the platform admin's login) **fall back
@@ -134,7 +143,7 @@ to each other**. Give either one and it is used for both. Only if you give neith
 
 ### The manifest
 
-Stack mode keeps its desired state in `/etc/miabi/stack.yaml`, mode `0600`. It has to be a file on
+Stack mode keeps its desired state in `/etc/miabi/miabi.yaml`, mode `0600`. It has to be a file on
 the host and not a database table, because PostgreSQL is *itself* part of the stack — the installer
 cannot read the database to learn how to start the database.
 
@@ -171,8 +180,23 @@ secrets:
   encryption_key: …
 ```
 
-Edit it and re-run `miabi install` (or `miabi-stack install`) — the converge is idempotent, so only
-what actually changed is recreated.
+Edit it and re-run `sudo miabi setup` — the converge is idempotent, so only what actually changed
+is recreated.
+
+:::note It used to be `stack.yaml`
+The manifest was `/etc/miabi/stack.yaml` before this release, which collided with the `stack.yaml`
+name used for [declarative manifests](/docs/cicd/manifest-reference). The old path is **no longer
+read**, but it is detected: point a command at a host that still has one and it says so, and
+`sudo miabi stack migrate-config` renames it.
+:::
+
+:::caution Pin your images
+Every tag above is a fixed version, and that is the point: `miabi setup` on two hosts a month apart
+should build the same stack. A floating tag (`latest`, `edge`, `main`, …) **warns**, because it
+breaks the rollout in two ways — a failed upgrade cannot roll back (there is no distinct previous
+image to return to), and drift against it cannot be detected, so the next upgrade reports "already
+at" and does nothing. Use `miabi upgrade --version 1.8.0` instead.
+:::
 
 :::danger Back up this file
 It holds the database password, the JWT secret and the encryption key, and it is the **only copy**.
@@ -183,7 +207,7 @@ so a newly generated one can never open it.
 
 ### The gateway config
 
-`goma.yml` sits beside `stack.yaml` and is **bind-mounted read-only** into the gateway — the same
+`goma.yml` sits beside `miabi.yaml` and is **bind-mounted read-only** into the gateway — the same
 shape as the Compose install, so you edit one file on the host and restart.
 
 Miabi writes the default on first install and records its digest. After that:
@@ -200,7 +224,7 @@ After editing it, restart the gateway to apply it (Goma watches the providers di
 base config):
 
 ```bash
-miabi-stack restart miabi-gateway
+sudo miabi stack restart miabi-gateway
 ```
 
 `gateway.env` is the gateway's environment: `GOMA_LOG_LEVEL` and `GOMA_ANALYTICS_ENABLED` (both
@@ -249,46 +273,101 @@ forbids host binds. Pass `--no-host-proc` (or `MIABI_NO_HOST_PROC=1`) and Miabi 
 `/proc` instead, which inside a container already reflects host CPU and memory. **Host metrics keep
 working** — this is a graceful fallback, not a feature you lose.
 
-## Install with `docker run` (no script)
+## Install without the script
 
-Don't want to pipe a script into `bash`? You don't have to. The Miabi image *is* the installer — its
-entrypoint is the `miabi` binary — so a stack install is a single `docker run`:
+Don't want to pipe a script into `bash`? You don't have to. The script's only unique job is
+installing Docker — everything after that is the `miabi` CLI, which you can install yourself.
+
+Grab the binary for your platform from the
+[CLI releases](https://github.com/miabi-io/miabi-cli/releases) (or `brew install miabi-io/tap/miabi`
+on macOS), then:
 
 ```bash
-docker run --rm -it \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  -v /etc/miabi:/etc/miabi \
-  miabi/miabi:1.4.0 install --domain miabi.example.com --admin-email you@example.com
+sudo miabi setup --domain miabi.example.com --admin-email you@example.com
 ```
 
 That's the whole install. It creates the network, the volumes, PostgreSQL, Redis, the gateway and
-the control plane, writes `/etc/miabi/stack.yaml`, and prints the admin password.
+the control plane, writes `/etc/miabi/miabi.yaml`, and prints the admin password.
 
 Drop `--admin-email` and Miabi falls back to `admin@miabi.example.com`.
 
 **Docker must already be installed** — this path skips the installer script, and the script is what
 installs Docker for you.
 
-### What the two mounts are for
+### `setup` is idempotent
 
-| Mount | Why |
-|---|---|
-| `/var/run/docker.sock` | The whole job. Miabi creates the containers through it. |
-| `/etc/miabi` | Where `stack.yaml` and `goma.yml` are written. The gateway config is **bind-mounted from here** into Goma, so this directory must exist on the host — Miabi refuses to install otherwise. |
+Running it again is a **converge**, not a reinstall: it keeps the stored secrets (a regenerated
+database password would lock the control plane out of its own data) and recreates only what actually
+differs from the manifest. That is what makes "edit the manifest, re-run setup" the supported way to
+change anything.
 
-:::caution Don't forget `-v /etc/miabi:/etc/miabi`
-Miabi refuses to install without it, because the manifest — and the gateway config beside it — would
-be written *inside the throwaway container* and lost when it exits:
+Add `--yes` to skip the confirmation when scripting it. Without a terminal there is nobody to
+answer, so `--yes` is not optional there.
 
+### Which image it installs
+
+`setup` installs `miabi/miabi` at the CLI's own version, so a CLI and the stack it installs agree by
+default. That decoupling is deliberate — a standalone CLI can be older or newer than the stack it
+manages, and `miabi stack status` shows both.
+
+To install something else, including from a private registry, pass it verbatim:
+
+```bash
+sudo miabi setup --domain miabi.example.com --image registry.example.com/miabi:1.7.3
 ```
-/etc/miabi is not bind-mounted from the host, so the gateway could never read it —
-Docker would create an empty directory there instead.
+
+### Everything else is the same binary
+
+```bash
+sudo miabi stack status
+sudo miabi upgrade                # rolls the control plane forward, rolling back if it fails
+sudo miabi stack uninstall        # keeps your data; add --volumes to destroy it
 ```
 
-Nothing is created when this happens.
+### Install with `docker run` — no binary at all
+
+The Miabi image is also an installer, and that path is fully supported. It is the right one when
+you'd rather not put a binary in `/usr/local/bin` — notably when **you don't have root**:
+
+```bash
+docker run --rm -it \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v /etc/miabi:/etc/miabi \
+  miabi/miabi:1.7.3 install --domain miabi.example.com --admin-email you@example.com
+```
+
+`install`, `upgrade`, `restart`, `status` and `uninstall` all run this way. They are the same
+commands as `miabi setup` / `miabi upgrade` / `miabi stack …` — one implementation, two front-ends —
+so neither path can drift from the other, flags included:
+
+```bash
+# alias it once and the day-two commands are short
+alias miabi-host='docker run --rm -it \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v /etc/miabi:/etc/miabi miabi/miabi:1.7.3'
+
+miabi-host status
+miabi-host upgrade --version 1.8.0    # or --image <ref> for a private registry
+miabi-host restart miabi-gateway
+miabi-host uninstall                  # keeps your data; add --volumes to destroy it
+```
+
+:::note `update` is now `upgrade`
+The image's verb was renamed to match the CLI. `update` still works and does the same thing, after
+printing a deprecation notice; it will be removed in a future release.
 :::
 
-Use `-it` for the confirmation prompt; add `--yes` and drop `-it` when scripting it.
+Two things this path does *better*:
+
+- **The tag you invoke is the tag you get.** The image asks Docker for its own reference, so
+  `miabi/miabi:1.7.3 install` lands exactly 1.7.3, private registry included, with no inference.
+  The CLI has no container to inspect and uses its build-stamped default instead.
+- **No root required.** See [Running the installer container as non-root](#running-the-installer-container-as-non-root)
+  below — uid 10001 plus the host's docker group is enough.
+
+`-v /etc/miabi:/etc/miabi` is not optional: without it the manifest and the gateway config are
+written *inside the throwaway container* and lost when it exits, so Miabi refuses to install rather
+than let that happen.
 
 ### Running the installer container as non-root
 
@@ -302,7 +381,7 @@ docker run --rm -it \
   --group-add "$(stat -c '%g' /var/run/docker.sock)" \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v /etc/miabi:/etc/miabi \
-  miabi/miabi:1.4.0 install --domain miabi.example.com --admin-email you@example.com
+  miabi/miabi:1.7.3 install --domain miabi.example.com --admin-email you@example.com
 ```
 
 - `--user 10001:10001` runs as the image's non-root account instead of root.
@@ -322,46 +401,6 @@ sudo install -d -o 10001 -g 10001 /etc/miabi
 
 This is the `docker run` equivalent of the Compose [Running unprivileged](#running-unprivileged)
 section: both run as uid/gid 10001 and grant the host's Docker GID.
-
-### The tag you invoke is the version you get
-
-The image asks Docker for **its own image reference**, so it installs exactly the image you ran —
-registry included. A private registry works the same as Docker Hub:
-
-```bash
-docker run --rm -it \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  -v /etc/miabi:/etc/miabi \
-  registry.example.com/miabi:1.4.0 install --domain miabi.example.com
-```
-
-### Everything else is the same command
-
-`install`, `update`, `status` and `uninstall` all run this way — the image is the tool that manages
-what it built:
-
-```bash
-alias miabi-stack='docker run --rm -it \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  -v /etc/miabi:/etc/miabi miabi/miabi:1.4.0'
-
-miabi-stack status
-miabi-stack uninstall            # keeps your data; add --volumes to destroy it
-```
-
-To upgrade, run a **newer** image — that is what makes it an upgrade:
-
-```bash
-docker run --rm -it \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  -v /etc/miabi:/etc/miabi \
-  miabi/miabi:1.5.0 update
-```
-
-:::note
-`update` needs an image at least as new as the feature you are using. An older image has no `update`
-command at all — you cannot ask a release to install itself with something it never shipped.
-:::
 
 ## Manual install with Docker Compose
 
@@ -437,7 +476,7 @@ purpose-built rootless image, use the Debian variant (`docker/Dockerfile.debian`
 
 Open your domain in a browser and sign in as the **platform admin**, seeded into the database on
 first boot. The installer generates the password, prints it once at the end of the run, and stores
-it in `/etc/miabi/stack.yaml` — which is the only copy, so back that file up. Change the password
+it in `/etc/miabi/miabi.yaml` — which is the only copy, so back that file up. Change the password
 from the UI after your first sign-in.
 
 The login is `admin_email` from the manifest — the address you installed with. If you gave only an

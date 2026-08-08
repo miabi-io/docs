@@ -22,7 +22,7 @@ Because both happen automatically, upgrading is just a matter of starting the ne
 Once a day, Miabi asks GitHub whether a newer release exists and shows platform admins a dismissible
 notice with a link to the release notes. **The check only notifies — nothing upgrades on its own.**
 An upgrade is always something you ask for, whether by re-running the installer (Compose) or by
-running `miabi update` (stack).
+running `miabi upgrade` (stack).
 
 The check is channel-aware: a pre-release build is offered newer pre-releases and stable releases; a
 stable build is never nudged onto a pre-release. Dismissing a notice hides it until the *next*
@@ -47,38 +47,52 @@ Admins can read the cached result at `GET /api/v1/admin/update`.
 How you upgrade depends on who owns the containers. Miabi labels every one of them, so it always
 knows — and refuses to act on a stack it does not own.
 
-- **Installer / `docker run`** (what `get.miabi.io` builds) → `miabi update`. Miabi replaces its own
-  container, rolling back if the new one does not come up.
+- **Installer / `docker run`** (what `get.miabi.io` builds) → `sudo miabi upgrade`, or
+  `docker run … miabi/miabi:<tag> upgrade` if you installed without the CLI. Miabi replaces its own
+  container, rolling back if the new one does not come up. (`update` still works, deprecated.)
 - **Compose**, if you set it up yourself → `docker compose pull && docker compose up -d`.
 
 If you are not sure which you have, ask:
 
 ```bash
 docker inspect miabi --format '{{index .Config.Labels "io.miabi.managed-by"}}'
-# miabi   → stack install
-# compose → compose install
+# miabi   → installed by `miabi setup`
+# compose → Compose install
 ```
 
 ## Upgrading
 
 ```bash
-MIABI_TAG=1.4.0 miabi-stack update
+sudo miabi upgrade
 ```
 
-…or, without the wrapper:
+`miabi upgrade` rolls the stack to the **latest published Miabi release**, looked up when the command
+runs. The version is not baked into the CLI: the CLI releases on its own cadence, so a build-time pin
+would freeze every install at whatever was current when that CLI was built — and an older CLI could
+never install today's Miabi. To choose a version yourself, or to upgrade with no network:
 
 ```bash
-docker run --rm -it \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  -v /etc/miabi:/etc/miabi \
-  miabi/miabi:1.4.0 update
+sudo miabi upgrade --version 1.8.0            # or v1.8.0 — the leading v is optional
+sudo miabi upgrade miabi-gateway --version 0.14.0
+sudo miabi upgrade --image registry.example.com/miabi:1.8.0
 ```
 
-The tag you invoke is the version you get. Miabi pulls the image, replaces the running control plane
-and waits for it to come back healthy.
+`--version` swaps **only the tag** on the component's current reference, so a private registry and
+non-Miabi components (the gateway) keep working. `--image` replaces the reference outright; the two
+cannot be combined.
 
-**It can replace its own container** because the updater is a *different* container — an ephemeral
-one that exits when it is done. That is the whole reason Miabi owns its containers rather than
+Miabi pulls the image, replaces the running control plane and waits for it to come back healthy.
+
+:::caution Don't pin to a floating tag
+`latest`, `edge`, `main` and friends are refused a clean rollback. The rollout skips its automatic
+rollback when the previous reference equals the new one — so a failed `:latest` upgrade has no
+distinct previous image to return to. Drift detection compares references too, so an old `:latest`
+and a new one look identical and the next upgrade reports "already at" without doing anything.
+Miabi warns when you use one.
+:::
+
+**It can replace its own container** because the thing driving the upgrade is not that container —
+it is the `miabi` binary on the host. That is the whole reason Miabi owns its containers rather than
 letting Compose own them.
 
 ### If the new version does not come up
@@ -90,7 +104,7 @@ The rollout is not a blind cutover:
    serves nothing never reaches the live one.
 2. The previous image is remembered before anything is replaced.
 3. If the new container never becomes healthy, the previous image is **restored automatically** and
-   the manifest is reverted, so `stack.yaml` never claims a version that is not running.
+   the manifest is reverted, so `miabi.yaml` never claims a version that is not running.
 
 ```
 verifying
@@ -111,20 +125,20 @@ A restart re-reads what is on disk — most usefully the gateway's `goma.yml`, w
 hot-reload (it watches its providers directory, not its base config):
 
 ```bash
-miabi-stack restart miabi-gateway     # or `miabi-stack restart` for the whole stack
+sudo miabi stack restart miabi-gateway   # or `miabi stack restart` for the whole stack
 ```
 
 The config is validated before anything is stopped, so a broken edit cannot take the gateway down.
-A restart cannot apply a *manifest* change — that needs `miabi install`, which recreates — and it
+A restart cannot apply a *manifest* change — that needs `miabi setup`, which recreates — and it
 says so rather than leaving the edit looking ignored.
 
 ### Changing anything else
 
 Everything else — the gateway version, the registry, `TZ`, the log level — lives in
-`/etc/miabi/stack.yaml`. Edit it and re-run:
+`/etc/miabi/miabi.yaml`. Edit it and re-run:
 
 ```bash
-miabi-stack install
+sudo miabi setup
 ```
 
 The converge is idempotent: components whose configuration did not change are left alone, and only

@@ -16,14 +16,14 @@ directive, so the workflow is: **rename `.env.example` → `.env`, fill in the v
 
 :::caution If you installed with the installer, there is no `.env`
 A stack install (the [one-liner](/docs/getting-started/installation) or `docker run … install`)
-keeps its configuration in the manifest at **`/etc/miabi/stack.yaml`**, and passes it to the
+keeps its configuration in the manifest at **`/etc/miabi/miabi.yaml`**, and passes it to the
 containers itself. Creating a `.env` file there changes nothing — nothing reads it.
 
 Set these variables under the manifest's `env:` block instead, then apply them:
 
 ```bash
-sudo vi /etc/miabi/stack.yaml     # env: { MIABI_LOG_LEVEL: debug, … }
-miabi-stack install               # re-converges; recreates only what actually changed
+sudo vi /etc/miabi/miabi.yaml     # env: { MIABI_LOG_LEVEL: debug, … }
+sudo miabi setup                  # re-converges; recreates only what actually changed
 ```
 
 Use `install`, **not** `restart`. An env var is part of a container's spec, and a spec can only be
@@ -305,6 +305,7 @@ tab. See [Registry](/docs/registry/administration).
 | `MIABI_RESTORE_MAX_MB` | `1024` | Max size of an uploaded database dump for restore |
 | `MIABI_STORAGE_USAGE_ENABLED` | `true` | Periodically measure each volume's real on-disk usage (`docker system df`) and cache it, so the UI shows declared-vs-used. Off ⇒ no filesystem walks; the UI shows declared sizes only |
 | `MIABI_STORAGE_USAGE_MINUTES` | `30` | Cadence of that measurement sweep. Raise it on nodes with many/large volumes where the `df` walk is heavy |
+| `MIABI_DATABASE_SIZE_CRON` | `20 2 * * *` | Cron schedule (platform timezone) for the nightly sweep that measures every **running** database instance's on-disk size. Without it, sizes refresh only when a detail page is opened and the value is over a day old — so a database nobody looks at is never measured. Set to an empty value to disable |
 | `MIABI_WEBHOOK_ALLOW_PRIVATE_TARGETS` | `false` | Allow outbound webhooks to RFC1918/ULA addresses. Loopback and link-local (incl. cloud metadata) are always blocked |
 | `MIABI_ALLOW_DOWNGRADE` | `false` | Boot even when the binary is older than the version recorded in the database |
 | `MIABI_API_URL` | — | Public base URL of the API, when it differs from `MIABI_WEB_URL` |
