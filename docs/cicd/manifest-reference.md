@@ -1,7 +1,7 @@
 ---
 sidebar_position: 6
 title: Manifest reference
-description: Every miabi.io/v1 kind and field accepted by apply and GitOps — Application, Stack, Database, Volume, Secret, Registry, Route, Domain and Project.
+description: Every miabi.io/v1 kind and field accepted by apply and GitOps — Application, Stack, Database, Volume, Secret, Config, Registry, Route, Domain and Project.
 ---
 
 # Manifest reference
@@ -48,6 +48,7 @@ deploys to staging and production unchanged.
 | [`Database`](#database) | A managed Postgres / MySQL / MariaDB / Redis database | 2nd |
 | [`Volume`](#volume) | Persistent storage | 1st |
 | [`Secret`](#secret) | A named encrypted value | 1st |
+| [`Config`](#config) | A set of configuration files mounted into apps | 1st |
 | [`Registry`](#registry) | A container-registry credential for private images | 2nd |
 | [`Route`](#route) | An HTTP routing rule (host/path → app:port + TLS) | 4th |
 | [`Domain`](#domain) | An owned hostname and its default TLS policy | 1st |
@@ -92,6 +93,11 @@ spec:
     - volume: web-data        # must be a Volume in the same bundle
       path: /data
       readOnly: false
+    - config: web-conf        # …or a Config — exactly one of volume/config
+      key: nginx.conf         # one file; omit to project the whole set under path
+      path: /etc/nginx/nginx.conf
+      mode: "0444"
+  reloadPolicy: restart       # restart (default) | none — on a mounted config's change
   resources:
     memory: 512Mi             # Ki/Mi/Gi; empty = unlimited
     cpu: "0.5"                # cores; empty = unlimited
@@ -112,7 +118,8 @@ spec:
 | `externalLabel` | Pins the external-access subdomain. Platform-wide unique: if taken, it is ignored and a generated label is used — the apply still succeeds. |
 | `ports` | See [port exposure](#port-exposure). |
 | `env` / `secretEnv` | Every `secretEnv` key must also appear in `env`. Values support [interpolation](#interpolation). |
-| `mounts` | `volume` must name a [`Volume`](#volume) in the same bundle. Privileged host binds are **not** manifest-expressible. |
+| `mounts` | Exactly one of `volume` or `config`, and both must be declared in the same bundle. `key` and `mode` are valid only with a `config` — setting them on a volume mount is an error, not a silent no-op. A config mount is always read-only. Privileged host binds are **not** manifest-expressible. |
+| `reloadPolicy` | `restart` (default) redeploys the app when a mounted [`Config`](#config)'s content changes; `none` leaves it running, for apps that watch their own config file. |
 | `resources` | Omitted fields mean unlimited / none. |
 | `containerLabels` | Reserved namespaces (`io.miabi.*`, `com.docker.*`) are stripped rather than rejected. See [container labels](/docs/applications/container-labels). |
 
@@ -229,6 +236,57 @@ Rotate through the [vault](/docs/secrets/overview) or the API.
 
 ---
 
+## Config
+
+A set of named configuration files, mounted into applications as read-only files — the file-shaped
+counterpart to a `Secret`. Content is encrypted at rest and rendered like app `env` before it is
+stored. See [Configuration files](/docs/secrets/configs) for the full model.
+
+```yaml
+apiVersion: miabi.io/v1
+kind: Config
+metadata:
+  name: prom-conf
+spec:
+  mode: "0644"                  # default octal mode for every file
+  sensitive: false              # keep content out of plans; reveal is admin-only
+  delimiters: ["<<", ">>"]      # interpolate on these instead of {{ }}
+  data:
+    prometheus.yml: |
+      global:
+        scrape_interval: 15s
+    rules/alerts.yml: |
+      groups: []
+```
+
+| Field | Notes |
+|---|---|
+| `data` | **Required**, at least one entry. Keys are **relative paths** matching `^[A-Za-z0-9]([A-Za-z0-9._-]*)?(/[A-Za-z0-9._-]+)*$` — no leading `/`, no `..`. Values are [interpolated](#interpolation). |
+| `mode` | Default octal file mode, `0644` when omitted. A mount's `mode` overrides it per file. |
+| `sensitive` | Content never enters a plan — only the digest and each key's present/absent state. |
+| `delimiters` | Exactly two distinct, non-empty markers, replacing `{{ }}` for this config only. Use it for files whose own syntax is `{{ }}` (Prometheus annotations, Grafana dashboards). |
+
+**Limits:** 256 KB per file, 512 KB total. The per-file cap is what matters — in
+[cluster mode](/docs/nodes/cluster-mode) each file becomes a Docker config object, and Docker caps
+those at 500 KB, so a larger file would validate here and fail at deploy.
+
+Mount it from an [`Application`](#application):
+
+```yaml
+mounts:
+  - config: prom-conf                # every file under a directory
+    path: /etc/prometheus            #   → /etc/prometheus/prometheus.yml, /etc/prometheus/rules/alerts.yml
+  - config: prom-conf                # a single file at an exact path
+    key: rules/alerts.yml
+    path: /etc/prometheus/rules/alerts.yml
+    mode: "0444"
+```
+
+A content change **redeploys every application mounting the config**, unless that app sets
+`reloadPolicy: none`. Deleting a config that is still mounted is refused.
+
+---
+
 ## Registry
 
 A container-registry credential for pulling private images. Applications select one by name through
@@ -336,12 +394,12 @@ spec:
 
 ## Interpolation
 
-Application `env` values and a Registry `password` are rendered as templates before they are applied.
-Four collections are available:
+Application `env` values, a Registry `password`, and a Config's file contents are rendered as
+templates before they are applied. Four collections are available:
 
 | Reference | Resolves to |
 |---|---|
-| `{{ .databases.<name>.host }}` | A managed database's connection details. Also `.port`, `.user`, `.password`, `.name`, `.uri`. Bare `{{ .databases.<name> }}` yields the URI. |
+| `{{ .databases.<name>.host }}` | A managed database's connection details. Also `.port`, `.user`, `.password`, `.name`, `.uri` (or its alias `.url`). Bare `{{ .databases.<name> }}` yields the URI. |
 | `{{ .secrets.<name> }}` | A workspace secret's value, resolved **at apply time**. |
 | `{{ .inputs.<key> }}` | Marketplace templates only — see [creating a template](/docs/marketplace/creating-a-template). |
 
@@ -353,6 +411,9 @@ work (`{{ .databases.shop-db.uri }}`).
 To address another application, put both in the same [`Stack`](#stack) and use its name as the
 hostname — stack members resolve each other by name on the stack network. (`{{ .applications.* }}`
 appears in the template grammar but is not resolvable in apply or GitOps.)
+
+A [`Config`](#config) whose own file format uses `{{ }}` sets `delimiters` to render on different
+markers, so only the references you meant are substituted.
 
 :::tip Two secret syntaxes
 `{{ .secrets.NAME }}` is resolved once, at apply time, and the value is stored. `${{ secrets.NAME }}`
@@ -375,9 +436,17 @@ and per-port exposure (`externalAccess` / `publish` as present-or-not).
 mounts, and stack membership. Change one and the resource is updated on the next apply that touches
 it for another reason; recreate it to be certain.
 
+Mounts aren't diffed, but a mounted config's *content* still converges: each app carries a
+fingerprint of every config it mounts, so editing a file plans as an update of the app itself. An app
+with `reloadPolicy: none` carries no fingerprint, which is how that policy is honoured.
+
 **Never diffed** — secret values, and the `secretEnv` values in a plan (shown as `(secret)`). A
 registry password is compared through a fingerprint, so a rotation converges without the plan
 carrying anything derived from the token.
+
+**Diffed, but never echoed** — a `Config`'s files. The plan compares the content digest and reports
+each changed key as `(absent)` → `(present)`, so you can see *which* file changed without its content
+landing in a log. A `sensitive: true` config reports the digest alone.
 
 The auto-allocated host port and the generated external-access subdomain are live state, not
 manifest state — they are compared by presence, so they are never churned.

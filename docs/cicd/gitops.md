@@ -229,6 +229,7 @@ database's live connection details into an app's environment, so you never hardc
 ```
 {{ .databases.<name>.host }}   {{ .databases.<name>.port }}   {{ .databases.<name>.user }}
 {{ .databases.<name>.password }}   {{ .databases.<name>.name }}   {{ .databases.<name>.uri }}
+{{ .databases.<name>.url }}        # alias of .uri
 ```
 
 Keys listed under `secretEnv` are stored **encrypted at rest**.

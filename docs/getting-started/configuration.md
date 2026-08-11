@@ -300,7 +300,7 @@ tab. See [Registry](/docs/registry/administration).
 |----------|---------|-------------|
 | `MIABI_DEV_MODE` | `false` | Relax production guards. Never enable on a public instance |
 | `MIABI_OPENAPI_DOCS` | `true` | Serve the interactive API reference at `/docs` |
-| `MIABI_MARKETPLACE_URL` | the marketplace repo's latest release asset | Where templates are synced from. Set to an explicit empty value to disable syncing (offline kill switch) |
+| `MIABI_MARKETPLACE_URL` | `https://marketplace.miabi.io` | Where templates are synced from. A server base URL fetches `/v1/export`; a `.json` URL (e.g. a release asset) is fetched as-is. Set to an explicit empty value to disable syncing (offline kill switch) |
 | `MIABI_DELETION_GRACE_DAYS` | `7` | Days an admin-scheduled account deletion waits before the data is purged |
 | `MIABI_RESTORE_MAX_MB` | `1024` | Max size of an uploaded database dump for restore |
 | `MIABI_STORAGE_USAGE_ENABLED` | `true` | Periodically measure each volume's real on-disk usage (`docker system df`) and cache it, so the UI shows declared-vs-used. Off ⇒ no filesystem walks; the UI shows declared sizes only |

@@ -74,9 +74,10 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: 'Secrets',
+      label: 'Secrets & Configs',
       items: [
         'secrets/overview',
+        'secrets/configs',
       ],
     },
     {

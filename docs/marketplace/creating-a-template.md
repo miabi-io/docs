@@ -21,6 +21,8 @@ A template is a single `template.yaml` with four parts:
 - **`inputs`** — the fields the installer prompts for (with validation, defaults, and secret
   generation).
 - **`databases`** — managed databases provisioned alongside the app.
+- **`configs`** — configuration files created and mounted into the app (optional; see
+  [below](#shipping-configuration-files)).
 - **`applications`** — the app(s) to deploy, with their env, ports, and healthcheck.
 
 ## Template variables
@@ -30,7 +32,7 @@ Templates can interpolate three sources into application `env` (and other string
 | Reference | Resolves to |
 |---|---|
 | `{{ .inputs.<key> }}` | A value the user entered (or a generated secret) |
-| `{{ .databases.<name>.host \| port \| user \| password \| name \| uri }}` | A provisioned database's live connection details |
+| `{{ .databases.<name>.host \| port \| user \| password \| name \| uri }}` | A provisioned database's live connection details (`url` is an alias of `uri`) |
 | `{{ .applications.<name>.alias }}` | A sibling application's network alias |
 
 There is **no `.secrets` namespace** in a marketplace template — referencing one is a hard render
@@ -60,7 +62,7 @@ metadata:
   author:
     name: Jonas Kaninda
     email: me@jkaninda.dev
-    website: https://goposta.org
+    website: https://goposta.dev
   tags: [email, smtp, transactional, mail, self-hosted]
   minMiabi: "0.5.0"
 
@@ -156,6 +158,57 @@ A template is a packaged version of a [GitOps project](/docs/cicd/gitops). If yo
 working `Project` manifest, turning it into a template is mostly a matter of replacing hardcoded
 values with `{{ .inputs.* }}` fields and adding the `metadata` block.
 :::
+
+## Shipping configuration files
+
+Plenty of apps can't be configured through environment variables alone — nginx wants an `nginx.conf`,
+Prometheus a `prometheus.yml`, Grafana a provisioning directory. Declare those under `configs` and
+mount them from an application, instead of telling users to build a custom image:
+
+```yaml
+configs:
+  - name: provisioning
+    mode: "0644"                 # default octal mode (0644 when omitted)
+    sensitive: true              # content carries credentials: keep it out of plans
+    delimiters: ["<<", ">>"]     # render on these, so the file's own {{ }} survives
+    files:
+      datasources/ds.yml: |
+        apiVersion: 1
+        datasources:
+          - name: Postgres
+            type: postgres
+            url: << .databases.db.host >>:<< .databases.db.port >>
+            user: << .databases.db.user >>
+            secureJsonData: { password: "<< .databases.db.password >>" }
+
+applications:
+  - name: grafana
+    primary: true
+    image: grafana/grafana
+    tag: "11.5.0"
+    mounts:
+      - config: provisioning                     # the whole set under a directory
+        path: /etc/grafana/provisioning
+      - config: provisioning                     # or one file, at an exact path
+        key: datasources/ds.yml
+        path: /etc/grafana/provisioning/datasources/ds.yml
+        mode: "0444"
+```
+
+| Field | Notes |
+|---|---|
+| `name` | Unique within the template, lowercase `[a-z0-9-]`. The workspace config is created as `<template>-<name>`, owned by the install. |
+| `files` | **Required**, at least one entry. Keys are relative paths (`ds.yml`, `datasources/ds.yml`) — never absolute, never containing `..`. |
+| `mode` / `sensitive` / `delimiters` | As in a [`Config` resource](/docs/cicd/manifest-reference#config). `delimiters` takes exactly two distinct, non-empty markers. |
+
+File contents are interpolated with the **same context as `env`** — `{{ .inputs.* }}`,
+`{{ .databases.* }}`, `{{ .applications.*.alias }}` — so a config can carry a rendered database
+password without a bootstrap script. Configs are created and mounted **before** the applications are
+deployed, so the files are in place on first boot, and each mount is read-only. Limits are 256 KB per file and 512 KB total; a mount's `key`/`mode` are valid only
+with a `config`, never with a `volume`.
+
+See [Configuration files](/docs/secrets/configs) for how they behave once installed — versioning,
+redeploy-on-change, and who can read the content.
 
 ## Testing your template
 
