@@ -83,6 +83,12 @@ Choose the correct mount path for the software you run. Mounting over a director
 populates at build time can hide the image's files behind the (initially empty) volume.
 :::
 
+:::tip Mounting a config file, not a volume
+To put an `nginx.conf` or a `prometheus.yml` into a container, use a
+[config](/docs/secrets/configs) instead. Configs are projected **per file**, so they can't shadow the
+rest of the directory the way an empty volume does.
+:::
+
 ## Persistence and lifecycle
 
 - Volumes persist across redeploys, container restarts, and image upgrades.

@@ -1,7 +1,7 @@
 ---
 sidebar_position: 1
 title: CLI
-description: Drive Miabi from the terminal or CI with the miabi command-line tool — deploy, roll back, stream logs, and manage apps, databases, and secrets.
+description: Drive Miabi from the terminal or CI with the miabi command-line tool — deploy, roll back, stream logs, and manage apps, databases, secrets, and config files.
 ---
 
 # CLI
@@ -130,6 +130,7 @@ argument**, or use the app bound with `miabi use`.
 | `miabi apps rm [app] [--yes]` | Delete an application. |
 | `miabi db …` | Manage database instances + logical databases (see below). |
 | `miabi secrets …` | Manage the workspace secret vault (see below). |
+| `miabi configs …` | Manage the workspace's configuration files (see below). |
 | `miabi apply -f <file> [--prune] [--dry-run]` | Converge to [declarative manifests](/docs/cicd/gitops). |
 | `miabi delete -f <file> [--dry-run]` | Delete exactly the resources a manifest bundle names. |
 | `miabi completion <shell>` | Shell completion (tab-completes app slugs). |
@@ -171,6 +172,33 @@ miabi secrets reveal API_KEY                  # print the value (admin; audited)
 miabi secrets usage API_KEY                   # apps referencing it
 miabi secrets rm API_KEY [--yes]
 ```
+
+### Configs
+
+The workspace's [configuration files](/docs/secrets/configs) — file sets mounted into applications
+read-only, encrypted at rest. Addressed by **name**; files come from disk with `--from-file`
+(`[key=]path`, repeatable) or `--from-dir`.
+
+```bash
+miabi configs ls                                    # names, file counts, size, version
+miabi configs get prom-conf                         # files and digest (no content)
+miabi configs set prom-conf --from-file prometheus.yml          # create, or replace the file set
+miabi configs set prom-conf --from-file rules/alerts.yml --merge # patch one file, keep the rest
+miabi configs set nginx --from-dir ./conf.d --recursive
+miabi configs set app --from-file app.conf=- < app.conf
+miabi configs cat prom-conf prometheus.yml          # print one file
+miabi configs edit prom-conf prometheus.yml         # edit in $EDITOR
+miabi configs usage prom-conf                       # apps mounting it
+miabi configs rm prom-conf [--yes]
+```
+
+`set` **replaces the whole file set** unless you pass `--merge`, so it stays idempotent in CI. Saving
+redeploys every app mounting the config (unless it sets `reloadPolicy: none`) — `--yes` skips the
+confirmation. Reading content (`cat`, `edit`, and `--merge`) is admin-only and audited; a config
+marked `--sensitive` additionally requires `--reveal` to print.
+
+Mounting a config into an app is declarative — see the
+[manifest reference](/docs/cicd/manifest-reference#config).
 
 ### AI agents
 
@@ -265,5 +293,6 @@ status to gate a pipeline on the rollout.
 - [API tokens](/docs/security/api-tokens) — create the token the CLI authenticates with.
 - [GitOps](/docs/cicd/gitops) — the declarative counterpart driven by `miabi apply` / `miabi delete`.
 - [Secrets](/docs/secrets/overview) — the vault managed by `miabi secrets`.
+- [Configuration files](/docs/secrets/configs) — the file sets managed by `miabi configs`.
 - [Pipelines](/docs/cicd/pipelines) and [Git push deploy](/docs/cicd/git-push-deploy) — in-platform
   build/deploy automation.
