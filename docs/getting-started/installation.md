@@ -279,7 +279,7 @@ Don't want to pipe a script into `bash`? You don't have to. The script's only un
 installing Docker — everything after that is the `miabi` CLI, which you can install yourself.
 
 Grab the binary for your platform from the
-[CLI releases](https://github.com/miabi-io/miabi-cli/releases) (or `brew install miabi-io/tap/miabi`
+[CLI releases](https://github.com/miabi-io/cli/releases) (or `brew install miabi-io/tap/miabi`
 on macOS), then:
 
 ```bash

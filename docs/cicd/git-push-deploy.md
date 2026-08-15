@@ -51,4 +51,5 @@ Connecting repositories and managing stored credentials are privileged actions. 
 - [Deploy from Git](/docs/applications/deploy-from-git)
 - [Encryption](/docs/security/encryption)
 - [Pipelines](/docs/cicd/pipelines)
+- [GitHub Actions](/docs/cicd/github-actions) — deploy from your own workflow instead of on push.
 - [Webhooks & notifications](/docs/cicd/webhooks-and-notifications)

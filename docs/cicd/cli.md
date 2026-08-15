@@ -20,7 +20,7 @@ state**, and **exits non-zero if it failed** — exactly what you want in CI.
 :::note
 The CLI is a standalone tool released on its own cadence, separate from the Miabi server. Source,
 releases, and the authoritative command reference live on GitHub:
-**[github.com/miabi-io/miabi-cli](https://github.com/miabi-io/miabi-cli)**.
+**[github.com/miabi-io/cli](https://github.com/miabi-io/cli)**.
 :::
 
 ## Install
@@ -39,20 +39,20 @@ run `brew trust miabi-io/tap` before `brew install miabi`.
 **Go:**
 
 ```bash
-go install github.com/miabi-io/miabi-cli@latest   # installs the `miabi` binary
+go install github.com/miabi-io/cli@latest   # installs the `miabi` binary
 ```
 
 Or grab a **prebuilt binary** for Linux, macOS, or Windows from the
-[releases page](https://github.com/miabi-io/miabi-cli/releases/latest).
+[releases page](https://github.com/miabi-io/cli/releases/latest).
 
 **Docker** — no install at all, which is handy in CI:
 
 ```bash
-docker run --rm -e MIABI_URL -e MIABI_TOKEN miabi/miabi-cli:latest whoami
+docker run --rm -e MIABI_SERVER -e MIABI_TOKEN miabi/cli:latest whoami
 
 # deploy from a pipeline — exits non-zero if the rollout fails
-docker run --rm -e MIABI_URL -e MIABI_TOKEN \
-  miabi/miabi-cli:latest apps deploy web --tag "$GIT_SHA" --wait
+docker run --rm -e MIABI_SERVER -e MIABI_TOKEN \
+  miabi/cli:latest apps deploy web --tag "$GIT_SHA" --wait
 ```
 
 ## Authenticate
@@ -61,7 +61,7 @@ The CLI talks to your instance with an **[API token](/docs/security/api-tokens)*
 and token by environment variable — ideal for CI:
 
 ```bash
-export MIABI_URL="https://miabi.example.com"
+export MIABI_SERVER="https://miabi.example.com"
 export MIABI_TOKEN="mb_…"       # created in the console: Settings → API tokens
 miabi whoami                    # verify: shows the identity, scopes, and active workspace/app
 ```
@@ -70,11 +70,12 @@ Or log in once for interactive use — this validates the token and stores the U
 `~/.miabi/config.yaml` (mode `0600`):
 
 ```bash
-miabi --url "$MIABI_URL" --token "$MIABI_TOKEN" login
+miabi --server "$MIABI_SERVER" --token "$MIABI_TOKEN" login
 ```
 
-Configuration resolves in the order **flags → environment (`MIABI_URL`, `MIABI_TOKEN`) → config
-file**. Point at a different file with `MIABI_CONFIG`.
+Configuration resolves in the order **flags → environment (`MIABI_SERVER`, `MIABI_TOKEN`) → config
+file**. Point at a different file with `MIABI_CONFIG`. `--url` and `MIABI_URL` are the deprecated
+spellings of `--server` / `MIABI_SERVER`; both still work.
 
 :::tip
 For CI, mint a least-privilege **deploy token** bound to one workspace and one app (scope `deploy`).
@@ -256,29 +257,40 @@ warns, because a failed rollout has no distinct previous image to roll back to. 
 
 ## In CI/CD
 
-The CLI is the recommended way to deploy from a pipeline. Set `MIABI_URL` and a deploy token as
+The CLI is the recommended way to deploy from a pipeline. Set `MIABI_SERVER` and a deploy token as
 `MIABI_TOKEN`, then call `apps deploy --wait`:
 
 ```yaml
-# GitHub Actions
 - name: Deploy to Miabi
   run: |
-    go install github.com/miabi-io/miabi-cli@latest
+    go install github.com/miabi-io/cli@latest
     miabi apps deploy web --tag "${{ github.sha }}" --wait
   env:
-    MIABI_URL:   ${{ vars.MIABI_URL }}
-    MIABI_TOKEN: ${{ secrets.MIABI_DEPLOY_TOKEN }}
+    MIABI_SERVER: ${{ vars.MIABI_SERVER }}
+    MIABI_TOKEN:  ${{ secrets.MIABI_DEPLOY_TOKEN }}
 ```
 
 Because `--wait` exits non-zero on a failed rollout, a broken deploy fails the pipeline step. (The
-container image `miabi/miabi-cli:latest` is a drop-in alternative to `go install`.)
+container image `miabi/cli:latest` is a drop-in alternative to `go install`.)
+
+On **GitHub Actions** you do not need any of that — [`miabi-io/deploy-action`](/docs/cicd/github-actions)
+installs the CLI and runs the same command:
+
+```yaml
+- uses: miabi-io/deploy-action@v1
+  with:
+    app: web
+    tag: ${{ github.sha }}
+    server: ${{ vars.MIABI_SERVER }}
+    token: ${{ secrets.MIABI_TOKEN }}
+```
 
 If you'd rather not install anything, the same deploy is one HTTP call. The `{workspace}` segment is
 a real workspace — its numeric id, its UID, or its handle. There is no `current` alias on the API
 (the CLI resolves that client-side):
 
 ```bash
-curl -fsS -X POST "$MIABI_URL/api/v1/workspaces/acme/apps/web/deploy" \
+curl -fsS -X POST "$MIABI_SERVER/api/v1/workspaces/acme/apps/web/deploy" \
   -H "Authorization: Bearer $MIABI_TOKEN" \
   -d '{"tag":"'"$GIT_SHA"'"}'
 ```
@@ -292,6 +304,7 @@ status to gate a pipeline on the rollout.
 - [AI agents (MCP)](/docs/cicd/mcp) — expose the panel to Claude, Cursor, or any MCP client via `miabi mcp`.
 - [API tokens](/docs/security/api-tokens) — create the token the CLI authenticates with.
 - [GitOps](/docs/cicd/gitops) — the declarative counterpart driven by `miabi apply` / `miabi delete`.
+- [GitHub Actions](/docs/cicd/github-actions) — the official action that wraps `miabi apps deploy`.
 - [Secrets](/docs/secrets/overview) — the vault managed by `miabi secrets`.
 - [Configuration files](/docs/secrets/configs) — the file sets managed by `miabi configs`.
 - [Pipelines](/docs/cicd/pipelines) and [Git push deploy](/docs/cicd/git-push-deploy) — in-platform

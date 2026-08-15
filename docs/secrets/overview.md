@@ -80,6 +80,9 @@ Beyond application and job environments, a secret can back:
 - **Declarative manifests.** `{{ .secrets.NAME }}` resolves at apply time in an app's `env` and in a
   `Registry` password — and a [`Secret` resource](/docs/cicd/manifest-reference#secret) can declare
   or generate the value in the same bundle, so a manifest never has to carry one.
+- **Pipelines.** A [pipeline's `env`](/docs/cicd/pipelines#defining-your-own), at pipeline or step
+  level, so a build gets its npm token or deploy key without the value ever entering the repository.
+  Resolved when the job is dispatched, masked in the live logs, and stored on the run unresolved.
 
 ## Who can do what
 
