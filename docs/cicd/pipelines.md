@@ -22,9 +22,13 @@ on:
   push: { branches: [main] }   # a push to main fires a run, pinned to that commit
   manual: true                 # also runnable from the UI / API
   schedule: "0 3 * * *"        # optional cron (runs the app's branch HEAD)
+env:                           # optional; applied to every step
+  NODE_ENV: production
+  NPM_TOKEN: ${{ secrets.NPM_TOKEN }}   # resolved from the workspace vault
 steps:
   - name: test
     image: node:20
+    env: { CI: "true" }        # optional; adds to the pipeline's env
     run: "npm ci && npm test"
   - name: build
     uses: build                # builds the checked-out source, pushes it, captures the digest
@@ -120,6 +124,76 @@ A `git push` can also start a run three ways (native webhook, CI calling the tri
 
 ## Environment & step outputs
 
+### Defining your own
+
+`env` sets variables for every step; a step's own `env` adds to it and wins on a collision:
+
+```yaml
+env:
+  NODE_ENV: production
+  NPM_TOKEN: ${{ secrets.NPM_TOKEN }}   # resolved from the workspace vault
+steps:
+  - name: test
+    image: node:22
+    env:
+      CI: "true"
+    run: npm ci && npm test
+```
+
+Values may reference a [workspace secret](/docs/secrets/overview) as `${{ secrets.NAME }}`. The
+reference is resolved **by the control plane** when the job is dispatched — a runner never reads
+your vault — and the resolved value is masked out of the live log stream. A reference to a secret
+that does not exist fails the run before it starts, rather than running a build with a blank token.
+
+When the same name is set twice, the last one wins:
+
+```
+pipeline env  <  values exported via $MIABI_ENV  <  step env
+```
+
+The run itself records what you *asked for*, not what it resolved to: the run and step detail (and
+the API) show `${{ secrets.NPM_TOKEN }}` verbatim, so a run stays a readable audit record and no
+plaintext credential is stored alongside it.
+
+:::info What the runner can see
+A resolved secret travels to the runner and lives in that job's process environment for the
+duration of the step — the same trust already placed in a runner for registry credentials. A
+workspace's secrets are therefore only as protected as the runners registered to it, which is
+worth weighing before pointing a pipeline that references production credentials at a
+[self-hosted runner](/docs/cicd/runners) on a shared machine.
+:::
+
+:::caution
+`MIABI_*` names are reserved for the build context below and are rejected at save time, so a
+pipeline cannot shadow the credentials the `deploy` step authenticates with. `env` is also rejected
+on a `uses:` step: a built-in step runs no container of its own, so the value would be accepted and
+silently dropped.
+:::
+
+:::note Getting a credential into a Dockerfile build
+A `uses: build` step sees **neither** pipeline nor step `env` — it shells out to `docker build`,
+and only `build-args` cross that boundary. But a build arg is recorded in the image history, so
+anyone who can pull the image can read it back with `docker history`: it must not carry a secret.
+
+Until BuildKit build secrets are supported, do the credentialed work in a **container step before
+the build** and leave the result in the shared `/workspace`, which the build context is read from:
+
+```yaml
+  - name: npmrc
+    image: node:22
+    env:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+    run: 'echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > .npmrc'
+  - name: build
+    uses: build
+```
+
+Then make sure the file does not end up in the image — add it to `.dockerignore`, or write it
+outside the build context.
+:::
+
+### Provided by the runner
+
 The runner exports run context to every step as environment variables:
 
 | Variable | Meaning |
@@ -173,4 +247,5 @@ A pipeline's `deploy` step produces a **deployment** — the same release object
 - [Container registry](/docs/registry/overview)
 - [GitOps](/docs/cicd/gitops)
 - [Git push deploy](/docs/cicd/git-push-deploy)
+- [GitHub Actions](/docs/cicd/github-actions) — build on GitHub's runners and deploy the result.
 - [Webhooks & notifications](/docs/cicd/webhooks-and-notifications)

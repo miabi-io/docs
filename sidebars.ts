@@ -120,6 +120,7 @@ const sidebars: SidebarsConfig = {
         'cicd/gitops',
         'cicd/manifest-reference',
         'cicd/git-push-deploy',
+        'cicd/github-actions',
         'cicd/webhooks-and-notifications',
       ],
     },
