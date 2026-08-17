@@ -98,6 +98,7 @@ spec:
       path: /etc/nginx/nginx.conf
       mode: "0444"
   reloadPolicy: restart       # restart (default) | none — on a mounted config's change
+  runAsUser: "1000:1000"      # account the container runs as; omit to keep the image's
   resources:
     memory: 512Mi             # Ki/Mi/Gi; empty = unlimited
     cpu: "0.5"                # cores; empty = unlimited
@@ -120,6 +121,7 @@ spec:
 | `env` / `secretEnv` | Every `secretEnv` key must also appear in `env`. Values support [interpolation](#interpolation). |
 | `mounts` | Exactly one of `volume` or `config`, and both must be declared in the same bundle. `key` and `mode` are valid only with a `config` — setting them on a volume mount is an error, not a silent no-op. A config mount is always read-only. Privileged host binds are **not** manifest-expressible. |
 | `reloadPolicy` | `restart` (default) redeploys the app when a mounted [`Config`](#config)'s content changes; `none` leaves it running, for apps that watch their own config file. |
+| `runAsUser` | The account the container runs as — `uid`, `uid:gid`, `name` or `name:group` — like `docker run --user`. Omit to keep the image's own user. A workspace under the [restricted security profile](/docs/security/container-security-profile) must give a non-root **numeric** uid; a name is refused there, since the image decides what it maps to. Attached volumes are chowned to it on deploy. |
 | `resources` | Omitted fields mean unlimited / none. |
 | `containerLabels` | Reserved namespaces (`io.miabi.*`, `com.docker.*`) are stripped rather than rejected. See [container labels](/docs/applications/container-labels). |
 
@@ -132,7 +134,9 @@ The two exposure knobs are orthogonal, and a port may use either, both, or neith
   [`Route`](#route) instead.
 - **`publish: true`** (with optional `hostPort`) — binds the container port to a raw port on the node
   (L4), like `docker -p`. Host ports are bounded by `MIABI_HOST_PORT_MIN`/`MAX` (1024 and up by
-  default); omit `hostPort` to auto-allocate.
+  default); omit `hostPort` to auto-allocate one from that window. A **privileged** workspace may
+  request any host port (`1`–`65535`), so infrastructure that has to sit on a fixed port — `25`,
+  `53`, `443` — can be published from a manifest.
 
 A port with neither is reachable only from inside the app's networks — which is what you want when a
 [label-driven proxy](/docs/networking/reverse-proxy-and-traefik) fronts it.
@@ -337,7 +341,23 @@ spec:
   port: 8080
   path: /                   # default /
   tls: acme                 # acme | custom | off (default acme)
+  security:
+    exploitProtection: true # reject common injection/traversal signatures at the gateway
+  maintenance:              # omit to serve normally
+    enabled: true
+    statusCode: 503         # 4xx or 5xx; omit for the gateway's 503
+    message: Back at 14:00 UTC
 ```
+
+**`maintenance`** parks the route: the gateway answers every request itself and never reaches the
+backend, so the app keeps running while a migration or a deploy happens behind a deliberate
+response. Because a manifest is the desired state, **removing the block resumes traffic** — an
+apply un-parks a route that was parked by hand in the console. Details, including how the response
+is rendered as plain text, JSON, or XML depending on the caller, are in
+[Routing & middlewares](/docs/networking/routing-and-middlewares#maintenance-mode).
+
+A parked route still reports its sync status as *live*: the gateway is serving it, it is simply
+serving your notice.
 
 ---
 

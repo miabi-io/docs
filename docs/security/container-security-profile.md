@@ -39,11 +39,40 @@ Relevant settings (see [Configuration](/docs/getting-started/configuration)):
 | `MIABI_FORCE_NON_ROOT_USER` | Force the restricted profile platform-wide (default `false`). |
 | `MIABI_SECURITY_INIT_IMAGE` | Tiny fallback image used to fix volume ownership (default `busybox:latest`). |
 
+## Choosing the user yourself
+
+An app can pin the account its container runs as, instead of taking the image's default or the
+platform UID — the equivalent of `docker run --user`. Set **Run as user** in the app's **Settings**
+tab, `runAsUser` in a [manifest](/docs/cicd/manifest-reference), or `run_as_user` on the API. A
+one-off or scheduled **job** can pin its own too, at creation; blank inherits the app's.
+
+Accepted forms are `uid`, `uid:gid`, `name` and `name:group`. Blank keeps the image's own user.
+
+How it interacts with the profile:
+
+| Effective profile | What you may set |
+|-------------------|------------------|
+| **Default** | Any account the image understands, `root` included. |
+| **Restricted** | A **non-root numeric uid** only — `1000`, `1000:1000`, `65534:0`. It *replaces* the platform UID; `no-new-privileges` and the dropped `NET_RAW` still apply. |
+
+Under the restricted profile a **name** is refused, not just `root`. A name is resolved from the
+image's own `/etc/passwd`, which the workload controls, so `appuser` is free to be uid `0` — the
+platform cannot verify it. Only a numeric uid is checkable. A gid of `0` is fine: it is the
+arbitrary-UID convention the profile itself uses.
+
+The rule is enforced when you save the app, job or manifest **and** again at deploy time. So if an
+admin moves a workspace to *Restricted* later, an app still carrying `runAsUser: root` fails its
+next deploy with a clear error rather than quietly continuing to run as root.
+
+This is the way to keep hardening for a workspace while accommodating an image that insists on its
+own baked-in account — say one that must be uid `1001` because its files are owned by it. Prefer it
+over dropping the whole workspace back to *Default*.
+
 ## Volumes and file ownership
 
-A non-root process can't write to a volume owned by `root`. When the restricted profile applies,
-Miabi makes an app's managed volumes writable by the platform UID **before** the real container
-starts.
+A non-root process can't write to a volume owned by `root`. Whenever a container is pinned to a user
+— the platform UID under the restricted profile, or your own **Run as user** — Miabi makes the app's
+managed volumes writable by that user **before** the real container starts.
 
 There's a subtlety worth knowing: Docker seeds an empty named volume with the image's content — and
 the image's file ownership — the first time a container mounts it. So Miabi runs the ownership fix
@@ -73,7 +102,8 @@ Toggle it on the plan next to the security profile selector (see
 :::tip
 Roll the restricted profile out to a test workspace first. Your own apps are usually fine; the
 common breakage is a third-party image that assumes `root` — for official marketplace apps, enable
-**Allow official image user**; for your own, adjust the image to run as a non-root user.
+**Allow official image user**; for your own, set **Run as user** to the non-root uid the image
+expects, or adjust the image to run as a non-root user.
 :::
 
 :::note
