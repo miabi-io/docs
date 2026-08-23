@@ -67,6 +67,51 @@ Upgrading is manual and per component, as it is for Miabi itself: pull the newer
 restart it, or re-run the agent install script on the node. `MIABI_UPDATE_CHECK=false` disables all
 of it together.
 
+## Version notes
+
+### Goma Gateway 0.14 — forwarded headers are only believed from a trusted proxy
+
+Miabi now provisions **Goma Gateway 0.14**, which brings the `oidc` middleware and one change that
+can break a working install.
+
+The gateway used to trust `X-Forwarded-Proto` and `X-Forwarded-For` from anyone. It now believes them
+only when the request arrives from an address listed in its `proxy.trustedProxies`. That is the
+correct behaviour — without it any client can forge those headers and spoof its own IP — but it
+changes what happens when something terminates TLS *in front of* the gateway.
+
+**Who is affected:** installs where Cloudflare, nginx, HAProxy or a cloud load balancer terminates
+TLS and forwards plaintext to the gateway, and whose `goma.yml` has no `proxy:` block.
+
+**What breaks:** the gateway sees a plaintext hop, decides the request is not HTTPS, and the
+`redirectScheme` middleware redirects it — back to the terminator, which forwards plaintext again.
+The request loops until the client gives up. Miabi puts that middleware on the **built-in container
+registry** route, so `docker push` and `docker pull` are usually the first thing to fail.
+
+**The fix** is to tell the gateway what is in front of it, in `goma.yml`:
+
+```yaml
+proxy:
+  enabled: true
+  trustedProxies:
+    - "10.0.0.0/8"        # your terminator's address or range
+    # For Cloudflare, use its published ranges: https://www.cloudflare.com/ips/
+  ipHeaders:
+    - "CF-Connecting-IP"  # keep first when behind Cloudflare
+    - "X-Forwarded-For"
+```
+
+`trustedProxies` must not be empty — an empty list with `enabled: true` is rejected at load, since
+nothing would separate a proxy from a client that simply sends the header itself.
+
+If you cannot configure that, `MIABI_REGISTRY_HTTPS_REDIRECT=false` drops the redirect from the
+registry route as an escape hatch. It is the lesser fix: it stops the loop without giving the gateway
+the real client IP, which request logging, rate limiting and IP allowlists all depend on.
+
+:::note Not affected
+An install where the gateway itself terminates TLS — the default Compose and `miabi setup`
+topologies — needs no change. The connection really is HTTPS, so no forwarded header is consulted.
+:::
+
 ## Back up first
 
 :::caution

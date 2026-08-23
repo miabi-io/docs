@@ -16,6 +16,18 @@ Many real systems are more than one process. A typical app might be a web servic
 
 Each application in a stack is still a full Miabi application — it has its own [releases](/docs/applications/releases-and-rollbacks), [environment](/docs/applications/environment-variables), [scaling](/docs/applications/scaling-and-resources), and [logs](/docs/applications/logs-and-timeline). The stack is the grouping that ties them together.
 
+## Names
+
+A stack has two names, and only one of them can change:
+
+- **Name** — the permanent handle, a lowercase slug unique within the workspace. It is the stack's
+  identity: the Docker Compose project name stamped onto every member container's labels, the
+  per-stack Docker network, and the key a [GitOps](/docs/cicd/gitops) bundle matches the stack by
+  are all derived from it when the stack is created. **It cannot be changed** — renaming would
+  detach the stack from its own resources and make an apply create a duplicate. To use a different
+  name, create a new stack and move the apps across.
+- **Display name** — the free-text label shown in the console. Change it whenever you like.
+
 ## When to use a stack
 
 Use a stack when several apps:

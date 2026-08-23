@@ -49,6 +49,41 @@ Custom secrets are the ones **you** create and own.
 - **Delete** — allowed only when no app references the secret. If it's still in use, Miabi refuses
   and tells you to remove the references first, so a deploy can never break on a missing secret.
 
+## Generating a value
+
+Nobody should be inventing a database password by hand, and nothing should be routed through a
+password manager and back to get one. The **Generator** produces passwords, passphrases and tokens
+inside the console:
+
+- **A page**, under **Developers → Generator**, for the deliberate case.
+- **A button** on the vault's toolbar, which can name and save the result as a secret in one step —
+  the value never touches the clipboard.
+- **Inline**, beside every field that already collects a secret: the vault's value box, a secret env
+  var, a registry or Git credential, and middleware fields like a basicAuth password or an OIDC
+  client secret.
+
+Three kinds:
+
+| Kind | For | Entropy |
+|---|---|---|
+| **Password** | Service and app credentials. Choose length, character classes, and minimum digits/symbols. | ~6.5 bits per character with the full alphabet |
+| **Passphrase** | Something a person has to read out or type. Drawn from the 7,776-word EFF list. | 12.9 bits per word |
+| **Token** | Webhook signing secrets, API tokens, JWT keys. N random bytes as hex or base64url. | 8 bits per byte |
+
+Every value shows its **entropy in bits** — how many equally-likely values the generator could have
+produced. Under 45 is too weak for anything network-reachable; 70–110 is comfortable for a service
+credential; past 128 the value stops being the weakest part of the system.
+
+:::note Generated in your browser
+Values come from `crypto.getRandomValues`, entirely client-side. A value you discard never crossed
+the network, never entered the audit log, and was never in the platform's memory. Your **options**
+are remembered between visits; the **values** are not — a generator history would be a list of
+plaintext secrets in browser storage.
+:::
+
+The same policy is available in a manifest — see `generate:` in the
+[manifest reference](/docs/cicd/manifest-reference), which draws from the same alphabet.
+
 ## Managed secrets
 
 Some secrets are **managed** — auto-created and owned by a platform resource rather than by you. The

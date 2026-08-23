@@ -251,6 +251,7 @@ tab. See [Registry](/docs/registry/administration).
 |----------|---------|-------------|
 | `MIABI_REGISTRY_ENABLED` | `false` | Run the built-in OCI registry. Pins the switch when set — `false` pins it *off*; unset leaves it to the console |
 | `MIABI_REGISTRY_HOST` | — | Registry hostname; pins the field when set. Unset ⇒ the console's value, else `registry.<MIABI_EXTERNAL_BASE_DOMAIN>`; with neither, image distribution fails. Must be a bare DNS hostname with an optional port (no scheme, no path, not a single label) |
+| `MIABI_REGISTRY_HTTPS_REDIRECT` | `true` | Redirect plaintext registry requests to HTTPS. Set `false` **only** when a TLS terminator (Cloudflare, nginx, a load balancer) sits in front of the gateway and the gateway's `proxy.trustedProxies` is not configured — otherwise the redirect loops and every push and pull fails. Configuring trusted proxies on the gateway is the better fix; see [Running behind a proxy](https://goma.jkaninda.dev/usermanual/running-behind-a-proxy.html) |
 | `MIABI_REGISTRY_STORAGE` | `filesystem` | `filesystem` or `s3`; pins the driver when set. `s3` is an Enterprise feature, verified when selected and at startup |
 | `MIABI_REGISTRY_IMAGE` | — | Override the registry image (default `registry:3`) |
 | `MIABI_REGISTRY_AUTH_URL` | `http://miabi:9000` | Where the gateway reaches Miabi's registry auth endpoint |
@@ -300,7 +301,7 @@ tab. See [Registry](/docs/registry/administration).
 |----------|---------|-------------|
 | `MIABI_DEV_MODE` | `false` | Relax production guards. Never enable on a public instance |
 | `MIABI_OPENAPI_DOCS` | `true` | Serve the interactive API reference at `/docs` |
-| `MIABI_MARKETPLACE_URL` | `https://marketplace.miabi.io` | Where templates are synced from. A server base URL fetches `/v1/export`; a `.json` URL (e.g. a release asset) is fetched as-is. Set to an explicit empty value to disable syncing (offline kill switch) |
+| `MIABI_MARKETPLACE_URL` | `https://marketplace.miabi.io` | Where templates are synced from. A server base URL fetches `/v1/export`; a `.json` URL (e.g. a release asset) is fetched as-is. Set to an explicit empty value to disable syncing (offline kill switch). Pointing it at **your own** catalog requires an Enterprise license — see [private template registry](/docs/marketplace/overview#running-your-own-catalog) |
 | `MIABI_DELETION_GRACE_DAYS` | `7` | Days an admin-scheduled account deletion waits before the data is purged |
 | `MIABI_RESTORE_MAX_MB` | `1024` | Max size of an uploaded database dump for restore |
 | `MIABI_STORAGE_USAGE_ENABLED` | `true` | Periodically measure each volume's real on-disk usage (`docker system df`) and cache it, so the UI shows declared-vs-used. Off ⇒ no filesystem walks; the UI shows declared sizes only |
