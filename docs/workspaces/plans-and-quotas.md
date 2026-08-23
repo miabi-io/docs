@@ -16,6 +16,22 @@ plan a workspace is on.
 
 ![Plans and quotas](/img/screenshots/plans-quotas.png)
 
+## The plan catalog
+
+A platform admin manages plans under **Admin → Plans**. A fresh install is seeded with two:
+
+| Plan | What it is |
+|---|---|
+| **Pro** | The default. Every workspace with no plan assigned lands on it. |
+| **Unlimited** | A **system** plan: no limits, pinned to Miabi's own system workspace. It carries a `system` badge in the console and cannot be renamed, deleted, made the default, or assigned to a workspace — it grants unlimited resources and every capability, and the platform manages its one assignment itself. |
+
+**Community allows three plans in total**, so you have one slot to add a plan of your own — a smaller
+starter tier, say, or a bespoke one for a particular team. The system plan counts toward that total
+like any other. An Enterprise licence raises or lifts the limit.
+
+Adding a fourth without a licence is refused with `PLAN_LIMIT_REACHED`; the **New plan** button is
+disabled once you are at the cap, and the admin page shows how many of your slots are used.
+
 ## Quotas
 
 A quota is an upper bound on a countable resource. Typical quotas include:
