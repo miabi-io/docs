@@ -30,6 +30,37 @@ The catalog is maintained by the Miabi project and grows over time. Templates ar
 so the set can expand without changing how you install them. Anyone can author and contribute one —
 see [Creating a template](/docs/marketplace/creating-a-template).
 
+## Running your own catalog
+
+`MIABI_MARKETPLACE_URL` points Miabi at the catalog it syncs from. Three values are meaningful:
+
+| Value | Effect |
+|---|---|
+| `https://marketplace.miabi.io` (default) | Miabi's official hosted catalog. |
+| *empty* | Syncing off — the embedded templates are the whole catalog (offline / air-gapped). |
+| Any other URL | **Your own catalog**: a self-hosted marketplace service, or a static `export.json` on a CDN or git release. |
+
+A private catalog is how you ship templates that are yours — internal services, a golden stack, a
+customer-specific bundle — through the same install flow as the official ones.
+
+:::info Enterprise feature
+Pointing `MIABI_MARKETPLACE_URL` at your own catalog is part of the **Enterprise** edition (the
+`private_registry` entitlement). The official catalog and the empty kill switch are never gated —
+neither is a paid configuration.
+
+Without a license the setting is not an error and Miabi does not refuse to start: it logs a warning
+naming the entitlement and **syncs from the official catalog instead**, so the marketplace keeps
+working. The check runs at each sync rather than only at boot, so installing a license takes effect
+on the next sync without a restart — and a lapsed one returns the install to the official catalog
+the same way.
+
+See [Community vs Enterprise](/docs/editions/community-vs-enterprise) and
+[Licensing](/docs/editions/licensing).
+:::
+
+Bundles are cached per source, so switching catalogs — or being returned to the official one by an
+expired license — never serves the other catalog's templates.
+
 ## Versioning
 
 Every template is **versioned**. When you install one, you pin a specific version, and the

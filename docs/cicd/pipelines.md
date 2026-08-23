@@ -46,6 +46,56 @@ steps:
 A pipeline is attached to an application whose source is a Git repo. The runner clones that repo once at the run's commit into a shared workspace (`/workspace`), then runs each step over it. The stored spec is what executes — the `.miabi/pipeline.yaml` file is your version-controlled source of truth, not auto-read (re-apply after editing).
 :::
 
+## What a pipeline builds
+
+A pipeline is bound to **one source**, chosen when you create it. The binding decides what the runner
+checks out into the shared `/workspace` before the first step, and where a `uses: build` step pushes.
+
+| Bound to | Checks out | Pushes to | `uses: deploy` |
+|---|---|---|---|
+| An **application** | the app's Git repository, at the run's commit | `ws_<id>/<app-name>` | yes — deploys that app |
+| A **repository** | the registered [Git repository](/docs/applications/deploy-from-git), at the run's commit | `ws_<id>/pl_<pipeline-name>` | no |
+| Nothing | nothing — steps run against an empty workspace | — | no |
+
+Binding to a **repository** is how you build and push an image without an application attached: a
+library, a base image, a tool — anything you want built from a repo but not deployed as a Miabi app.
+Pick the repository and, optionally, a branch.
+
+Over the API the field is `git_repository`, and it takes **a name or an id** — the JSON type decides
+which, because an all-digit name is a valid handle:
+
+```jsonc
+"git_repository": "acme-api"   // the repository named acme-api
+"git_repository": 3            // the repository with id 3
+"git_repository": "123"        // the repository *named* 123, not id 123
+```
+
+Prefer the name: repository names are immutable and unique per workspace, and unlike an id they mean
+the same thing on another install. Names resolve within the workspace only.
+
+- **Branch** is what manual and scheduled runs build. Leave it blank to use the repository's default
+  branch. A push trigger always builds the commit it carries, whatever this says.
+- Images land under `pl_<pipeline-name>` in your workspace's registry namespace, kept apart from
+  application images so a pipeline and an unrelated app of the same name never collide.
+
+:::note One source, not two
+A pipeline binds to an application **or** a repository, never both — each supplies the checkout, so
+together there is no answer to what a run clones. Miabi refuses the combination.
+
+The repository is picked from your registered Git repositories rather than typed as a URL. That keeps
+the choice of which repositories a workspace may reach inside its permissions, and reuses the
+credential already stored there.
+:::
+
+:::warning Builds are uncached for a repository-bound pipeline
+An application-bound build shares its layer cache with direct deploys of that app. A
+repository-bound pipeline has no application to key that cache off yet, so every run rebuilds from
+scratch.
+:::
+
+A `uses: deploy` step needs an application, and a `uses: build` step needs a source. Both are
+rejected when you save the pipeline, not at the moment a runner picks it up.
+
 ## Steps
 
 Each step is either a **container step** (`image` + `run`) or a **built-in** (`uses:`).

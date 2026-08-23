@@ -232,7 +232,21 @@ spec:
   value: "s3cr3t"     # or:
   generate: true      # let Miabi generate a strong random value
   length: 48          # generated length (default 32)
+  symbols: true       # widen the alphabet beyond letters and digits
+  minNumbers: 2       # guarantee at least this many digits
+  minSpecial: 2       # guarantee at least this many symbols
 ```
+
+| Field | Default | Meaning |
+|---|---|---|
+| `length` | `32` | Characters to generate. |
+| `symbols` | `false` | Include punctuation (`!#$%&()*+,-./:;<=>?@[]^_{\|}~`). Quotes, backslash and backtick are excluded so a value survives being pasted into a shell, a YAML file or a connection string. |
+| `minNumbers` | `0` | Minimum digits. |
+| `minSpecial` | `0` | Minimum symbols. Setting it implies `symbols: true`. |
+
+These are the same options the console's [generator](/docs/secrets/overview) exposes, drawing from
+the same alphabet — so a policy written here and the same policy set in the UI produce comparable
+values. Minimums that exceed `length` are trimmed rather than silently ignored, digits first.
 
 Secret values are **write-only**: never read back, never shown in a plan, and never diffed. An
 existing secret is treated as in sync, so a bundle can safely re-apply without churning values.

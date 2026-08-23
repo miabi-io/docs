@@ -43,7 +43,8 @@ deploy strategy:
 4. The old container is retired.
 
 Weighted **canary** rollout — running the new release beside the stable one and shifting a share of
-traffic to it — is a separate, opt-in strategy, not what an ordinary deploy does.
+traffic to it — is a separate, opt-in strategy, not what an ordinary deploy does. See
+[Canary Deployments](/docs/applications/canary-deployments).
 
 Because the switch happens only after the new version is ready, users never hit a stopped service. The same mechanism applies to rollbacks, so reverting is just as smooth.
 
