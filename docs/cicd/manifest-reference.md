@@ -50,6 +50,7 @@ deploys to staging and production unchanged.
 | [`Secret`](#secret) | A named encrypted value | 1st |
 | [`Config`](#config) | A set of configuration files mounted into apps | 1st |
 | [`Registry`](#registry) | A container-registry credential for private images | 2nd |
+| [`Middleware`](#middleware) | A gateway policy — rate limit, auth, access rules — routes reference by name | 1st |
 | [`Route`](#route) | An HTTP routing rule (host/path → app:port + TLS) | 4th |
 | [`Domain`](#domain) | An owned hostname and its default TLS policy | 1st |
 | [`Project`](#project) | Bundles the resources above into one unit | — |
@@ -123,7 +124,46 @@ spec:
 | `reloadPolicy` | `restart` (default) redeploys the app when a mounted [`Config`](#config)'s content changes; `none` leaves it running, for apps that watch their own config file. |
 | `runAsUser` | The account the container runs as — `uid`, `uid:gid`, `name` or `name:group` — like `docker run --user`. Omit to keep the image's own user. A workspace under the [restricted security profile](/docs/security/container-security-profile) must give a non-root **numeric** uid; a name is refused there, since the image decides what it maps to. Attached volumes are chowned to it on deploy. |
 | `resources` | Omitted fields mean unlimited / none. |
+| `source` | Build the image from Git instead of pulling one — see [Building from source](#building-from-source). Mutually exclusive with `image`. |
 | `containerLabels` | Reserved namespaces (`io.miabi.*`, `com.docker.*`) are stripped rather than rejected. See [container labels](/docs/applications/container-labels). |
+| `strategy` | How a new release replaces the running one: `recreate`, `rolling` (default) or `canary`. **Omit it** to leave whatever the app is configured with in the console. A canary needs a running release to shift traffic against, so the first deploy of an app is always a straight rollout. Canary weights and interval stay console-side — they tune a rollout in flight rather than describing desired state. |
+
+### Building from source
+
+An application either **pulls** an image or **builds** one. `source` is the second: point it at a
+repository and Miabi builds and deploys it, exactly as an app created from a Git repository in the
+console does.
+
+```yaml
+kind: Application
+metadata: { name: web }
+spec:
+  source:
+    git: https://github.com/acme/web
+    ref: main                     # branch, tag or commit; default branch when omitted
+    buildMethod: auto             # auto | dockerfile | buildpack
+    builder: paketobuildpacks/builder-jammy-base   # buildpack builds only
+    buildpacks: [paketo-buildpacks/go]             # buildpack builds only
+    buildEnv:                     # available to the BUILD, not the running container
+      BP_GO_VERSION: "1.26"
+    repository: acme-github       # stored Git credential, for a private repo
+  ports: [{ container: 8080 }]
+```
+
+`image` and `source` are **mutually exclusive** — a manifest declaring both is refused rather than
+having the engine pick one. `buildEnv` is build-time only; variables the running container needs
+belong in `env`.
+
+`repository` names a stored Git credential in the workspace. Like `registry`, it is not a declarable
+kind: it resolves against credentials that already exist, so a token created once in the console can
+be reused across manifests.
+
+:::tip Generate it from an existing app
+An application created in the console can be exported as a manifest: **App → Settings → GitOps
+manifest → Generate**. It carries the source (or image), ports, environment, resources and the
+volumes it mounts — a working starting point for moving an app into Git. Secret values are not
+included; each is listed by name under `secretEnv`.
+:::
 
 ### Port exposure
 
@@ -146,7 +186,9 @@ A port with neither is reachable only from inside the app's networks — which i
 ## Stack
 
 Groups applications into one logical unit with a shared network, so members resolve each other by
-name.
+name. Grouping is no longer required just to make one app reachable from another — see
+[Addressing another application](#addressing-another-application) — so reach for a Stack when the
+apps genuinely belong together, not to solve a hostname.
 
 ```yaml
 apiVersion: miabi.io/v1
@@ -354,7 +396,13 @@ spec:
   app: web                  # must be an Application in the same bundle
   port: 8080
   path: /                   # default /
+  rewrite: /                # replace the matched prefix before the app sees it
+  methods: [GET, POST]      # omit to accept every method
   tls: acme                 # acme | custom | off (default acme)
+  tlsProvider: internal-ca  # tls: acme only — which certManager provider issues it
+  middlewares:              # the gateway chain, IN EXECUTION ORDER
+    - api-ratelimit
+    - admin-auth
   security:
     exploitProtection: true # reject common injection/traversal signatures at the gateway
   maintenance:              # omit to serve normally
@@ -372,6 +420,104 @@ is rendered as plain text, JSON, or XML depending on the caller, are in
 
 A parked route still reports its sync status as *live*: the gateway is serving it, it is simply
 serving your notice.
+
+### TLS
+
+| `tls` | What it serves |
+|---|---|
+| `acme` (default) | A certificate the gateway issues and renews itself. `tlsProvider` picks which certManager provider issues it, for an install running more than one — a public ACME issuer and an internal CA, say. Omit it for the gateway's default. |
+| `custom` | A certificate you imported. **`certificate: <name>` is required** — it names a stored Certificate in the workspace. |
+| `off` | No TLS. The route answers plain HTTP only. |
+
+```yaml
+spec:
+  hosts: [secure.example.com]
+  app: web
+  tls: custom
+  certificate: example-wildcard   # imported out of band; see below
+```
+
+Certificates are **not a declarable kind**, and deliberately so: one carries a private key, which
+does not belong in a Git repository. Import it through the console or the certificate API, then name
+it here — the same rule [`registry`](#application) follows for a pull credential. A name that matches
+nothing in the workspace fails the apply rather than creating a route that claims a hostname and
+serves no TLS on it.
+
+The combinations are checked when the manifest is parsed, because either half alone reads as
+deliberate and behaves as a mistake: `tls: custom` without a `certificate` cannot serve TLS at all,
+and a `certificate` on an `acme` route is silently ignored. Both are refused.
+
+**`rewrite`** replaces the matched path prefix before the request reaches the app, so a route on
+`/api` can serve a backend that expects `/`. **`methods`** narrows the route to those HTTP methods;
+omitting it accepts every method, and the order does not matter.
+
+**`advancedConfig`** takes raw Goma route YAML and **supersedes the structured fields above**. It is
+the escape hatch for a gateway feature the manifest does not model — prefer the fields, because
+nothing validates its contents beyond it being YAML without an inline certificate.
+
+:::warning A route in a manifest is fully described by it
+These fields are written on every apply, so **omitting one clears it**. A route that had a rewrite
+set in the console loses it the first time a manifest that does not mention `rewrite` is applied to
+it. That is the desired-state contract, and the same rule `maintenance` follows — but it is worth
+knowing before you put an existing route under GitOps. Export or copy its current settings first.
+:::
+
+**`middlewares`** is the chain the gateway runs before the request reaches your app, and **the order
+is behaviour, not presentation**: listing `api-ratelimit` before `admin-auth` throttles anonymous
+requests, while the reverse makes every request authenticate first and rate-limits only those that
+got through. Reordering the list is a real change and plans as an update.
+
+A name does **not** have to be declared in the same bundle. One that is missing from it resolves
+against the middlewares the workspace already has — including the defaults seeded when the workspace
+was created — so a manifest can name `basic-auth` without owning it. A name that matches nothing at
+all is refused on apply rather than stored, since a route referencing a middleware that does not
+exist would render a broken gateway config.
+
+---
+
+## Middleware
+
+A gateway policy — a rate limit, basic auth, an access policy — that [Routes](#route) reference by
+name. It is a resource of its own rather than a block inside a route because one policy is normally
+shared: writing the rate limit once and naming it from five routes is the point, and inlining it
+would leave five copies to keep in step.
+
+```yaml
+apiVersion: miabi.io/v1
+kind: Middleware
+metadata:
+  name: api-ratelimit
+spec:
+  type: rateLimit           # the gateway's middleware type
+  paths: ["/api"]           # optional: narrow it to these request paths
+  rule:                     # the type's own configuration, passed to the gateway
+    unit: minute
+    requestsPerUnit: 60
+    burst: 10
+---
+apiVersion: miabi.io/v1
+kind: Middleware
+metadata:
+  name: admin-auth
+spec:
+  type: basicAuth
+  rule:
+    realm: Admin
+    users:
+      - username: ops
+        password: "{{ .secrets.ops_password }}"   # a vault reference, not a literal
+```
+
+**`rule` is free-form on purpose.** The shape belongs to the middleware type, and the gateway's own
+catalogue owns it — validating it a second time here would be a copy that drifts the moment the
+catalogue gains a field. A malformed rule is refused when you apply, naming the field at fault. The
+[middleware reference](/docs/middlewares/overview) documents every type and its rule.
+
+**Secrets in a rule are interpolated and then encrypted at rest.** Write `{{ .secrets.name }}`
+rather than a literal password, so the credential lives in the vault and the manifest is safe to
+commit. They are never read back: a plan shows a rule change as `rule (current) → (changed)`, never
+the value. Rotating the secret behind the reference still converges — the engine compares a
+fingerprint of the *rendered* rule, so a change nothing else can see is still a change.
 
 ---
 
@@ -428,12 +574,13 @@ spec:
 
 ## Interpolation
 
-Application `env` values, a Registry `password`, and a Config's file contents are rendered as
-templates before they are applied. Four collections are available:
+Application `env` values, a Registry `password`, a Middleware `rule`, and a Config's file contents
+are rendered as templates before they are applied. Four collections are available:
 
 | Reference | Resolves to |
 |---|---|
 | `{{ .databases.<name>.host }}` | A managed database's connection details. Also `.port`, `.user`, `.password`, `.name`, `.uri` (or its alias `.url`). Bare `{{ .databases.<name> }}` yields the URI. |
+| `{{ .applications.<name>.url }}` | Another application's address. Also `.host`, `.port`, `.scheme`. Bare `{{ .applications.<name> }}` yields the URL. |
 | `{{ .secrets.<name> }}` | A workspace secret's value, resolved **at apply time**. |
 | `{{ .inputs.<key> }}` | Marketplace templates only — see [creating a template](/docs/marketplace/creating-a-template). |
 
@@ -442,9 +589,48 @@ Helper functions: `randAlphaNum`, `randHex`, `base64`, `default`, `lower`, `uppe
 An unresolvable reference is a **hard error**, never a silently empty value. Names containing hyphens
 work (`{{ .databases.shop-db.uri }}`).
 
-To address another application, put both in the same [`Stack`](#stack) and use its name as the
-hostname — stack members resolve each other by name on the stack network. (`{{ .applications.* }}`
-appears in the template grammar but is not resolvable in apply or GitOps.)
+### Addressing another application
+
+An application is reachable from its siblings at **its own name**. Miabi registers that name as a DNS
+alias on every network the workspace owns, so the value you write in the manifest is the value that
+resolves at runtime:
+
+```yaml
+kind: Application
+metadata: { name: api }
+spec:
+  image: ghcr.io/acme/api
+  ports: [{ container: 8080 }]
+---
+kind: Application
+metadata: { name: web }
+spec:
+  image: ghcr.io/acme/web
+  env:
+    API_URL: "{{ .applications.api }}"          # http://api:8080
+    API_HOST: "{{ .applications.api.host }}"    # api
+    API_PORT: "{{ .applications.api.port }}"    # 8080
+```
+
+`.port` and `.scheme` come from the referenced app's **first declared port**. The target need not be
+in the same bundle — one already in the workspace resolves too — and declaration order does not
+matter, because the address is the name, not something minted at creation.
+
+`.alias` also resolves, to the container's exact identity (`mb-app-<token>-<id>`). Prefer `.host`:
+the alias changes if the app is recreated, and means nothing to a human reading the environment.
+
+:::warning Both apps must be able to reach each other
+A workspace network is a **node-local bridge** unless [cluster mode](/docs/nodes/cluster-mode) is on,
+so two apps pinned to different nodes share no network and the name will not resolve. Apply refuses
+such a reference outright, naming both nodes, rather than letting it fail as a connection error
+later. In cluster mode the network is an overlay spanning every node and the reference is fine.
+
+An application that has **not been deployed since Miabi 1.10** does not answer to its name yet —
+aliases are set when a container is created. Redeploy the target once and it does.
+:::
+
+Apps in the same [`Stack`](#stack) additionally resolve each other by name on the stack network,
+which is unchanged.
 
 A [`Config`](#config) whose own file format uses `{{ }}` sets `delimiters` to render on different
 markers, so only the references you meant are substituted.
@@ -476,7 +662,9 @@ with `reloadPolicy: none` carries no fingerprint, which is how that policy is ho
 
 **Never diffed** — secret values, and the `secretEnv` values in a plan (shown as `(secret)`). A
 registry password is compared through a fingerprint, so a rotation converges without the plan
-carrying anything derived from the token.
+carrying anything derived from the token. A `Middleware`'s `rule` works the same way: its
+fingerprint covers the rendered rule, secrets included, and the plan reports only
+`rule (current) → (changed)`.
 
 **Diffed, but never echoed** — a `Config`'s files. The plan compares the content digest and reports
 each changed key as `(absent)` → `(present)`, so you can see *which* file changed without its content

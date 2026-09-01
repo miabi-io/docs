@@ -28,13 +28,24 @@ A stack has two names, and only one of them can change:
   name, create a new stack and move the apps across.
 - **Display name** — the free-text label shown in the console. Change it whenever you like.
 
+## Talking to each other
+
+Applications in a stack resolve each other by name on the stack's own network — the API is `api` to
+the worker beside it.
+
+That is **not** a reason to create one, though: every application in a workspace already reaches its
+siblings by name on the workspace network, stack or no stack. See
+[Pointing one application at another](/docs/applications/environment-variables#pointing-one-application-at-another).
+Group apps into a stack because they belong together, not to give them a hostname.
+
 ## When to use a stack
 
 Use a stack when several apps:
 
 - **Belong to the same system** — they're deployed, versioned, and reasoned about together.
 - **Share configuration** — they reference the same [secrets](/docs/applications/environment-variables) and database credentials.
-- **Depend on each other** — a worker and the web app it supports, for example.
+- **Are deployed and promoted as a unit** — a worker and the web app it supports move together
+  through dev, staging and production.
 
 If an application is genuinely standalone, it doesn't need a stack — create it on its own.
 

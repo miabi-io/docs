@@ -20,6 +20,15 @@ Set the app's **deploy strategy** to `canary` in its settings, or start one from
 Deployments tab. Miabi starts the new release under its own network alias beside the stable one and
 splits traffic between them at the gateway.
 
+The setting applies to **every** deploy of that app, however it was triggered — the console, the
+CLI, a [pipeline](/docs/cicd/pipelines) run, or a [GitOps](/docs/cicd/gitops) reconcile. A manifest
+can state it directly with
+[`spec.strategy`](/docs/cicd/manifest-reference#application); leaving that field out keeps whatever
+the app is configured with.
+
+The **first** deploy of an app is always a straight rollout, whatever the setting says: a canary
+splits traffic against the running release, and on a first deploy there is none.
+
 While a canary is live, the Deployments tab shows the current split and offers **Promote** (the
 canary becomes stable and takes all traffic) and **Abort** (the canary is stopped and discarded, and
 everything returns to stable).

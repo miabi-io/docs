@@ -120,6 +120,7 @@ Off by default. See [GPUs](/docs/applications/gpus) for the full workflow.
 | `MIABI_METRICS_SCRAPE_SECONDS` | `60` | Metrics sampling interval |
 | `MIABI_METRICS_RETENTION_HOURS` | `24` | Metrics history window |
 | `MIABI_PROXY_NETWORK` | `miabi` | Docker network shared by the gateway and app containers so the proxy can reach backends (legacy alias: `MIABI_GOMA_NETWORK`) |
+| `MIABI_INTERNAL_NETWORK` | *(unset)* | The platform's [private network](/docs/networking/networks-and-subnets#the-platforms-private-network), where the control-plane database and cache live. Set by `miabi setup`; leave unset on a Compose stack, which has no such network |
 | `MIABI_GOMA_PROVIDER_DIR` | `/etc/goma/providers` | Directory where Miabi writes per-route Goma config files that the gateway hot-reloads |
 | `MIABI_WEB_DIR` | — | Directory of the built web UI; when set, Miabi serves it as an SPA at `/`. The official image serves the UI from the embedded binary |
 | `DOCKER_HOST` | `unix:///var/run/docker.sock` | Docker Engine endpoint |

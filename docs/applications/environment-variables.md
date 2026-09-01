@@ -35,6 +35,32 @@ Once a value is stored as a secret, the console masks it. Treat secrets as write
 
 When you provision a [database](/docs/databases/overview), Miabi generates its credentials and stores them as secrets. Reference these from your application's environment instead of copying connection strings by hand. This keeps credentials in the vault, encrypted, and rotatable without editing each app manually.
 
+## Pointing one application at another
+
+Applications in a workspace share a network and reach each other by **name**, so the API at `api`
+is `http://api:8080` to every sibling — no IP, no generated hostname, and nothing to update when
+either side is redeployed.
+
+Set it as a plain variable:
+
+| Variable | Value |
+|---|---|
+| `API_URL` | `http://api:8080` |
+
+In a [manifest](/docs/cicd/manifest-reference#addressing-another-application) you can have Miabi
+build that address for you, so the port follows the app it belongs to:
+
+```yaml
+env:
+  API_URL: "{{ .applications.api }}"     # http://api:8080
+```
+
+:::note
+Both applications must be on the same node unless [cluster mode](/docs/nodes/cluster-mode) is on — a
+workspace network is node-local otherwise. Apps deployed before Miabi 1.10 answer to their name only
+after their next deploy.
+:::
+
 ## Redeploy on change
 
 Environment variables and secrets are baked into the running container, so **changes take effect on the next deploy**. After editing a variable:

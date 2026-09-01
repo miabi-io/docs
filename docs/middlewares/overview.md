@@ -25,6 +25,34 @@ field of each.
 A middleware belongs to the workspace, not to a route, so the same rate limit can guard a dozen
 routes and be tuned in one place.
 
+### Or declare it
+
+Middlewares are a [declarative resource](/docs/cicd/manifest-reference#middleware), so the same
+policy can live in Git and be applied with the rest of a stack:
+
+```yaml
+apiVersion: miabi.io/v1
+kind: Middleware
+metadata: { name: api-ratelimit }
+spec:
+  type: rateLimit
+  paths: ["/api"]
+  rule: { unit: minute, requestsPerUnit: 60 }
+---
+apiVersion: miabi.io/v1
+kind: Route
+metadata: { name: web }
+spec:
+  hosts: [app.example.com]
+  app: web
+  middlewares: [api-ratelimit]     # the chain, in execution order
+```
+
+A route may name a middleware it does not declare — one created here in the console, or seeded with
+the workspace — so adopting the declarative form is incremental. Credentials inside a `rule` should
+be `{{ .secrets.name }}` references rather than literals; see
+[Secret fields](#secret-fields) below.
+
 ## Order matters
 
 A route's middlewares run **in the order they are listed**, and any one of them can answer or reject
@@ -95,4 +123,6 @@ gateway's version, so nothing stops you saving one — the route is what reports
 
 - **[All middlewares](/docs/middlewares/reference)** — the full reference, field by field.
 - **[Routing](/docs/networking/routing-and-middlewares)** — how routes reach your applications.
+- **[Manifest reference](/docs/cicd/manifest-reference#middleware)** — declaring middlewares and
+  attaching them to routes in Git.
 - **[Goma Gateway docs](https://goma.jkaninda.dev/middlewares/)** — the gateway's own reference.
