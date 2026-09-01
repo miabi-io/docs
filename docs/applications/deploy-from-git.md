@@ -71,6 +71,14 @@ From the CLI:
 miabi apps resync-pipeline web
 ```
 
+## Moving it into GitOps
+
+An app you built here can be described as a manifest and committed alongside your code: **Settings →
+GitOps manifest → Generate**. The generated document carries the repository, ref and build settings
+under `source`, so applying it elsewhere rebuilds from the same code rather than pulling the image
+this install happened to produce. See the
+[manifest reference](/docs/cicd/manifest-reference#building-from-source).
+
 ## Switching to a prebuilt image
 
 A Git app can switch to pulling a prebuilt image without being recreated — see

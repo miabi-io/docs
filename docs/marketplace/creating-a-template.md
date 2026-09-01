@@ -203,7 +203,10 @@ applications:
 
 File contents are interpolated with the **same context as `env`** — `{{ .inputs.* }}`,
 `{{ .databases.* }}`, `{{ .applications.*.alias }}` — so a config can carry a rendered database
-password without a bootstrap script. Configs are created and mounted **before** the applications are
+password without a bootstrap script. (Templates address a sibling by its container alias; the richer
+`.host` / `.port` / `.url` form is
+[manifest-only](/docs/cicd/manifest-reference#addressing-another-application), because a template's
+apps are named by the install rather than by the author.) Configs are created and mounted **before** the applications are
 deployed, so the files are in place on first boot, and each mount is read-only. Limits are 256 KB per file and 512 KB total; a mount's `key`/`mode` are valid only
 with a `config`, never with a `volume`.
 

@@ -12,9 +12,9 @@ description: Run apps across nodes on an encrypted overlay network — requireme
 
 ## Single-node default vs cluster
 
-By default, Miabi runs your nodes as **standalone Docker** hosts and deploys plain containers. Each node is an island: an app can reach a database **on the same node**, and Miabi enforces that — it refuses to attach an app to a database on a different node, because the workspace network is node-local and the name simply would not resolve.
+By default, Miabi runs your nodes as **standalone Docker** hosts and deploys plain containers. Each node is an island: an app can reach a database **on the same node**, and Miabi enforces that — it refuses to attach an app to a database on a different node, because the workspace network is node-local and the name simply would not resolve. The same applies between two applications: a manifest whose app [addresses a sibling](/docs/cicd/manifest-reference#addressing-another-application) on another node is refused at apply, for the same reason.
 
-**Cluster mode** removes that limit. Your nodes become one fabric: apps and databases reach each other **across hosts** by name, over an encrypted overlay.
+**Cluster mode** removes that limit. Your nodes become one fabric: apps, databases and sibling applications reach each other **across hosts** by name, over an encrypted overlay.
 
 Nothing changes for single-node installs. Cluster mode is opt-in, and plain Docker stays first-class.
 

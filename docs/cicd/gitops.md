@@ -57,6 +57,22 @@ This makes Git your single source of truth and your audit log: a commit is a cha
 Keep your manifests in their own repository or a dedicated directory, and protect it with reviews. Every merged change becomes a tracked, revertible deployment.
 :::
 
+### Starting from an app you already have
+
+You do not have to write the first manifest by hand. An application created in the console — from a
+Docker image or from a Git repository — can render itself as one: **App → Settings → GitOps manifest
+→ Generate**. It describes the app as it is configured, including its source, ports, environment and
+the volumes it mounts, so you can commit it and point a Git source at it.
+
+Two things it deliberately leaves out. **Secret values** are never included — each is listed by name
+under `secretEnv`, so the vault stays the only place the value lives, and you create the secrets
+separately (or declare them with `generate: true`). And the export covers **that app and its
+volumes**, not the rest of the workspace: a bundle carrying resources the app does not own would
+prune them if applied elsewhere with `--prune`.
+
+Apps managed by a marketplace install or by an existing GitOps source cannot be exported: the first
+is described by its template, and the second already has a manifest.
+
 ### Source options
 
 A Git source points at a repository, a **ref** (branch, tag or commit) and a **path** (the
@@ -82,6 +98,19 @@ that stops a wiped directory from tearing down a workspace.
 
 Deleting a source can optionally cascade, tearing down exactly the resources that source created and
 leaving everything else untouched.
+
+### Last sync vs. last check
+
+The source's detail page shows both, and they answer different questions:
+
+| | Meaning |
+|---|---|
+| **Last check** | The most recent reconcile, whether or not it changed anything — and whether it succeeded or failed. On an `auto` source this moves on every sweep, so it is how you tell the source is still running. |
+| **Last sync** | The last reconcile that actually **converged something** — the commit whose apply created, updated or deleted a resource, with its author and message. It deliberately stands still while nothing ships. |
+
+So a healthy source whose repository has only seen documentation commits for a month reads *checked a
+minute ago, last synced a month ago* — which is the truth. When the two commits differ, the check line
+names the newer revision and says it changed nothing.
 
 ## One-shot apply
 
@@ -210,6 +239,15 @@ spec:
       spec:
         tls: acme                # acme | custom
 
+    # A gateway policy the route below runs. Declaring it here keeps the limit in
+    # Git with everything else it protects.
+    - apiVersion: miabi.io/v1
+      kind: Middleware
+      metadata: { name: posta-ratelimit }
+      spec:
+        type: rateLimit
+        rule: { unit: minute, requestsPerUnit: 120 }
+
     # Public HTTPS route for the web UI / API, with automatic Let's Encrypt TLS.
     - apiVersion: miabi.io/v1
       kind: Route
@@ -219,6 +257,7 @@ spec:
         app: posta
         port: 9000
         tls: acme                # acme | custom | off
+        middlewares: [posta-ratelimit]   # the gateway chain, in execution order
 ```
 
 ### Environment interpolation
@@ -248,6 +287,18 @@ bundle is created first, so a bundle can generate its own credentials:
 # …then, in the application's env:
 #   POSTA_JWT_SECRET: "{{ .secrets.posta-jwt }}"
 ```
+
+And one application can address another by name — `{{ .applications.<name> }}` resolves to the
+address a sibling dials, with `.host`, `.port` and `.scheme` available separately:
+
+```yaml
+# in the web app's env:
+#   API_URL: "{{ .applications.api }}"        # http://api:8080
+```
+
+The target need not be declared in the same bundle, and declaration order does not matter. Both apps
+do have to be on the same node unless [cluster mode](/docs/nodes/cluster-mode) is on — see
+[Addressing another application](/docs/cicd/manifest-reference#addressing-another-application).
 
 (`{{ .inputs.* }}` is [marketplace-template](/docs/marketplace/creating-a-template) only.)
 

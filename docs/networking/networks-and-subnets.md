@@ -15,7 +15,9 @@ busy host never runs out of address space.
 Each workspace gets a **default network** the moment it is created. It is fully platform-managed:
 
 - Every **application**, **database**, and **job** in the workspace is automatically attached to it,
-  so they can reach each other by name.
+  so they can reach each other by name. Each container answers to its resource's own name, which is
+  what `{{ .applications.<name>.host }}` resolves to in a
+  [manifest](/docs/cicd/manifest-reference#addressing-another-application).
 - You **cannot detach** a resource from the default network, and you **cannot delete** it — it is
   the shared backbone the workspace relies on.
 
@@ -67,6 +69,76 @@ If you run Compose by hand instead of `install.sh`, create it first:
 ```bash
 docker network create --driver bridge --subnet 10.63.0.0/16 miabi
 ```
+
+## The platform's private network
+
+Miabi's own components do **not** sit on the shared gateway network. They get a second, private
+bridge — `miabi-internal` — and only the gateway is on both. This is true of every install path: a
+managed one (`install.sh`, `miabi setup`) creates it with an explicit `10.62.0.0/16`, and the
+[Compose files](https://github.com/miabi-io/miabi/tree/main/examples/compose) declare it alongside
+`miabi`.
+
+| Container | `miabi` (shared) | `miabi-internal` (private) |
+|---|---|---|
+| `miabi-gateway` | ✅ reaches your apps, and the internet for ACME | ✅ reaches Miabi and Redis |
+| `miabi` (control plane) | — | ✅ |
+| `miabi-postgres` | — | ✅ |
+| `miabi-redis` | — | ✅ |
+| `mb-registry` (built-in registry) | ✅ | ✅ |
+| your routed apps | ✅ | — |
+
+(On the Traefik Compose variant, Traefik takes the gateway's row.)
+
+The reason is that everything on the shared network can dial everything else on it by name. The
+control-plane database has a **single superuser password** covering every workspace and every stored
+secret, and Redis holds the background job queue — so one exposed application being compromised
+should not put them within reach. After the split, the only way into the platform is through the
+gateway, where your [routes and middlewares](/docs/networking/routing-and-middlewares) — rate limits,
+IP allowlists, security policies — actually apply.
+
+Nothing about deploying, routing, or connecting apps changes: your containers still join `miabi`
+when they have a route, exactly as before.
+
+### Changing the subnets
+
+On a managed install both CIDRs must miss each other, the workspace pool (`10.64.0.0/12`, below),
+and your LAN or VPN:
+
+```bash
+curl -fsSL https://get.miabi.io | sudo \
+  MIABI_DOMAIN=miabi.example.com \
+  MIABI_SUBNET=10.63.0.0/16 \
+  MIABI_INTERNAL_SUBNET=10.62.0.0/16 bash
+```
+
+They are also flags on `miabi setup` (`--subnet`, `--internal-subnet`) and are recorded in
+`/etc/miabi/miabi.yaml`:
+
+```yaml
+network:
+  name: miabi
+  subnet: 10.63.0.0/16
+internal_network:
+  name: miabi-internal
+  subnet: 10.62.0.0/16
+```
+
+:::note Upgrading an existing install
+The split happens on your next `miabi upgrade`. The private network is created, every component is
+attached to it **while still running**, and only then are the containers recreated on their final
+networks — so there is no window where Miabi cannot reach its database. Expect the same brief
+restart any upgrade involves.
+:::
+
+:::note Upgrading a Compose stack
+Pull the new `compose.yaml`, add `MIABI_INTERNAL_NETWORK=miabi-internal` to your `.env`, and
+`docker compose up -d` — Compose creates the network and moves the containers onto it. The variable
+matters: Miabi reads it to place the helper containers it runs out of process (platform backups, the
+built-in registry), and an empty value leaves them on `miabi` alone, where the database no longer is.
+
+On the Traefik variant the control plane also carries `traefik.docker.network=miabi-internal`, since
+Traefik's Docker provider otherwise looks for the panel's address on `miabi` and finds none.
+:::
 
 ## Managed subnet allocation
 

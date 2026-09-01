@@ -71,17 +71,22 @@
           },
           "type": "array"
         },
+        "source": {
+          "$ref": "#/$defs/SourceSpec",
+          "description": "Source builds the image from a Git repository instead of pulling one. Exactly one of source and image is set: an app either builds or pulls, and a manifest declaring both would not say which wins. Image stays the plain, common case; source is what makes a build-from-git app expressible at all, so an app created in the console can be exported and re-applied as itself."
+        },
         "stack": {
           "description": "Stack optionally names the owning Stack resource.",
+          "type": "string"
+        },
+        "strategy": {
+          "description": "Strategy is how a new release replaces the running one: recreate (stop then start), rolling (start the new container before retiring the old) or canary (run both and shift traffic). Empty keeps whatever the app is configured with, so a manifest that does not care about rollout mechanics leaves the console's setting alone instead of silently resetting it.",
           "type": "string"
         },
         "tag": {
           "type": "string"
         }
       },
-      "required": [
-        "image"
-      ],
       "type": "object"
     },
     "ConfigSpec": {
@@ -186,6 +191,31 @@
       },
       "required": [
         "name"
+      ],
+      "type": "object"
+    },
+    "MiddlewareSpec": {
+      "additionalProperties": false,
+      "description": "MiddlewareSpec is one gateway middleware. Type selects the behaviour from the gateway's catalogue (basicAuth, rateLimit, accessPolicy, …) and Rule carries that type's own configuration, so the manifest reads like the gateway config it produces rather than a Miabi-shaped translation of it.",
+      "properties": {
+        "paths": {
+          "description": "Paths narrows the middleware to the request paths listed; empty applies it to everything the route serves.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "rule": {
+          "additionalProperties": {},
+          "description": "Rule is the type's configuration, passed through to the gateway.",
+          "type": "object"
+        },
+        "type": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
       ],
       "type": "object"
     },
@@ -348,8 +378,15 @@
       "additionalProperties": false,
       "description": "RouteSpec binds one or more hostnames (and an optional path) to an application's port with a TLS mode — an HTTP routing rule. List every hostname the route should answer on, e.g. both example.com and www.example.com.",
       "properties": {
+        "advancedConfig": {
+          "description": "AdvancedConfig is raw Goma route YAML that SUPERSEDES the structured fields above.",
+          "type": "string"
+        },
         "app": {
           "description": "target application name",
+          "type": "string"
+        },
+        "certificate": {
           "type": "string"
         },
         "hosts": {
@@ -362,11 +399,26 @@
           "$ref": "#/$defs/RouteMaintenanceSpec",
           "description": "Maintenance parks the route at the gateway. Omitting it means \"serving\", so removing the block from a manifest resumes traffic."
         },
+        "methods": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "middlewares": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
         "path": {
           "type": "string"
         },
         "port": {
           "type": "integer"
+        },
+        "rewrite": {
+          "type": "string"
         },
         "security": {
           "$ref": "#/$defs/RouteSecuritySpec",
@@ -379,6 +431,9 @@
             "custom",
             "off"
           ],
+          "type": "string"
+        },
+        "tlsProvider": {
           "type": "string"
         }
       },
@@ -412,6 +467,49 @@
           "type": "string"
         }
       },
+      "type": "object"
+    },
+    "SourceSpec": {
+      "additionalProperties": false,
+      "description": "SourceSpec builds an application's image from a Git repository. It mirrors the console's Source card: where the code is, which ref to build, and how to turn it into an image.",
+      "properties": {
+        "buildEnv": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "BuildEnv are variables available to the BUILD, not to the running container — a private module token, a feature flag the compiler reads. Runtime env belongs in spec.env.",
+          "type": "object"
+        },
+        "buildMethod": {
+          "description": "BuildMethod is auto (Dockerfile if present, else buildpacks), dockerfile or buildpack. Empty means auto.",
+          "type": "string"
+        },
+        "builder": {
+          "description": "Builder is the Cloud Native Buildpacks builder image; Buildpacks pins the buildpacks to run. Both apply to the buildpack path only.",
+          "type": "string"
+        },
+        "buildpacks": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "git": {
+          "description": "Git is the repository URL (https or ssh). Required.",
+          "type": "string"
+        },
+        "ref": {
+          "description": "Ref is the branch, tag or commit to build. Empty builds the repository's default branch.",
+          "type": "string"
+        },
+        "repository": {
+          "description": "Repository names a stored Git credential for a private repo, by its name in the workspace. It is not a declarable kind, so it resolves against credentials that already exist — the same rule spec.registry follows for an image pull.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "git"
+      ],
       "type": "object"
     },
     "StackSpec": {
@@ -452,11 +550,34 @@
         ]
       },
       "then": {
-        "properties": {
-          "spec": {
-            "$ref": "#/$defs/ApplicationSpec"
+        "allOf": [
+          {
+            "properties": {
+              "spec": {
+                "$ref": "#/$defs/ApplicationSpec"
+              }
+            }
+          },
+          {
+            "properties": {
+              "spec": {
+                "description": "An application either pulls an image or builds one from source — set exactly one of image and source.",
+                "oneOf": [
+                  {
+                    "required": [
+                      "image"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "source"
+                    ]
+                  }
+                ]
+              }
+            }
           }
-        }
+        ]
       }
     },
     {
@@ -512,6 +633,25 @@
         "properties": {
           "spec": {
             "$ref": "#/$defs/DomainSpec"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "Middleware"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "spec": {
+            "$ref": "#/$defs/MiddlewareSpec"
           }
         }
       }
@@ -644,6 +784,7 @@
         "Config",
         "Database",
         "Domain",
+        "Middleware",
         "Project",
         "Registry",
         "Route",

@@ -69,7 +69,7 @@ curl -fsSL https://get.miabi.io | sudo MIABI_DOMAIN=miabi.example.com \
 ```
 
 It installs Docker if missing, installs the `miabi` CLI to `/usr/local/bin`, then runs
-`miabi setup` — which creates the network, the volumes and the four containers, writes
+`miabi setup` — which creates the two networks, the volumes and the four containers, writes
 `/etc/miabi/miabi.yaml`, and prints the admin password.
 
 That one address becomes both your admin login *and* your Let's Encrypt contact — see [One email is
@@ -128,6 +128,8 @@ which renames it.
 | `MIABI_REGISTRY_ENABLED` | `--registry` | Enable the [built-in registry](/docs/registry/overview). |
 | `MIABI_REGISTRY_HOST` | `--registry-host` | Its hostname (default `registry.<domain>`). Needs its own DNS record — it gets its own certificate. |
 | — | `--goma-config` | Gateway config file, relative to the manifest's directory (default `goma.yml`). |
+| `MIABI_SUBNET` | `--subnet` | CIDR for the shared app network (default `10.63.0.0/16`). |
+| `MIABI_INTERNAL_SUBNET` | `--internal-subnet` | CIDR for [the platform's private network](/docs/networking/networks-and-subnets#the-platforms-private-network) — control plane, database, cache (default `10.62.0.0/16`). |
 | `MIABI_NO_HOST_PROC` | `--no-host-proc` | Do **not** bind the host's `/proc`. See below. |
 | `MIABI_CONFIG_FILE` | `--file` | Where the manifest lives (default `/etc/miabi/miabi.yaml`). `MIABI_ETC` sets its directory. |
 | `MIABI_FORCE_STACK` | — | Install even though a Compose stack is present. See the caution above. |
@@ -286,8 +288,12 @@ on macOS), then:
 sudo miabi setup --domain miabi.example.com --admin-email you@example.com
 ```
 
-That's the whole install. It creates the network, the volumes, PostgreSQL, Redis, the gateway and
-the control plane, writes `/etc/miabi/miabi.yaml`, and prints the admin password.
+That's the whole install. It creates the two networks, the volumes, PostgreSQL, Redis, the gateway
+and the control plane, writes `/etc/miabi/miabi.yaml`, and prints the admin password.
+
+Two networks, because the platform does not sit on the same one your apps do: PostgreSQL, Redis and
+the control plane live on a private `miabi-internal` bridge that only the gateway also joins. See
+[The platform's private network](/docs/networking/networks-and-subnets#the-platforms-private-network).
 
 Drop `--admin-email` and Miabi falls back to `admin@miabi.example.com`.
 
@@ -417,6 +423,12 @@ docker network create --driver bridge --subnet 10.63.0.0/16 miabi
 docker compose up -d
 docker compose logs -f miabi
 ```
+
+The stack comes up on **two** networks: `miabi`, shared with every app you expose with a route, and
+`miabi-internal`, private to PostgreSQL, Redis and the control plane. Only the gateway is on both.
+Compose creates the private one for you, and `.env.example` already sets the matching
+`MIABI_INTERNAL_NETWORK`. See
+[The platform's private network](/docs/networking/networks-and-subnets#the-platforms-private-network).
 
 `compose.yaml` refuses to start until these are set in `.env` — `docker compose up` aborts with
 `required variable ... is missing a value` rather than starting a half-configured stack:
