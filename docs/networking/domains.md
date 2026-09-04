@@ -41,7 +41,60 @@ DNS changes can take a few minutes to propagate. If verification fails on the fi
 try, wait and retry — Miabi also re-checks pending domains periodically.
 :::
 
+### How a domain was verified
+
+Miabi records **how** ownership was established, because the two are not the same kind
+of claim:
+
+| Verified via | Meaning | Re-checked? |
+|---|---|---|
+| **DNS** | The challenge `TXT` record was found in public DNS. | Yes — if the record disappears for several consecutive checks, the domain is un-verified and its routes go offline. |
+| **DNS provider** | The same proof, on a domain whose records Miabi manages through a [connected provider](/docs/networking/dns-providers). | Reasserted by the DNS reconcile job. |
+| **Admin override** | A platform administrator marked the domain verified without a DNS proof, for a private or otherwise unreachable zone. | Checked, but **never revoked** — see below. |
+
+An **admin override** is a waiver, not a proof. Miabi keeps probing DNS for it and shows
+what the last check saw, but it never un-verifies the domain: the record it would look
+for is one that, by definition, cannot be published. If the record *does* appear later,
+the override is promoted to a normal DNS proof automatically and stops being a standing
+exception nobody remembers granting.
+
+### The DNS panel stays available
+
+The `TXT` record for a domain is visible from the DNS button at any time, verified or
+not, along with whether the last check found it and how long ago that check ran. Keep
+the record in place after verification — removing it un-verifies a DNS-proven domain.
+
+## The domain detail page
+
+Selecting a domain name opens its detail page, which gathers everything about one
+hostname in a single place:
+
+- **Ownership** — how it was verified, when, what the last DNS check saw, and the
+  connected DNS provider (which you can link or unlink here).
+- **DNS record** — the `TXT` record, always visible, with copy buttons.
+- **Routes** — every route serving a host under this domain, with its live status.
+  This is what verification is gating: if a route is offline because the domain is
+  unverified, you can see it and fix it without leaving the page.
+- **Settings** — default TLS mode, wildcard coverage, and timestamps.
+
+Verify (or **Re-check**, once verified), edit and delete all act from the header.
+
+### Privileged workspaces
+
+Routes in a [privileged workspace](/docs/workspaces/overview) serve on a registered but
+unverified domain. Those domains show as **serving · unverified** rather than *pending*,
+so the status matches what the gateway is actually doing. Privilege is a serving
+exemption only — it does not verify the domain and does not stop another workspace from
+verifying the same name.
+
 ## Attaching a domain to an app
+
+:::tip
+For the whole exposure flow — declaring a container port, choosing between a generated URL
+and your own domain, and the route fields — see
+[Exposing an Application](/docs/applications/exposing-your-app).
+:::
+
 
 Once verified, open the domain and **attach** it to an
 [application](/docs/applications/overview). Traffic for that hostname is then routed
@@ -58,7 +111,8 @@ certificate if one applies. See [TLS certificates](/docs/networking/tls-certific
 | Status | Meaning |
 |--------|---------|
 | **Pending** | Added but ownership not yet confirmed. |
-| **Verified** | DNS ownership confirmed; ready to attach. |
+| **Serving · unverified** | Unproven, but served anyway because the workspace is privileged. |
+| **Verified** | Ownership confirmed; the badge names whether by DNS, a DNS provider, or an admin override. |
 | **Active** | Attached to an app and serving traffic. |
 | **Error** | Verification or certificate issuance failed — check the record and DNS provider. |
 

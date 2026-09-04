@@ -12,6 +12,13 @@ and Miabi generates the routing.
 
 ![Routing and middlewares](/img/screenshots/routing-middlewares.png)
 
+:::tip Looking for how to put an app online?
+This page explains what the gateway does with a route. For the step-by-step of making an
+application reachable — declaring a port, one-click external access, attaching your own
+domain, or publishing a host port — start at
+**[Exposing an Application](/docs/applications/exposing-your-app)**.
+:::
+
 ## How routing works
 
 When you attach a verified [domain](/docs/networking/domains) to an
