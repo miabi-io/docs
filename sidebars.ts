@@ -29,6 +29,7 @@ const sidebars: SidebarsConfig = {
         'applications/overview',
         'applications/deploy-from-git',
         'applications/deploy-from-image',
+        'applications/exposing-your-app',
         'applications/environment-variables',
         'applications/releases-and-rollbacks',
         'applications/scaling-and-resources',
@@ -173,6 +174,7 @@ const sidebars: SidebarsConfig = {
         'workspaces/organizations',
         'workspaces/roles-and-permissions',
         'workspaces/plans-and-quotas',
+        'workspaces/user-preferences',
       ],
     },
     {
@@ -193,7 +195,10 @@ const sidebars: SidebarsConfig = {
       label: 'Administration',
       items: [
         'administration/platform-admin',
+        'administration/users-and-accounts',
+        'administration/workspace-oversight',
         'administration/nodes-and-capacity',
+        'administration/scheduled-jobs',
         'administration/upgrades',
       ],
     },

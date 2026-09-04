@@ -39,16 +39,68 @@ sign-in, enable any available SSO/MFA, and reserve it for platform tasks rather 
 
 ## What the platform admin manages
 
-Platform admins handle cross-workspace, instance-level concerns:
+Platform administration is global: *the server, the fleet, and the configuration everything
+else runs on* — not the contents of any one workspace. The admin console is organised
+around that, and this table is the map.
 
-| Area | Responsibility |
-|------|----------------|
-| **Nodes** | View the fleet, check node status and health, and assign capacity. See [Nodes & Capacity](/docs/administration/nodes-and-capacity). |
-| **Platform settings** | Manage the typed, cached key-value configuration that governs instance-wide behavior. See [Platform Settings](/docs/operations/platform-settings). |
-| **Capacity** | Understand how much compute is available across the fleet and how workspaces consume it. |
+### Tenants
+
+| Section | Responsibility |
+|---|---|
+| **Users** | Create accounts, reset credentials, revoke sessions, set per-user limits, and schedule deletions. See [Users & Accounts](/docs/administration/users-and-accounts). |
+| **Workspaces** | Cross-workspace visibility, privileged workspaces, and key rotation. See [Workspace Oversight](/docs/administration/workspace-oversight). |
+| **Plans** | Define what a workspace may consume and which capabilities it unlocks. See [Plans & Quotas](/docs/workspaces/plans-and-quotas). |
+
+### Infrastructure
+
+| Section | Responsibility |
+|---|---|
+| **Nodes** | The fleet: status, health, capacity, container inventory, housekeeping and Docker import. See [Nodes & Capacity](/docs/administration/nodes-and-capacity). |
+| **Runners** | The build machines pipelines execute on. See [Runners](/docs/cicd/runners). |
+| **Registry** | The built-in multi-tenant OCI registry. See [Registry administration](/docs/registry/administration). |
+| **Platform backup** | Backing up and restoring the platform itself. See [Backups](/docs/storage/backups). |
+
+### Traffic
+
+| Section | Responsibility |
+|---|---|
+| **Domains** | Verify, force-verify or ban a domain in any workspace. See [Workspace Oversight](/docs/administration/workspace-oversight#moderating-domains). |
+| **Routes & ports** | Every route on the instance, and the host-port review queue. See [Workspace Oversight](/docs/administration/workspace-oversight#moderating-routes-and-host-ports). |
+
+### Configuration & operations
+
+| Section | Responsibility |
+|---|---|
+| **Settings** | The typed, cached key-value configuration governing instance-wide behaviour. See [Platform Settings](/docs/operations/platform-settings). |
+| **Deployment config** | Registry mirror and platform image pins. See [Scheduled Jobs & Image Defaults](/docs/administration/scheduled-jobs#image-defaults). |
+| **Jobs** | The background sweeps that keep the platform consistent. See [Scheduled Jobs](/docs/administration/scheduled-jobs). |
+| **Metrics** | Instance-wide resource and activity overview. |
+| **Events** | The platform-wide activity feed. See [Audit log](/docs/operations/audit-log). |
 | **Upgrades** | Roll the instance forward to a newer image. See [Upgrades](/docs/administration/upgrades). |
 
-These responsibilities are global. A platform admin is concerned with *the server, the fleet, and the configuration that everything else runs on* — not with the contents of any one workspace.
+### Identity & compliance
+
+| Section | Responsibility |
+|---|---|
+| **OAuth providers** | External identity providers for sign-in. See [SSO](/docs/security/sso). |
+| **Directory (LDAP)** | Directory-backed authentication. See [SSO](/docs/security/sso). |
+| **SIEM** | Streaming audit events to an external SIEM. See [SIEM](/docs/security/siem). |
+| **License** | Enterprise entitlement. See [Licensing](/docs/editions/licensing). |
+
+## What a platform admin cannot do
+
+The boundary matters as much as the capability list. Admin visibility is **structural, not
+contents**:
+
+- **Workspace secrets stay unreadable.** They are encrypted with per-workspace keys and the
+  admin console holds none of them. There is no "view secret" for another tenant.
+- **Managed containers are not directly operable** from the node view (see below).
+- **The last platform admin cannot be removed**, deactivated or demoted. There is no
+  supported route to an instance nobody can administer.
+
+Everything a platform admin *does* do is written to the
+[audit log](/docs/operations/audit-log), which is the record you will want when someone
+asks why an account was reset or a domain was banned.
 
 ## Managed containers are protected
 
@@ -76,6 +128,9 @@ For the full breakdown of workspace-level capabilities, see [Roles & Permissions
 
 ## Where to go next
 
+- [Users & Accounts](/docs/administration/users-and-accounts) — creating accounts and recovering locked-out users.
+- [Workspace Oversight](/docs/administration/workspace-oversight) — privileged workspaces, and moderating domains and ports.
 - [Nodes & Capacity](/docs/administration/nodes-and-capacity) — the operational view of your fleet.
+- [Scheduled Jobs & Image Defaults](/docs/administration/scheduled-jobs) — background sweeps and platform image pins.
 - [Platform Settings](/docs/operations/platform-settings) — instance-wide configuration.
 - [Upgrades](/docs/administration/upgrades) — moving to a newer release.
