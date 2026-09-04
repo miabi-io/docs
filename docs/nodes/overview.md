@@ -50,7 +50,7 @@ Miabi labels such nodes **unmanaged** and can install the agent on all of them f
 
 ## Managing nodes
 
-Node management is a **platform-admin** responsibility (Owner or Admin at the platform level). See [Platform Administration](/docs/administration/platform-admin) for who can add, remove, and configure nodes, and the [Architecture](/docs/concepts/architecture) page for how nodes fit into Miabi's overall design.
+Node management is a **platform-admin** responsibility (Owner or Admin at the platform level). See [Platform Administration](/docs/administration/platform-admin) for who can add, remove, and configure nodes, and the [Architecture](/docs/architecture/overview) page for how nodes fit into Miabi's overall design.
 
 ## Next steps
 

@@ -105,10 +105,12 @@ untouched.
 Goma sits behind a **pluggable proxy abstraction**. Miabi talks to a generic reverse-proxy
 interface, and Goma is the default implementation. This keeps the door open for other
 proxies later without changing how you define domains, routes, or middlewares. See the
-[architecture overview](/docs/concepts/architecture) for where the abstraction sits in the
+[architecture overview](/docs/architecture/overview) for where the abstraction sits in the
 system.
 
 ## Workspace middlewares
+
+![Routes listed under their domains, with sync status](/img/screenshots/domains-routes.png)
 
 Workspaces own **middlewares** — reusable request-processing rules you attach to routes.
 Common examples:

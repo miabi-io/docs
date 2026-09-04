@@ -106,7 +106,7 @@ Goma Gateway (routing, TLS/ACME) ─▶ Miabi (Go / Okapi) ─▶ Docker Engine 
 The Miabi control plane is a single Go binary that serves both the REST API and the embedded web
 console. It talks to the local Docker Engine directly and to remote nodes through a lightweight
 [agent](/docs/nodes/agent). [Goma Gateway](/docs/networking/routing-and-middlewares) sits in front,
-handling routing and TLS. See [Architecture](/docs/concepts/architecture) for the full picture.
+handling routing and TLS. See [Architecture](/docs/architecture/overview) for the full picture.
 
 ## API reference
 

@@ -26,6 +26,8 @@ workspace sidebar to manage them.
 Config content is **always encrypted at rest** — config files carry credentials more often than not,
 and the cost is negligible.
 
+![A configuration file set with its files and the apps mounting it](/img/screenshots/configs.png)
+
 ## Anatomy
 
 A config has a **name** (lowercase `[a-z0-9-]`, unique in the workspace), one or more **files**, and:

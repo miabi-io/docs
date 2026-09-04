@@ -76,7 +76,7 @@ around that, and this table is the map.
 | **Jobs** | The background sweeps that keep the platform consistent. See [Scheduled Jobs](/docs/administration/scheduled-jobs). |
 | **Metrics** | Instance-wide resource and activity overview. |
 | **Events** | The platform-wide activity feed. See [Audit log](/docs/operations/audit-log). |
-| **Upgrades** | Roll the instance forward to a newer image. See [Upgrades](/docs/administration/upgrades). |
+| **Upgrades** | Roll the instance forward to a newer image. See [Upgrades](/docs/upgrades/upgrading). |
 
 ### Identity & compliance
 
@@ -133,4 +133,4 @@ For the full breakdown of workspace-level capabilities, see [Roles & Permissions
 - [Nodes & Capacity](/docs/administration/nodes-and-capacity) — the operational view of your fleet.
 - [Scheduled Jobs & Image Defaults](/docs/administration/scheduled-jobs) — background sweeps and platform image pins.
 - [Platform Settings](/docs/operations/platform-settings) — instance-wide configuration.
-- [Upgrades](/docs/administration/upgrades) — moving to a newer release.
+- [Upgrades](/docs/upgrades/upgrading) — moving to a newer release.

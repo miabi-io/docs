@@ -8,6 +8,8 @@ description: Connect a repository and deploy automatically on push, with encrypt
 
 **Git push deploy** is the simplest continuous-delivery path in Miabi: connect a repository to an application, and every push to the tracked branch triggers a deploy. No pipeline definition required — Miabi builds (or pulls) and rolls out the new release automatically.
 
+![Git push-to-deploy setup showing the remote and deploy key](/img/screenshots/git-push-deploy.png)
+
 ## Connecting a repository
 
 From an application's settings in the console, connect a Git repository and choose the branch to track. Miabi supports the common hosts (GitHub, GitLab, Bitbucket). Once connected, Miabi can both **read** your code to build it and **listen** for pushes to trigger deploys.

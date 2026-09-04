@@ -15,9 +15,18 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
+      label: 'Architecture',
+      items: [
+        'architecture/overview',
+        'architecture/request-lifecycle',
+        'architecture/deployment-pipeline',
+        'architecture/multi-node',
+      ],
+    },
+    {
+      type: 'category',
       label: 'Core Concepts',
       items: [
-        'concepts/architecture',
         'concepts/web-console',
         'concepts/resource-model',
       ],
@@ -199,7 +208,14 @@ const sidebars: SidebarsConfig = {
         'administration/workspace-oversight',
         'administration/nodes-and-capacity',
         'administration/scheduled-jobs',
-        'administration/upgrades',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Upgrades',
+      items: [
+        'upgrades/overview',
+        'upgrades/upgrading',
       ],
     },
     {

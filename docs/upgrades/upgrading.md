@@ -1,0 +1,208 @@
+---
+sidebar_position: 2
+title: Upgrading
+description: The upgrade procedure for a stack or Compose install, what to do when the new version does not come up, and per-version notes.
+---
+
+# Upgrading
+
+Upgrading is pulling a newer image and recreating the containers. Miabi applies its own migrations
+on startup — see [Overview](/docs/upgrades/overview) for what happens while it does.
+
+## Back up first
+
+:::caution
+**Always back up your database before upgrading**, and especially before a major-version upgrade. Migrations modify your schema and data in place. A backup is your only way back if something goes wrong — see [Backups](/docs/storage/backups).
+:::
+
+## Upgrade procedure
+
+How you upgrade depends on who owns the containers. Miabi labels every one of them, so it always
+knows — and refuses to act on a stack it does not own.
+
+- **Installer / `docker run`** (what `get.miabi.io` builds) → `sudo miabi upgrade`, or
+  `docker run … miabi/miabi:<tag> upgrade` if you installed without the CLI. Miabi replaces its own
+  container, rolling back if the new one does not come up. (`update` still works, deprecated.)
+- **Compose**, if you set it up yourself → `docker compose pull && docker compose up -d`.
+
+If you are not sure which you have, ask:
+
+```bash
+docker inspect miabi --format '{{index .Config.Labels "io.miabi.managed-by"}}'
+# miabi   → installed by `miabi setup`
+# compose → Compose install
+```
+
+## Upgrading
+
+![`sudo miabi upgrade` rolling the control plane forward in a terminal](/img/screenshots/upgrade-terminal.png)
+
+```bash
+sudo miabi upgrade
+```
+
+`miabi upgrade` rolls the stack to the **latest published Miabi release**, looked up when the command
+runs. The version is not baked into the CLI: the CLI releases on its own cadence, so a build-time pin
+would freeze every install at whatever was current when that CLI was built — and an older CLI could
+never install today's Miabi. To choose a version yourself, or to upgrade with no network:
+
+```bash
+sudo miabi upgrade --version 1.8.0            # or v1.8.0 — the leading v is optional
+sudo miabi upgrade miabi-gateway --version 0.14.0
+sudo miabi upgrade --image registry.example.com/miabi:1.8.0
+```
+
+`--version` swaps **only the tag** on the component's current reference, so a private registry and
+non-Miabi components (the gateway) keep working. `--image` replaces the reference outright; the two
+cannot be combined.
+
+Miabi pulls the image, replaces the running control plane and waits for it to come back healthy.
+
+:::caution Don't pin to a floating tag
+`latest`, `edge`, `main` and friends are refused a clean rollback. The rollout skips its automatic
+rollback when the previous reference equals the new one — so a failed `:latest` upgrade has no
+distinct previous image to return to. Drift detection compares references too, so an old `:latest`
+and a new one look identical and the next upgrade reports "already at" without doing anything.
+Miabi warns when you use one.
+:::
+
+**It can replace its own container** because the thing driving the upgrade is not that container —
+it is the `miabi` binary on the host. That is the whole reason Miabi owns its containers rather than
+letting Compose own them.
+
+### If the new version does not come up
+
+The rollout is not a blind cutover:
+
+1. For components that can safely run a second copy (the gateway), the new image is started under a
+   throwaway name first, watched, and only promoted once it is **healthy** — a gateway that boots but
+   serves nothing never reaches the live one.
+2. The previous image is remembered before anything is replaced.
+3. If the new container never becomes healthy, the previous image is **restored automatically** and
+   the manifest is reverted, so `miabi.yaml` never claims a version that is not running.
+
+```
+verifying
+rolling-back  miabi did not become healthy within 1m30s
+rolled-back   … rolled back to miabi/miabi:1.3.0, which is running
+```
+
+:::caution A rollback is recovery, not undo
+Restoring the previous **image** does not undo a schema **migration** the new version already
+applied. Miabi's migrations are additive, so an older binary against a newer schema generally works —
+but the supported recovery path for a genuinely bad upgrade is still to restore the pre-upgrade
+backup. See [Downgrades](/docs/upgrades/overview#downgrades-are-not-supported).
+:::
+
+### Restarting without upgrading
+
+A restart re-reads what is on disk — most usefully the gateway's `goma.yml`, which Goma does **not**
+hot-reload (it watches its providers directory, not its base config):
+
+```bash
+sudo miabi stack restart miabi-gateway   # or `miabi stack restart` for the whole stack
+```
+
+The config is validated before anything is stopped, so a broken edit cannot take the gateway down.
+A restart cannot apply a *manifest* change — that needs `miabi setup`, which recreates — and it
+says so rather than leaving the edit looking ignored.
+
+### Changing anything else
+
+Everything else — the gateway version, the registry, `TZ`, the log level — lives in
+`/etc/miabi/miabi.yaml`. Edit it and re-run:
+
+```bash
+sudo miabi setup
+```
+
+The converge is idempotent: components whose configuration did not change are left alone, and only
+what actually changed is recreated. Bumping PostgreSQL is therefore something you ask for by name,
+not a side effect of upgrading the panel.
+
+## Upgrading a Compose install (if you set one up yourself)
+
+The supported path is to **re-run the installer**: it stamps the release's exact image tags into
+`.env` and brings the stack up.
+
+```bash
+# 1. Back up first (see /docs/storage/backups)
+
+# 2. Re-run the installer — it rewrites MIABI_IMAGE / GOMA_IMAGE / RUNNER_IMAGE
+curl -fsSL https://get.miabi.io | sudo bash
+
+# ...or pin an exact release
+curl -fsSL https://get.miabi.io \
+  | sudo MIABI_VERSION=v1.4.0 bash
+
+# 3. Watch the logs for the migration confirmation
+cd /opt/miabi && docker compose logs -f miabi
+```
+
+To upgrade by hand instead, edit `.env` and set the **image**, then recreate:
+
+```bash
+# .env
+MIABI_IMAGE=miabi/miabi:1.4.0
+
+docker compose pull && docker compose up -d
+```
+
+:::caution
+`MIABI_VERSION` is an **installer** variable (a git tag, e.g. `v1.4.0`) — the server and
+`compose.yaml` never read it. Setting `MIABI_VERSION` in `.env` does nothing. The variable compose
+reads is `MIABI_IMAGE` (an image reference, e.g. `miabi/miabi:1.4.0`, with no leading `v`).
+:::
+
+Wait for a line similar to **`database migrations applied`** in the logs. Once it appears, the schema and data steps are complete and the instance is running the new version.
+
+## Version notes
+
+### Goma Gateway 0.14 — forwarded headers are only believed from a trusted proxy
+
+Miabi now provisions **Goma Gateway 0.14**, which brings the `oidc` middleware and one change that
+can break a working install.
+
+The gateway used to trust `X-Forwarded-Proto` and `X-Forwarded-For` from anyone. It now believes them
+only when the request arrives from an address listed in its `proxy.trustedProxies`. That is the
+correct behaviour — without it any client can forge those headers and spoof its own IP — but it
+changes what happens when something terminates TLS *in front of* the gateway.
+
+**Who is affected:** installs where Cloudflare, nginx, HAProxy or a cloud load balancer terminates
+TLS and forwards plaintext to the gateway, and whose `goma.yml` has no `proxy:` block.
+
+**What breaks:** the gateway sees a plaintext hop, decides the request is not HTTPS, and the
+`redirectScheme` middleware redirects it — back to the terminator, which forwards plaintext again.
+The request loops until the client gives up. Miabi puts that middleware on the **built-in container
+registry** route, so `docker push` and `docker pull` are usually the first thing to fail.
+
+**The fix** is to tell the gateway what is in front of it, in `goma.yml`:
+
+```yaml
+proxy:
+  enabled: true
+  trustedProxies:
+    - "10.0.0.0/8"        # your terminator's address or range
+    # For Cloudflare, use its published ranges: https://www.cloudflare.com/ips/
+  ipHeaders:
+    - "CF-Connecting-IP"  # keep first when behind Cloudflare
+    - "X-Forwarded-For"
+```
+
+`trustedProxies` must not be empty — an empty list with `enabled: true` is rejected at load, since
+nothing would separate a proxy from a client that simply sends the header itself.
+
+If you cannot configure that, `MIABI_REGISTRY_HTTPS_REDIRECT=false` drops the redirect from the
+registry route as an escape hatch. It is the lesser fix: it stops the loop without giving the gateway
+the real client IP, which request logging, rate limiting and IP allowlists all depend on.
+
+:::note Not affected
+An install where the gateway itself terminates TLS — the default Compose and `miabi setup`
+topologies — needs no change. The connection really is HTTPS, so no forwarded header is consulted.
+:::
+
+## Where to go next
+
+- [Overview](/docs/upgrades/overview) — update notifications and the migration model.
+- [Backups](/docs/storage/backups) — restoring the pre-upgrade backup is the supported recovery path.
+- [Platform Settings](/docs/operations/platform-settings) — instance-wide configuration.

@@ -14,6 +14,8 @@ This is the opt-in alternative to the default [rolling
 switch](/docs/applications/releases-and-rollbacks#zero-downtime-updates), which cuts over all at
 once as soon as the new container is healthy.
 
+![A canary rollout showing the traffic split with Pause, Promote and Abort](/img/screenshots/canary-rollout.png)
+
 ## Starting a canary
 
 Set the app's **deploy strategy** to `canary` in its settings, or start one from the app's

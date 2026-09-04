@@ -10,6 +10,8 @@ description: Dedicated build machines that keep build and pipeline load off your
 
 This separation matters because a build spike (CPU, memory, disk, image layers, build cache) is exactly the kind of load you don't want competing with the production workloads a node is keeping up. Moving builds onto runners keeps hosting nodes calm and predictable, and keeps untrusted build inputs away from a production Docker daemon.
 
+![The runners list showing each runner's status and last job](/img/screenshots/runners.png)
+
 ## How builds reach a runner
 
 A runner builds an image and **pushes it to a registry by digest**; a deploy then **pulls that digest** onto the target node. The runner and the node never share a Docker daemon. This is what makes "build off-node" clean: once the artifact lives in a registry, *who* built it is decoupled from *where* it runs.

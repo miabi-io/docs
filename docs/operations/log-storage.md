@@ -11,6 +11,8 @@ job run, a database or volume backup, a platform backup. **Log storage** is the 
 owns those full logs, keeping them out of the database while preserving the live-tail experience
 you already have.
 
+![Stored logs with the retention and search controls](/img/screenshots/log-storage.png)
+
 ## The problem it solves
 
 Historically each execution log was written inline as a database text column. That is simple but
