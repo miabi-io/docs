@@ -230,7 +230,7 @@ agent is allowed to do.
 One group of commands is the exception to "pure API client": **`setup`, `upgrade` and `stack …` act
 on the machine they run on**, through its Docker socket, and never touch the HTTP API. They are what
 installs and operates a Miabi host — see
-[Installation](/docs/getting-started/installation) and [Upgrades](/docs/administration/upgrades).
+[Installation](/docs/getting-started/installation) and [Upgrades](/docs/upgrades/upgrading).
 
 | Command | What it does |
 |---|---|
@@ -253,7 +253,7 @@ command runs — the CLI does not carry a platform version, because it releases 
 reference, so a private registry and non-Miabi components (the gateway) keep working;
 `--image` replaces the reference outright. Pinning matters: a floating tag such as `latest`
 warns, because a failed rollout has no distinct previous image to roll back to. See
-[Upgrades](/docs/administration/upgrades).
+[Upgrades](/docs/upgrades/upgrading).
 
 ## In CI/CD
 

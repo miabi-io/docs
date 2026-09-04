@@ -8,6 +8,8 @@ description: Enable the built-in registry, choose local or S3/MinIO storage, set
 
 The built-in [container registry](/docs/registry/overview) is managed by a **platform admin** from **Admin → Container Registry**. It is disabled by default, so single-node installs are unaffected until you turn it on.
 
+![Registry administration: storage usage, quotas and garbage collection](/img/screenshots/admin-registry.png)
+
 ## Enabling the registry
 
 Turn it on under **Admin → Container Registry → Configuration**: set a **Host**, tick **Enable the registry**, and save. Point DNS for that hostname at the gateway. Miabi then:

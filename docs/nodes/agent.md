@@ -8,6 +8,8 @@ description: The thin Docker-proxy agent, its outbound-only tunnel and security 
 
 The **node agent** is a small, standalone program (Go module `github.com/miabi-io/agent`) that connects a remote Docker host to your Miabi control plane. It is intentionally thin: it is a **Docker proxy** that exposes only the local Docker socket and nothing else.
 
+![A node's agent status and connection details](/img/screenshots/node-agent.png)
+
 ## What the agent does
 
 The agent has one job — let the control plane drive Docker on the remote host. It:

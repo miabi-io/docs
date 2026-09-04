@@ -206,4 +206,4 @@ Start single-node. Adopt cluster mode when you actually have multiple nodes that
 - [Nodes overview](/docs/nodes/overview)
 - [Node agent](/docs/nodes/agent)
 - [Networks & subnets](/docs/networking/networks-and-subnets)
-- [Architecture](/docs/concepts/architecture)
+- [Architecture](/docs/architecture/overview)

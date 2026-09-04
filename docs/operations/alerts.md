@@ -26,6 +26,8 @@ Three layers make that work:
   and shared.
 - **Notifications** — the per-user delivery. Read/unread is per user.
 
+![The alerts view with an active alert and its history](/img/screenshots/alerts.png)
+
 ## What you get — the built-in catalog
 
 Alerts arrive already tuned so a normal deploy is silent and a real problem is

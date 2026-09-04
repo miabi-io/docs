@@ -19,6 +19,8 @@ unblocks real workloads. Fractional GPUs (MIG / time-slicing / MPS), VRAM quotas
 fleet-wide GPU-aware scheduling are not yet supported. See [Limitations](#limitations).
 :::
 
+![Requesting GPU devices in an application's resource settings](/img/screenshots/app-gpus.png)
+
 ## Prerequisites
 
 A node can host GPU workloads when it has:

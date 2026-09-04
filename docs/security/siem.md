@@ -19,6 +19,8 @@ return **HTTP 402**. See [Community vs Enterprise](/docs/editions/community-vs-e
 [Licensing](/docs/editions/licensing).
 :::
 
+![SIEM streaming configuration with the destination and event filters](/img/screenshots/siem.png)
+
 ## Why stream to a SIEM
 
 The [audit log](/docs/operations/audit-log) already gives you an append-only, per-workspace record

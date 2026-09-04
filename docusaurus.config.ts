@@ -22,6 +22,7 @@ const config: Config = {
   // Screenshots are added later (see static/img/screenshots/README.md), so a
   // missing image should warn rather than fail the build.
   markdown: {
+    mermaid: true,
     hooks: {
       onBrokenMarkdownImages: 'warn',
     },
@@ -49,6 +50,7 @@ const config: Config = {
     ],
   ],
   themes: [
+    '@docusaurus/theme-mermaid',
     [
       '@easyops-cn/docusaurus-search-local',
       {

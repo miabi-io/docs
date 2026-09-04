@@ -10,6 +10,8 @@ By default a container runs as whatever user its image declares — often `root`
 security profile** hardens how a workspace's application and job containers run, so a compromised
 or misbehaving container has far less power on the host.
 
+![The workspace container security profile settings](/img/screenshots/security-profile.png)
+
 ## Profiles
 
 Every workspace has an effective security profile, resolved from its plan (or a per-workspace
