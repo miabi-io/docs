@@ -27,9 +27,11 @@ challenges.
 
 A connected DNS provider enables three things:
 
-- **Ownership checks** — Miabi publishes and reads back verification records itself,
-  so verifying a [domain](/docs/networking/domains) is a single click instead of a
-  manual copy-paste.
+- **Ownership checks** — Miabi publishes the verification record for you, so verifying
+  a [domain](/docs/networking/domains) is a single click instead of a manual
+  copy-paste. The check itself always queries the domain's **authoritative
+  nameservers**, never the provider's API — a record that exists only in a pending
+  zone proves nothing.
 - **Automatic A/AAAA records** — when you attach a domain to an app, Miabi can create
   and maintain the `A`/`AAAA` records that point the hostname at the right node,
   keeping them in sync if the node's address changes.
