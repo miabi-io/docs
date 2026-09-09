@@ -78,6 +78,31 @@ decrypted transparently with the same passphrase.
 To go back to unencrypted backups, tick **Turn encryption off** and save. Backups taken while the
 passphrase was set still need it to restore.
 
+Setting a passphrase is optional on every edition. A workspace without one keeps taking
+unencrypted backups — encryption is a choice about your own data, not something the platform
+requires of you.
+
+### Rotating the passphrase
+
+Recovery points are encrypted with a random key of their own, and that key is sealed under your
+passphrase. Changing the passphrase re-seals those keys and leaves the stored dumps untouched, so
+rotation is quick and every existing recovery point stays readable with the new passphrase.
+
+The passphrase cannot be cleared while recovery points are still sealed with it. Clearing it would
+not delete anything — it would make Miabi forget the only secret that opens them, and nothing would
+look wrong until a restore was attempted. Delete those recovery points first, or keep the
+passphrase.
+
+### The recovery kit
+
+Every recovery point offers a **recovery kit** download: a short document with the sealed key, the
+exact encryption parameters, where the artifacts live in your bucket, and the commands to get from
+your passphrase to a restorable dump — all without Miabi running.
+
+The kit never contains the key itself, only the sealed form, so it is safe to store alongside the
+backups it describes. It is worthless to anyone without the passphrase, and worth a great deal to
+you if Miabi is the thing you have lost.
+
 :::warning
 Losing the passphrase means losing the backups it protects. Store it in the same place you keep
 your other break-glass credentials, not only in Miabi.
