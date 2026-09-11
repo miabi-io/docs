@@ -288,6 +288,17 @@ tab. See [Registry](/docs/registry/administration).
 | `MIABI_FORCE_NON_ROOT_USER` | `false` | Force every app & job container to a non-root UID regardless of plan |
 | `MIABI_RESTRICTED_UID` | `100000` | The UID used by the restricted profile |
 | `MIABI_SECURITY_INIT_IMAGE` | `busybox:latest` | Init image used to prepare restricted containers |
+| `MIABI_CONTAINER_GRANTS_ENABLED` | `false` | Allow applications to be granted Linux capabilities and host devices. Off, nothing may be granted in **any** workspace — the system workspace included — and the console offers neither. See [Capabilities & devices](/docs/applications/capabilities-and-devices) |
+
+## Registration
+
+Self-service sign-up is off until you turn it on. See [Authentication](/docs/security/authentication).
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MIABI_REGISTRATION_ENABLED` | `false` | Open the `/register` page. Fixed at boot — **restart** to apply, and it is shown read-only in Platform Settings |
+| `MIABI_REQUIRE_EMAIL_VERIFICATION` | — | Require a new account to confirm its address before it can sign in. Unset leaves it editable in Platform Settings; set here it is pinned read-only. Sign-up refuses to open if this is on with no SMTP configured |
+| `MIABI_ALLOWED_SIGNUP_DOMAINS` | — | Comma-separated domain allow-list (`acme.com,acme.co.uk`); a subdomain matches its parent. Blank admits any domain. Same pinning rule as above |
 
 ## Licensing
 

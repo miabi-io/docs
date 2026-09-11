@@ -22,6 +22,8 @@ override):
 | **Default** | Containers run as the image's own user (may be `root`). No extra hardening — the historical behaviour. |
 | **Restricted** | Containers are forced to run as a **non-root platform UID** with `no-new-privileges` set and the `NET_RAW` capability dropped — similar to OpenShift's *restricted* SCC. |
 
+A profile only ever takes capabilities away. Granting one to an individual application is a separate, opt-in mechanism — see [Capabilities & devices](/docs/applications/capabilities-and-devices) — and the restricted profile admits none of them, so the two cannot be combined.
+
 Under the restricted profile, application **and** one-off/cron **job** containers are started as
 `MIABI_RESTRICTED_UID:0` (GID `0`, the arbitrary-UID convention). Images that hard-depend on being
 `root` at runtime may not work under it.
