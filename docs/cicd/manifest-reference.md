@@ -117,6 +117,7 @@ spec:
 | `registry` | Names a [`Registry`](#registry) credential. It need not be declared in the same bundle — an undeclared name resolves against the workspace's existing credentials. An unknown name is an error, not a silent anonymous pull. |
 | `command` | Overrides the image's command (argv form). |
 | `stack` | Must name a [`Stack`](#stack) **in the same bundle**. Members share a network and resolve each other by name. |
+| `location` | The [location](/docs/nodes/cluster-mode#locations) the app is created in, by name. Omit it to use its stack's location, else the workspace default. An app that mounts a volume is created on that volume's node. Fixed once created — see [locations](#locations). |
 | `externalLabel` | Pins the external-access subdomain. Platform-wide unique: if taken, it is ignored and a generated label is used — the apply still succeeds. |
 | `ports` | See [port exposure](#port-exposure). |
 | `env` / `secretEnv` | Every `secretEnv` key must also appear in `env`. Values support [interpolation](#interpolation). |
@@ -197,7 +198,10 @@ metadata:
   name: shop
 spec:
   description: Storefront — web, worker and its datastores
+  location: eu-central   # optional; the workspace default when omitted
 ```
+
+Member applications that declare no `location` of their own are created in the stack's location.
 
 ---
 
@@ -215,6 +219,7 @@ spec:
   engine: postgres      # postgres | mysql | mariadb | redis
   version: "17-alpine"
   placement: auto       # auto | dedicated | shared
+  location: eu-central  # optional; the workspace default when omitted
 ```
 
 | `placement` | Behaviour |
@@ -245,11 +250,12 @@ kind: Volume
 metadata:
   name: web-data
 spec:
-  size: 5Gi     # accepted, but see below
+  size: 5Gi              # accepted, but see below
+  location: eu-central   # optional; the workspace default when omitted
 ```
 
-Volumes are compared by **presence only** — an existing volume never shows as drift, since its
-attributes are fixed at creation.
+Volumes are compared by **presence and location only** — an existing volume never shows as drift, since
+its attributes are fixed at creation.
 
 :::caution
 `spec.size` is accepted by the parser but **not currently applied**: a volume created from a manifest
@@ -672,6 +678,15 @@ landing in a log. A `sensitive: true` config reports the digest alone.
 
 The auto-allocated host port and the generated external-access subdomain are live state, not
 manifest state — they are compared by presence, so they are never churned.
+
+### Locations
+
+`location` on an `Application`, `Stack`, `Database` or `Volume` is compared only when the manifest
+states it, so a manifest without one never drifts. A resource is never moved: a different location
+fails the apply — delete the resource and apply again. Private networks don't span locations, so an
+app that references an application or database in another location through
+[interpolation](#interpolation), or mounts a volume there, is refused with a message naming both.
+Applies cannot target a location restricted to platform admins.
 
 ## Prune
 

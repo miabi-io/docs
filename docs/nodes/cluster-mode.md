@@ -81,9 +81,32 @@ an empty cluster. Its workspace networks are overlays from the start, so there i
 Each cluster has its own agent service and token, and deploys to a slow cluster cannot take every
 worker slot while deploys to other clusters wait.
 
-:::note
-Apps in a cluster other than the default one deploy and run, but are not publicly routed yet.
-:::
+A swarm outside the default cluster serves its own public traffic: the gateway on its **ingress node**,
+by default its manager, serves every route in the cluster, and DNS records for those routes point at
+that node's public address. The ingress node must run its own gateway (edge-gateway connectivity). To
+use another node, or put a load balancer in front, open the cluster, choose **Gateway → Change**, and
+set the node and, optionally, the ingress IP or hostname DNS should point at.
+
+## Locations
+
+Workspaces see clusters as **locations**. When a workspace can use more than one, the create forms for
+apps, databases, volumes, stacks and marketplace installs show a **Location** picker, and manifests use
+[`spec.location`](/docs/cicd/manifest-reference#locations). A new resource is created in the location it
+names, else the workspace's **default location** (set by workspace owners and admins under
+**Settings → General**), else the first location the workspace may use. Only platform admins can pin a
+node.
+
+Inside a location, a new resource goes to the online, uncordoned node with the least container memory
+already placed on it. A service app is scheduled by Swarm, and a standalone cluster has one node.
+
+From a cluster's **Edit** dialog, administrators can:
+
+- restrict it to **platform admins only**, which hides it from workspaces;
+- **cordon** it, so nothing new lands there while running workloads stay.
+
+Private networks never span locations. Attaching a database, mounting a volume, joining a stack, or
+referencing an app or database from a manifest across two locations is refused with a message naming
+both. Across two nodes of one location it is allowed only when the cluster runs a swarm.
 
 ## Cluster networking
 
@@ -152,7 +175,7 @@ Miabi also keeps **stateful** apps (those holding node-local storage) as node-pi
 
 The two runtimes are placed by different things, and the console offers the control that actually decides:
 
-- A **container** app is placed by **node** — you pick it.
+- A **container** app is placed in a [location](#locations); platform admins can also pin a node.
 - A **service** app is placed by the **Swarm scheduler**, which ignores the node you pick. To put it somewhere specific, choose **Placement → Pin to `<node>`**, which emits a real Swarm constraint.
 
 ### Availability: draining a node
