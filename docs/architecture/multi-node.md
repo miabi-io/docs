@@ -59,6 +59,10 @@ Two shapes, and which one you get depends on how the node was added:
 | **Port-forward** | The central gateway dials the app at the node's address on an auto-provisioned host port |
 | **Edge gateway** | The node runs its own Goma instance and serves its apps directly |
 
+New nodes are always added as edge gateways; port-forward is kept only for nodes that already use
+it. A node without public ports 80/443 should join the [cluster](/docs/nodes/cluster-mode) as a
+worker instead, where the central gateway reaches its apps over the overlay network.
+
 An edge gateway is the one to choose when the node is geographically distant or on its own uplink —
 traffic terminates there instead of crossing the network twice. Routing and middleware definitions
 stay workspace-level either way; only the gateway rendering them differs. See

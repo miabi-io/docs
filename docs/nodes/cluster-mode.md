@@ -59,12 +59,31 @@ Swarm has **no NAT traversal**. Each node dials the others directly on the ports
 
 Cluster mode is a platform-admin action (see [Platform Administration](/docs/administration/platform-admin)):
 
-1. Open **Nodes** in the console and choose **Enable cluster**.
+1. Open **Clusters** in the admin console, open the **default** cluster and choose **Enable Swarm**.
 2. Read the preflight findings.
-3. Give the cluster a **name** (optional, e.g. `prod-eu-west-1`). Swarm identifies a cluster by an unreadable id and a manager address that moves, so without a name the panel can only say "the cluster" — fine with one, useless with two. You can set or change it later.
-4. Set the **advertise address** — the address swarm peers reach this manager on.
+3. Set the **advertise address** — the address swarm peers reach this manager on.
+
+Name the cluster and give it a location code (for example `Frankfurt` · `eu-central`) with **Edit** on the same page.
 
 Miabi initializes (or adopts an existing) Docker Swarm and promotes the control-plane node as a manager. If a host is already part of a swarm it is recognized rather than reinitialized.
+
+## Swarm in other clusters
+
+Every node you add is a standalone cluster of its own. To run another swarm, for example in a second
+region, open that node's cluster under **Clusters** and choose **Enable Swarm**. Miabi initializes the
+swarm on the node over its agent tunnel, so the control plane never opens a connection into that
+network. Join more nodes from the same page.
+
+A cluster other than the default one only takes and releases **empty** nodes: a node with apps,
+databases or volumes is refused when it would join or leave, and Swarm is enabled or disabled only on
+an empty cluster. Its workspace networks are overlays from the start, so there is nothing to migrate.
+
+Each cluster has its own agent service and token, and deploys to a slow cluster cannot take every
+worker slot while deploys to other clusters wait.
+
+:::note
+Apps in a cluster other than the default one deploy and run, but are not publicly routed yet.
+:::
 
 ## Cluster networking
 
@@ -78,7 +97,7 @@ Because every app and every database already joins the workspace's default netwo
 
 Enabling cluster mode converts your workspaces automatically. But an install that was **already** in cluster mode when it upgraded never saw that transition, so its workspaces are still on node-local bridges — and cross-node connectivity silently does not work.
 
-The Nodes page will tell you:
+The default cluster's page will tell you:
 
 > **N workspace networks are still node-local bridges.** Apps and databases in them can't reach each other across nodes.
 
@@ -109,9 +128,9 @@ Metrics and exec have no manager-side equivalent in Docker — there is no `dock
 
 You do not have to SSH to each host. Swarm can carry the agent for you:
 
-**Nodes → Manage cluster nodes** deploys the agent as a **global service** — one task on every node in the cluster, and on every node that **joins later**. Every node becomes managed, with no per-host step and no drift as the cluster grows.
+**Clusters → default cluster → Manage cluster nodes** deploys the agent as a **global service** — one task on every node in the cluster, and on every node that **joins later**. Every node becomes managed, with no per-host step and no drift as the cluster grows.
 
-Nodes that register this way appear in the Nodes list with a **`cluster`** badge: the swarm brought them in, an admin did not. Use the **From the cluster** filter to see just those.
+Nodes that register this way appear in the Nodes list with a **`cluster`** badge: the swarm brought them in, an admin did not. Filter the Nodes list by cluster to see a cluster's nodes.
 
 :::caution
 This grants Miabi the **Docker socket** — root-equivalent — on every machine in the swarm, now and in future. That is the right default for machines you already administer, and a surprising one for a shared cluster. It is an explicit action, not something enabling cluster mode does silently.

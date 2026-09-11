@@ -172,10 +172,10 @@ authority is trusted. Issue a certificate whose SANs include your control plane'
 
 ### In a cluster
 
-When you deploy agents from **Nodes → Manage cluster nodes**, the dialog offers the same three
-choices — trust a CA file already on the nodes, paste a certificate, or skip verification — and
-Miabi can fetch the certificate your control plane currently serves so you do not have to find it.
-Whichever is in force stays visible on the Nodes page, so a workaround taken once to get a
+When you deploy agents from **Clusters → default cluster → Manage cluster nodes**, the dialog offers
+the same three choices — trust a CA file already on the nodes, paste a certificate, or skip
+verification — and Miabi can fetch the certificate your control plane currently serves so you do not
+have to find it. Whichever is in force stays visible on the cluster's page, so a workaround taken once to get a
 self-signed certificate working cannot quietly become permanent. See
 [Cluster mode](/docs/nodes/cluster-mode#manage-cluster-nodes).
 

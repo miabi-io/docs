@@ -37,6 +37,16 @@ Standalone nodes are **islands**: an app can reach a database on the same node, 
 
 When you want apps and databases to reach each other **across hosts** — over an encrypted overlay, with service-based deployments and rescheduling — opt into **[cluster mode](/docs/nodes/cluster-mode)**, which Miabi builds on auto-detected Docker Swarm. It is entirely optional; standalone nodes remain fully supported.
 
+## Clusters
+
+Every node belongs to exactly one **cluster**, listed under **Clusters** in the admin console.
+
+- The **default cluster** holds the control-plane host and, once you enable Swarm, every node that joins it.
+- Any other node is a **standalone cluster** of its own. Adding a node creates one, and **Enable Swarm** on its page turns it into a swarm of its own — see [Swarm in other clusters](/docs/nodes/cluster-mode#swarm-in-other-clusters).
+- Joining a swarm moves a node, and everything placed on it, into that swarm's cluster; leaving gives the node a standalone cluster back.
+
+Give a cluster a location name and code (for example `Frankfurt` · `eu-central`) with **Edit** on its page. Upgrading an existing install creates these clusters automatically and changes no gateway, DNS record or Swarm object.
+
 ## Managed and unmanaged nodes
 
 A node is **managed** when Miabi has a Docker connection to it — the local socket, or a connected [agent](/docs/nodes/agent). That connection is what powers metrics, resource stats, the in-console shell, and housekeeping.
