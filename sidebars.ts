@@ -43,6 +43,7 @@ const sidebars: SidebarsConfig = {
         'applications/releases-and-rollbacks',
         'applications/scaling-and-resources',
         'applications/gpus',
+        'applications/capabilities-and-devices',
         'applications/jobs',
         'applications/stacks',
         'applications/environments',

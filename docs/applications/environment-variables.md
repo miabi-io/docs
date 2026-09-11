@@ -70,5 +70,5 @@ Environment variables and secrets are baked into the running container, so **cha
 3. Miabi brings up a new [release](/docs/applications/releases-and-rollbacks) with the updated configuration, with zero downtime.
 
 :::tip
-Group related apps and share secrets across them with [Stacks](/docs/applications/stacks), and use [Environments](/docs/applications/environments) to keep dev, staging, and production values separate.
+Group related apps and share secrets across them with [Stacks](/docs/applications/stacks). To keep dev, staging, and production values separate, give each stage its own application — variables belong to an application, not to a promotion stage. See [Environments](/docs/applications/environments).
 :::
