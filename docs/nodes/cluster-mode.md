@@ -105,7 +105,8 @@ From a cluster's **Edit** dialog, administrators can:
 
 - restrict it to **platform admins only**, which hides it from workspaces;
 - **cordon** it, so nothing new lands there while running workloads stay;
-- set its **external domain** for one-click app URLs (see [External access](#external-access)).
+- set its **external domain** for one-click app URLs (see [External access](#external-access));
+- choose how service apps are reached by name (see [Service load balancing](#service-load-balancing)).
 
 Private networks never span locations. Attaching a database, mounting a volume, joining a stack, or
 referencing an app or database from a manifest across two locations is refused with a message naming
@@ -125,6 +126,20 @@ says how many apps are affected; clearing it removes those URLs. Custom domains 
 The default cluster's domain and provider can be pinned from the environment with
 `MIABI_EXTERNAL_BASE_DOMAIN` and `MIABI_EXTERNAL_BASE_PROVIDER`, which the dialog then shows read-only. The
 built-in registry is published as `registry.<domain>` under the default cluster's domain.
+
+### Service load balancing
+
+A service app is reached by its name, from the gateway and from other apps. With **Virtual IP**, the
+default, the name resolves to one stable address that Docker balances across the replicas with the kernel's
+IPVS. Some hosts cannot run IPVS inside Docker's network namespaces, most often nodes that are LXC containers,
+for example on Proxmox. There the name still resolves but every connection is refused, so neither the gateway
+nor other apps reach the service, although its tasks run fine.
+
+On such a cluster, set **Service load balancing** to **DNS round-robin** in the cluster's **Edit** dialog.
+The name then resolves to the replicas' own addresses. Running services switch in place, and later deploys use
+the setting. A client that caches DNS keeps using the replica it resolved until its cache expires, so traffic
+spreads less evenly than through a virtual IP. The [network check](#network-check) tests a virtual IP on one
+node and tells you when to switch.
 
 ### Node pools
 
@@ -236,6 +251,7 @@ Cluster networking fails in a way that is almost impossible to read from the out
 | **DNS** | Gossip is reaching the node | Open `7946/tcp+udp` |
 | **TCP** | The data plane carries packets | Open `4789/udp` **and ESP** |
 | **1400-byte payload** | No MTU black hole | The path between nodes is not 1500-clean |
+| **Service virtual IP** | Docker can balance a service's virtual IP on the node | Set [service load balancing](#service-load-balancing) to DNS round-robin |
 
 The payload check is the one nobody thinks to run, and the only one that catches an **MTU black hole** — where TLS handshakes succeed and every large response hangs forever.
 
