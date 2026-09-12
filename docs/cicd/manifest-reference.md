@@ -259,6 +259,9 @@ spec:
   instance: auto        # auto | dedicated | shared
   placement:
     location: eu-central # optional; the workspace default when omitted
+  resources:            # optional; gives the database an instance of its own
+    memory: 1Gi
+    cpu: "0.5"
 ```
 
 | `instance` | Behaviour |
@@ -269,6 +272,16 @@ spec:
 
 `instance` used to be spelled `placement: auto`, before `placement` became a block. That spelling
 still parses; setting it together with `instance` is an error.
+
+`resources` limits the database's instance: `memory` (with `Ki`, `Mi` or `Gi`) and `cpu` in cores, the
+engine tuned to the memory — see [resource sizing](/docs/databases/provisioning#resource-sizing).
+Stating them gives the database an instance of its own, since one it reused would already run with
+another's size: `auto` provisions a new instance instead of reusing one, and `shared` with
+`resources` is an error.
+
+Omitted, the instance keeps whatever limits it has, so a size set in the console or by the plan's
+default is left alone. A stated limit converges, restarting the instance, and `"0"` removes it. A
+database whose instance also hosts other databases cannot converge a size; change it on the instance.
 
 Reference the result from an app's env with `{{ .databases.shop-db.* }}` — see
 [interpolation](#interpolation). The database is also attached to the app that references it, so it

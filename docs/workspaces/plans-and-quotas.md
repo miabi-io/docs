@@ -40,6 +40,7 @@ A quota is an upper bound on a countable resource. Typical quotas include:
 |-------|------------------------|
 | Applications | Apps deployed in the workspace. |
 | Databases | Provisioned database instances. |
+| Database CPU & memory | The CPU and memory limits of all database instances added up, a budget separate from apps and jobs. See [plan limits](/docs/databases/provisioning#plan-limits). |
 | Domains | Custom domains attached. |
 | Members | Users invited to the workspace. |
 | Volumes & storage | Persistent volumes and total disk used. |

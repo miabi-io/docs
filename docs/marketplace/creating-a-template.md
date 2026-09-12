@@ -20,7 +20,9 @@ A template is a single `template.yaml` with four parts:
   fields are rejected — there is no `slug` key.
 - **`inputs`** — the fields the installer prompts for (with validation, defaults, and secret
   generation).
-- **`databases`** — managed databases provisioned alongside the app.
+- **`databases`** — managed databases provisioned alongside the app. A database may set
+  `resources` (`memory`, `cpu`) to size its instance; a sized database always gets an instance of its
+  own rather than reusing one.
 - **`configs`** — configuration files created and mounted into the app (optional; see
   [below](#shipping-configuration-files)).
 - **`applications`** — the app(s) to deploy, with their env, ports, and healthcheck.
@@ -105,6 +107,8 @@ databases:
     engine: redis
     version: "8-alpine"
     placement: dedicated
+    resources:
+      memory: 256Mi
 
 applications:
   - name: posta
