@@ -207,7 +207,7 @@ included; each is listed by name under `secretEnv`.
 The two exposure knobs are orthogonal, and a port may use either, both, or neither:
 
 - **`externalAccess: true`** — a public HTTPS URL at `<externalLabel>.<base-domain>`, served through
-  the reverse proxy (L7). Requires a platform base domain. For a custom hostname, use a
+  the reverse proxy (L7). Requires an external domain on the app's cluster. For a custom hostname, use a
   [`Route`](#route) instead.
 - **`publish: true`** (with optional `hostPort`) — binds the container port to a raw port on the node
   (L4), like `docker -p`. Host ports are bounded by `MIABI_HOST_PORT_MIN`/`MAX` (1024 and up by

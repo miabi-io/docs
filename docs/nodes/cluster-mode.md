@@ -104,11 +104,27 @@ already placed on it. A service app is scheduled by Swarm, and a standalone clus
 From a cluster's **Edit** dialog, administrators can:
 
 - restrict it to **platform admins only**, which hides it from workspaces;
-- **cordon** it, so nothing new lands there while running workloads stay.
+- **cordon** it, so nothing new lands there while running workloads stay;
+- set its **external domain** for one-click app URLs (see [External access](#external-access)).
 
 Private networks never span locations. Attaching a database, mounting a volume, joining a stack, or
 referencing an app or database from a manifest across two locations is refused with a message naming
 both. Across two nodes of one location it is allowed only when the cluster runs a swarm.
+
+### External access
+
+Each cluster has its own **external domain** for [one-click app URLs](/docs/applications/exposing-your-app),
+with an optional certificate provider, both set in the cluster's **Edit** dialog. Point `*.<domain>` at the
+cluster's gateway; the dialog shows the address to use. An app's generated URL is `<label>.<domain>` under
+the domain of the cluster it runs in, from the console and from a manifest's `externalAccess` alike, and a
+cluster without a domain has external access off. Two clusters cannot share a domain.
+
+Changing the domain moves every generated URL in the cluster to the new domain, after a confirmation that
+says how many apps are affected; clearing it removes those URLs. Custom domains are untouched.
+
+The default cluster's domain and provider can be pinned from the environment with
+`MIABI_EXTERNAL_BASE_DOMAIN` and `MIABI_EXTERNAL_BASE_PROVIDER`, which the dialog then shows read-only. The
+built-in registry is published as `registry.<domain>` under the default cluster's domain.
 
 ### Node pools
 

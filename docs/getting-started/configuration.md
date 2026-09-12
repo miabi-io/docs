@@ -127,13 +127,17 @@ Off by default. See [GPUs](/docs/applications/gpus) for the full workflow.
 
 ## Public app URLs
 
-Miabi can hand every app a ready-to-use public URL under a wildcard base domain (the "one-click URL"
-feature). Point `*.<base>` DNS at the gateway and set:
+Miabi can hand every app a ready-to-use public URL under a wildcard domain (the "one-click URL"
+feature). Each cluster has its own **external domain**, set under **Clusters → Edit**, and `*.<domain>`
+DNS points at that cluster's gateway. The default cluster's can also come from the environment:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `MIABI_EXTERNAL_BASE_DOMAIN` | — | Base domain for one-click app URLs, e.g. `apps.example.com` (point `*.apps.example.com` at the gateway) |
-| `MIABI_EXTERNAL_BASE_PROVIDER` | — | Goma certManager provider used for those app certs (empty = gateway default) |
+| `MIABI_EXTERNAL_BASE_DOMAIN` | — | The default cluster's external domain, e.g. `apps.example.com` (point `*.apps.example.com` at the gateway). Pins the field when set; unset leaves it to the cluster page |
+| `MIABI_EXTERNAL_BASE_PROVIDER` | — | Goma certManager provider for the default cluster's generated URLs (empty = gateway default). Pins the field when set |
+
+An install upgraded from a version that kept the domain in **Platform Settings** moves it onto the
+default cluster, and generated URLs keep their hostnames.
 
 ## Log store
 
@@ -251,7 +255,7 @@ tab. See [Registry](/docs/registry/administration).
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `MIABI_REGISTRY_ENABLED` | `false` | Run the built-in OCI registry. Pins the switch when set — `false` pins it *off*; unset leaves it to the console |
-| `MIABI_REGISTRY_HOST` | — | Registry hostname; pins the field when set. Unset ⇒ the console's value, else `registry.<MIABI_EXTERNAL_BASE_DOMAIN>`; with neither, image distribution fails. Must be a bare DNS hostname with an optional port (no scheme, no path, not a single label) |
+| `MIABI_REGISTRY_HOST` | — | Registry hostname; pins the field when set. Unset ⇒ the console's value, else `registry.<domain>` under the default cluster's external domain; with neither, image distribution fails. Must be a bare DNS hostname with an optional port (no scheme, no path, not a single label) |
 | `MIABI_REGISTRY_HTTPS_REDIRECT` | `true` | Redirect plaintext registry requests to HTTPS. Set `false` **only** when a TLS terminator (Cloudflare, nginx, a load balancer) sits in front of the gateway and the gateway's `proxy.trustedProxies` is not configured — otherwise the redirect loops and every push and pull fails. Configuring trusted proxies on the gateway is the better fix; see [Running behind a proxy](https://goma.jkaninda.dev/usermanual/running-behind-a-proxy.html) |
 | `MIABI_REGISTRY_STORAGE` | `filesystem` | `filesystem` or `s3`; pins the driver when set. `s3` is an Enterprise feature, verified when selected and at startup |
 | `MIABI_REGISTRY_IMAGE` | — | Override the registry image (default `registry:3`) |
