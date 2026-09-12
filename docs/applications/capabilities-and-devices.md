@@ -84,13 +84,42 @@ Grants round-trip through `miabi.io/v1`, and go through the same checks as the c
 ```yaml
 spec:
   security:
-    addCapabilities: [NET_ADMIN]
+    capabilities:
+      add: [NET_ADMIN]
     devices: ["/dev/net/tun"]
 ```
 
 An absent `security` block means **no grants**, not "leave what is there" — so removing
 it from a manifest revokes what the app had. A capability the platform will not grant
-fails the apply rather than being silently dropped.
+fails the apply rather than being silently dropped. `security.addCapabilities`, the
+spelling from before `capabilities` became a block, still parses.
+
+## Hardening an app
+
+The opposite direction needs no privileged workspace, and works in any workspace. Set it
+in the app's **Settings** tab or under `security` in a manifest:
+
+- **Drop capabilities** removes capabilities from Docker's default set, like
+  `docker run --cap-drop`. Any Linux capability may be named, or `ALL` to keep only what
+  the app is granted.
+- **Read-only root filesystem** mounts the image read-only. Volumes stay writable, so an
+  image that writes to `/tmp` or `/var/run` needs a volume there. One-off jobs keep a
+  writable filesystem, since migrations and asset builds write into the image.
+- **No new privileges** stops setuid binaries from raising a process's privileges.
+
+```yaml
+spec:
+  security:
+    readOnlyRootFilesystem: true
+    noNewPrivileges: true
+    capabilities:
+      add: [NET_BIND_SERVICE]
+      drop: [ALL]
+```
+
+Hardening layers on top of the workspace's
+[security profile](/docs/security/container-security-profile) and can only take more
+away. It applies to containers and replicated services alike, and needs a redeploy.
 
 ## What an operator sees
 

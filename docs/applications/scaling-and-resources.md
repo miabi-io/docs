@@ -42,8 +42,10 @@ Increase the **replica count** to run several identical containers of your app a
 Running more than one replica requires [cluster mode](/docs/nodes/cluster-mode). When it is on, apps
 deploy as replicated **swarm services** by default (you can opt a specific app back to a single
 container). Swarm load-balances east-west traffic across the replicas by the app's service alias,
-and **public ingress reaches them too** — the central gateway fronts the service's virtual IP over
-a shared ingress overlay, wherever the scheduler placed the tasks. The app's detail page shows the
+and **public ingress reaches them too** — the cluster's gateway reaches the service over a shared
+ingress overlay, wherever the scheduler placed the tasks: through its virtual IP, or its replicas'
+own addresses in a cluster set to
+[DNS round-robin](/docs/nodes/cluster-mode#service-load-balancing). The app's detail page shows the
 **real nodes** its replicas are running on.
 
 ## Single-node vs. multi-node

@@ -59,12 +59,101 @@ Swarm has **no NAT traversal**. Each node dials the others directly on the ports
 
 Cluster mode is a platform-admin action (see [Platform Administration](/docs/administration/platform-admin)):
 
-1. Open **Nodes** in the console and choose **Enable cluster**.
+1. Open **Clusters** in the admin console, open the **default** cluster and choose **Enable Swarm**.
 2. Read the preflight findings.
-3. Give the cluster a **name** (optional, e.g. `prod-eu-west-1`). Swarm identifies a cluster by an unreadable id and a manager address that moves, so without a name the panel can only say "the cluster" — fine with one, useless with two. You can set or change it later.
-4. Set the **advertise address** — the address swarm peers reach this manager on.
+3. Set the **advertise address** — the address swarm peers reach this manager on.
+
+Name the cluster and give it a location code (for example `Frankfurt` · `eu-central`) with **Edit** on the same page.
 
 Miabi initializes (or adopts an existing) Docker Swarm and promotes the control-plane node as a manager. If a host is already part of a swarm it is recognized rather than reinitialized.
+
+## Swarm in other clusters
+
+Every node you add is a standalone cluster of its own. To run another swarm, for example in a second
+region, open that node's cluster under **Clusters** and choose **Enable Swarm**. Miabi initializes the
+swarm on the node over its agent tunnel, so the control plane never opens a connection into that
+network. Join more nodes from the same page.
+
+A cluster other than the default one only takes and releases **empty** nodes: a node with apps,
+databases or volumes is refused when it would join or leave, and Swarm is enabled or disabled only on
+an empty cluster. Its workspace networks are overlays from the start, so there is nothing to migrate.
+To bring a node that already runs workloads into a swarm, join it to the default cluster, which accepts
+it, or enable Swarm on an empty node in that location instead.
+
+Each cluster has its own agent service and token, and deploys to a slow cluster cannot take every
+worker slot while deploys to other clusters wait.
+
+A swarm outside the default cluster serves its own public traffic: the gateway on its **ingress node**,
+by default its manager, serves every route in the cluster, and DNS records for those routes point at
+the cluster's public address. The ingress node must run its own gateway (edge-gateway connectivity). To
+use another node, open the cluster and choose **Gateway → Change**. Nodes of the default cluster never run
+a gateway of their own: the control plane's gateway serves every app there.
+
+## Locations
+
+Workspaces see clusters as **locations**. When a workspace can use more than one, the create forms for
+apps, databases, volumes, stacks and marketplace installs show a **Location** picker, and manifests use
+[`spec.location`](/docs/cicd/manifest-reference#locations). A new resource is created in the location it
+names, else the workspace's **default location** (set by workspace owners and admins under
+**Settings → General**), else the first location the workspace may use. Only platform admins can pin a
+node.
+
+Inside a location, a new resource goes to the online, uncordoned node with the least container memory
+already placed on it. A service app is scheduled by Swarm, and a standalone cluster has one node.
+
+From a cluster's **Edit** dialog, administrators can:
+
+- restrict it to **platform admins only**, which hides it from workspaces;
+- **cordon** it, so nothing new lands there while running workloads stay;
+- set its **public address**, the IP (or hostname) that DNS records for its routes point at: its gateway,
+  or a load balancer in front of it. A remote cluster learns the IP from the public address its ingress
+  node's agent connects from until you set one;
+- set its **external domain** for one-click app URLs (see [External access](#external-access));
+- choose how service apps are reached by name (see [Service load balancing](#service-load-balancing)).
+
+Private networks never span locations. Attaching a database, mounting a volume, joining a stack, or
+referencing an app or database from a manifest across two locations is refused with a message naming
+both. Across two nodes of one location it is allowed only when the cluster runs a swarm.
+
+### External access
+
+Each cluster has its own **external domain** for [one-click app URLs](/docs/applications/exposing-your-app),
+with an optional certificate provider, both set in the cluster's **Edit** dialog. Point `*.<domain>` at the
+cluster's gateway; the dialog shows the address to use. An app's generated URL is `<label>.<domain>` under
+the domain of the cluster it runs in, from the console and from a manifest's `externalAccess` alike, and a
+cluster without a domain has external access off. Two clusters cannot share a domain.
+
+Changing the domain moves every generated URL in the cluster to the new domain, after a confirmation that
+says how many apps are affected; clearing it removes those URLs. Custom domains are untouched.
+
+The default cluster's domain and provider can be pinned from the environment with
+`MIABI_EXTERNAL_BASE_DOMAIN` and `MIABI_EXTERNAL_BASE_PROVIDER`, which the dialog then shows read-only. The
+built-in registry is published as `registry.<domain>` under the default cluster's domain.
+
+### Service load balancing
+
+A service app is reached by its name, from the gateway and from other apps. With **Virtual IP**, the
+default, the name resolves to one stable address that Docker balances across the replicas with the kernel's
+IPVS. Some hosts cannot run IPVS inside Docker's network namespaces, most often nodes that are LXC containers,
+for example on Proxmox. There the name still resolves but every connection is refused, so neither the gateway
+nor other apps reach the service, although its tasks run fine.
+
+On such a cluster, set **Service load balancing** to **DNS round-robin** in the cluster's **Edit** dialog.
+The name then resolves to the replicas' own addresses. Running services switch in place, and later deploys use
+the setting. A client that caches DNS keeps using the replica it resolved until its cache expires, so traffic
+spreads less evenly than through a virtual IP. The [network check](#network-check) tests a virtual IP on one
+node and tells you when to switch.
+
+### Node pools
+
+A pool groups nodes by hardware or tier, for example `pro` or `gpu`. Set a node's pool from the
+**pool** chip on its detail page, or clear it to take the node out. Miabi mirrors the pool onto the
+node's Swarm label `miabi.pool`, so service placement can use it.
+
+Pools bind nothing on their own: [plan placement](/docs/workspaces/plans-and-quotas#placement), an
+Enterprise feature, gives them meaning. A plan that names a pool keeps its workspaces on that pool's
+nodes, and a plan without one keeps them off every pooled node. Pools match by name in every location,
+so `pro` in two locations is the same pool. A platform admin pinning a node bypasses the pool.
 
 ## Cluster networking
 
@@ -78,7 +167,7 @@ Because every app and every database already joins the workspace's default netwo
 
 Enabling cluster mode converts your workspaces automatically. But an install that was **already** in cluster mode when it upgraded never saw that transition, so its workspaces are still on node-local bridges — and cross-node connectivity silently does not work.
 
-The Nodes page will tell you:
+The default cluster's page will tell you:
 
 > **N workspace networks are still node-local bridges.** Apps and databases in them can't reach each other across nodes.
 
@@ -109,9 +198,9 @@ Metrics and exec have no manager-side equivalent in Docker — there is no `dock
 
 You do not have to SSH to each host. Swarm can carry the agent for you:
 
-**Nodes → Manage cluster nodes** deploys the agent as a **global service** — one task on every node in the cluster, and on every node that **joins later**. Every node becomes managed, with no per-host step and no drift as the cluster grows.
+**Clusters → default cluster → Manage cluster nodes** deploys the agent as a **global service** — one task on every node in the cluster, and on every node that **joins later**. Every node becomes managed, with no per-host step and no drift as the cluster grows.
 
-Nodes that register this way appear in the Nodes list with a **`cluster`** badge: the swarm brought them in, an admin did not. Use the **From the cluster** filter to see just those.
+Nodes that register this way appear in the Nodes list with a **`cluster`** badge: the swarm brought them in, an admin did not. Filter the Nodes list by cluster to see a cluster's nodes.
 
 :::caution
 This grants Miabi the **Docker socket** — root-equivalent — on every machine in the swarm, now and in future. That is the right default for machines you already administer, and a surprising one for a shared cluster. It is an explicit action, not something enabling cluster mode does silently.
@@ -125,7 +214,7 @@ If your control plane uses a **self-signed or private-CA certificate**, the agen
 
 With cluster mode on, new apps created **in the console** default to the replicated **service** runtime: replicas, rolling updates, and rescheduling across nodes. You can switch any app back to a single **container**.
 
-Declarative sources — [GitOps](/docs/cicd/gitops), Terraform, marketplace templates — are deliberately **excluded** from that default, so a manifest produces the same runtime every apply regardless of whether cluster mode happened to be on. They stay containers unless the manifest says otherwise, and they still join the workspace overlay, so they reach databases on other nodes just fine.
+Declarative sources — [GitOps](/docs/cicd/gitops), Terraform, marketplace templates — are deliberately **excluded** from that default, so a manifest produces the same runtime every apply regardless of whether cluster mode happened to be on. They stay containers unless the manifest sets [`deployment.runtime: service`](/docs/cicd/manifest-reference#application), along with `deployment.replicas`, `deployment.update` and `placement.constraints`, and they still join the workspace overlay, so they reach databases on other nodes just fine.
 
 Miabi also keeps **stateful** apps (those holding node-local storage) as node-pinned containers, so their data is never left behind.
 
@@ -133,7 +222,7 @@ Miabi also keeps **stateful** apps (those holding node-local storage) as node-pi
 
 The two runtimes are placed by different things, and the console offers the control that actually decides:
 
-- A **container** app is placed by **node** — you pick it.
+- A **container** app is placed in a [location](#locations); platform admins can also pin a node.
 - A **service** app is placed by the **Swarm scheduler**, which ignores the node you pick. To put it somewhere specific, choose **Placement → Pin to `<node>`**, which emits a real Swarm constraint.
 
 ### Availability: draining a node
@@ -165,6 +254,7 @@ Cluster networking fails in a way that is almost impossible to read from the out
 | **DNS** | Gossip is reaching the node | Open `7946/tcp+udp` |
 | **TCP** | The data plane carries packets | Open `4789/udp` **and ESP** |
 | **1400-byte payload** | No MTU black hole | The path between nodes is not 1500-clean |
+| **Service virtual IP** | Docker can balance a service's virtual IP on the node | Set [service load balancing](#service-load-balancing) to DNS round-robin |
 
 The payload check is the one nobody thinks to run, and the only one that catches an **MTU black hole** — where TLS handshakes succeed and every large response hangs forever.
 
