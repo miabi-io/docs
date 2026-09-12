@@ -77,6 +77,24 @@ spec:
   command: ["server", "--port=8080"]
   stack: shop                 # join a Stack (must be declared in the bundle)
   externalLabel: shop         # pins the public URL to shop.<base-domain>
+  placement:                  # where it runs
+    location: eu-central      # omit for its stack's, its databases' or the workspace default
+    constraints:              # service only, Swarm syntax
+      - node.labels.disk==ssd
+  deployment:                 # how it runs and rolls out
+    runtime: service          # container (default) | service — a replicated Swarm service
+    replicas: 3               # service only; omit to keep the current count
+    strategy: rolling         # recreate | rolling | canary; omit to keep the app's
+    update:                   # service only — how a release rolls out
+      parallelism: 1
+      delaySeconds: 10
+  security:                   # what it may do
+    runAsUser: "1000:1000"    # account the container runs as; omit to keep the image's
+    readOnlyRootFilesystem: true
+    noNewPrivileges: true
+    capabilities:
+      add: [NET_BIND_SERVICE] # allow-listed grants
+      drop: [ALL]             # any Linux capability, or ALL
   ports:
     - container: 8080
       scheme: http            # http | https (default http) — how the proxy talks to it
@@ -99,7 +117,6 @@ spec:
       path: /etc/nginx/nginx.conf
       mode: "0444"
   reloadPolicy: restart       # restart (default) | none — on a mounted config's change
-  runAsUser: "1000:1000"      # account the container runs as; omit to keep the image's
   resources:
     memory: 512Mi             # Ki/Mi/Gi; empty = unlimited
     cpu: "0.5"                # cores; empty = unlimited
@@ -117,17 +134,36 @@ spec:
 | `registry` | Names a [`Registry`](#registry) credential. It need not be declared in the same bundle — an undeclared name resolves against the workspace's existing credentials. An unknown name is an error, not a silent anonymous pull. |
 | `command` | Overrides the image's command (argv form). |
 | `stack` | Must name a [`Stack`](#stack) **in the same bundle**. Members share a network and resolve each other by name. |
-| `location` | The [location](/docs/nodes/cluster-mode#locations) the app is created in, by name. Omit it to use its stack's location, else the workspace default. An app that mounts a volume is created on that volume's node. Fixed once created — see [locations](#locations). |
+| `placement.location` | The [location](/docs/nodes/cluster-mode#locations) the app is created in, by name. Omit it to use its stack's location; else, when every database it references sits in one location, that location; else the workspace default. An app that mounts a volume is created on that volume's node. Fixed once created — see [locations](#locations). |
+| `placement.constraints` | Service only. Swarm placement constraints, such as `node.labels.disk==ssd` or `node.role!=manager`, narrowing the nodes of the app's location it runs on. An empty list clears them; omitting the field keeps them. A plan's [node pool](/docs/nodes/cluster-mode#node-pools) still applies on top. |
+| `deployment.runtime` | `container` (default) runs one Docker container; `service` runs a replicated Swarm service, which needs a location that runs a swarm — see [cluster mode](/docs/nodes/cluster-mode). Omitted, a new app is a container and an existing app keeps its runtime; stated, a change converges. |
+| `deployment.replicas` | Service only, 1–100. Omit it to keep the count the app runs at, so a scale made in the console is not undone. |
+| `deployment.strategy` | How a new release replaces the running one: `recreate`, `rolling` (default) or `canary`. **Omit it** to leave whatever the app is configured with in the console. A canary needs a running release to shift traffic against, so the first deploy of an app is always a straight rollout. Canary weights and interval stay console-side — they tune a rollout in flight rather than describing desired state. |
+| `deployment.update` | Service only. `parallelism` tasks are replaced at a time, with `delaySeconds` between batches. Omit it to keep the app's setting. Setting `deployment.replicas`, `deployment.update` or `placement.constraints` without `deployment.runtime: service` is an error, not a silent no-op. |
 | `externalLabel` | Pins the external-access subdomain. Platform-wide unique: if taken, it is ignored and a generated label is used — the apply still succeeds. |
 | `ports` | See [port exposure](#port-exposure). |
 | `env` / `secretEnv` | Every `secretEnv` key must also appear in `env`. Values support [interpolation](#interpolation). |
 | `mounts` | Exactly one of `volume` or `config`, and both must be declared in the same bundle. `key` and `mode` are valid only with a `config` — setting them on a volume mount is an error, not a silent no-op. A config mount is always read-only. Privileged host binds are **not** manifest-expressible. |
 | `reloadPolicy` | `restart` (default) redeploys the app when a mounted [`Config`](#config)'s content changes; `none` leaves it running, for apps that watch their own config file. |
-| `runAsUser` | The account the container runs as — `uid`, `uid:gid`, `name` or `name:group` — like `docker run --user`. Omit to keep the image's own user. A workspace under the [restricted security profile](/docs/security/container-security-profile) must give a non-root **numeric** uid; a name is refused there, since the image decides what it maps to. Attached volumes are chowned to it on deploy. |
+| `security.runAsUser` | The account the container runs as — `uid`, `uid:gid`, `name` or `name:group` — like `docker run --user`. Omit to keep the image's own user. A workspace under the [restricted security profile](/docs/security/container-security-profile) must give a non-root **numeric** uid; a name is refused there, since the image decides what it maps to. Attached volumes are chowned to it on deploy. |
+| `security.readOnlyRootFilesystem` | Mounts the container's root filesystem read-only. Volumes stay writable, so an image that writes elsewhere, such as `/tmp`, needs a volume there or it fails to start. One-off jobs keep a writable filesystem. |
+| `security.noNewPrivileges` | Stops a process gaining privileges through setuid binaries. The restricted security profile always sets it, so `false` is refused there rather than silently overridden. |
+| `security.capabilities` | `add` grants [capabilities](/docs/applications/capabilities-and-devices) from the allow-list, in a privileged workspace; `drop` removes any Linux capability, or `ALL` to keep only what `add` grants. The `CAP_` prefix is optional; a capability both added and dropped is an error. |
+| `security.devices` | Host devices exposed to the container — see [capabilities & devices](/docs/applications/capabilities-and-devices). Not allowed on a service. |
 | `resources` | Omitted fields mean unlimited / none. |
 | `source` | Build the image from Git instead of pulling one — see [Building from source](#building-from-source). Mutually exclusive with `image`. |
 | `containerLabels` | Reserved namespaces (`io.miabi.*`, `com.docker.*`) are stripped rather than rejected. See [container labels](/docs/applications/container-labels). |
-| `strategy` | How a new release replaces the running one: `recreate`, `rolling` (default) or `canary`. **Omit it** to leave whatever the app is configured with in the console. A canary needs a running release to shift traffic against, so the first deploy of an app is always a straight rollout. Canary weights and interval stay console-side — they tune a rollout in flight rather than describing desired state. |
+
+Every `security` field is the manifest's to state: an omitted one means the container default, so
+removing a field from the file converges the app back to it. Hardening layers on top of the
+workspace's security profile and can only take more away.
+
+:::note Older spellings
+Manifests written before these fields were grouped still apply. Top-level `runAsUser` and `strategy`,
+and `security.addCapabilities`, are read as `security.runAsUser`, `deployment.strategy` and
+`security.capabilities.add`. Setting an old spelling together with its new one is an error, and an
+export always writes the new ones.
+:::
 
 ### Building from source
 
@@ -198,10 +234,12 @@ metadata:
   name: shop
 spec:
   description: Storefront — web, worker and its datastores
-  location: eu-central   # optional; the workspace default when omitted
+  placement:
+    location: eu-central # optional; the workspace default when omitted
 ```
 
-Member applications that declare no `location` of their own are created in the stack's location.
+Member applications that declare no `placement.location` of their own are created in the stack's location. One
+that declares a different location is refused, naming both.
 
 ---
 
@@ -218,15 +256,19 @@ metadata:
 spec:
   engine: postgres      # postgres | mysql | mariadb | redis
   version: "17-alpine"
-  placement: auto       # auto | dedicated | shared
-  location: eu-central  # optional; the workspace default when omitted
+  instance: auto        # auto | dedicated | shared
+  placement:
+    location: eu-central # optional; the workspace default when omitted
 ```
 
-| `placement` | Behaviour |
+| `instance` | Behaviour |
 |---|---|
 | `auto` (default) | Reuse a compatible running instance; provision a dedicated one if none exists. |
 | `dedicated` | Always provision a fresh instance. Forced for Redis, which has no logical databases. |
 | `shared` | Require an existing compatible instance. Rejected for engines without logical databases. |
+
+`instance` used to be spelled `placement: auto`, before `placement` became a block. That spelling
+still parses; setting it together with `instance` is an error.
 
 Reference the result from an app's env with `{{ .databases.shop-db.* }}` — see
 [interpolation](#interpolation). The database is also attached to the app that references it, so it
@@ -251,7 +293,8 @@ metadata:
   name: web-data
 spec:
   size: 5Gi              # accepted, but see below
-  location: eu-central   # optional; the workspace default when omitted
+  placement:
+    location: eu-central # optional; the workspace default when omitted
 ```
 
 Volumes are compared by **presence and location only** — an existing volume never shows as drift, since
@@ -626,10 +669,12 @@ matter, because the address is the name, not something minted at creation.
 the alias changes if the app is recreated, and means nothing to a human reading the environment.
 
 :::warning Both apps must be able to reach each other
-A workspace network is a **node-local bridge** unless [cluster mode](/docs/nodes/cluster-mode) is on,
-so two apps pinned to different nodes share no network and the name will not resolve. Apply refuses
-such a reference outright, naming both nodes, rather than letting it fail as a connection error
-later. In cluster mode the network is an overlay spanning every node and the reference is fine.
+Private networks don't span [locations](#locations), and inside a location a workspace network is a
+**node-local bridge** unless that location runs a swarm. So the name will not resolve when the two
+apps sit in different locations, or on different nodes of a location without a swarm. Apply refuses
+such a reference outright, naming both sides, rather than letting it fail as a connection error
+later. In a location that runs a swarm the network is an overlay spanning its nodes, and the
+reference is fine.
 
 An application that has **not been deployed since Miabi 1.10** does not answer to its name yet —
 aliases are set when a container is created. Redeploy the target once and it does.
@@ -656,7 +701,10 @@ The plan compares desired state against a live snapshot. Not every field partici
 resource never shows phantom drift:
 
 **Diffed** — image, tag, digest, command, registry, resource caps, non-secret env, container labels,
-and per-port exposure (`externalAccess` / `publish` as present-or-not).
+the `security` block, and per-port exposure (`externalAccess` / `publish` as present-or-not).
+
+**Diffed only when stated** — `deployment` (runtime, replicas, strategy, update) and `placement`
+(location, constraints). A manifest silent about them leaves what the console set alone.
 
 **Not diffed** — create-time structure that cannot be mapped back unambiguously: ports themselves,
 mounts, and stack membership. Change one and the resource is updated on the next apply that touches
@@ -681,12 +729,29 @@ manifest state — they are compared by presence, so they are never churned.
 
 ### Locations
 
-`location` on an `Application`, `Stack`, `Database` or `Volume` is compared only when the manifest
+`placement.location` on an `Application`, `Stack`, `Database` or `Volume` is compared only when the manifest
 states it, so a manifest without one never drifts. A resource is never moved: a different location
-fails the apply — delete the resource and apply again. Private networks don't span locations, so an
-app that references an application or database in another location through
-[interpolation](#interpolation), or mounts a volume there, is refused with a message naming both.
-Applies cannot target a location restricted to platform admins.
+fails the apply — delete the resource and apply again.
+
+A new application that names no location follows what it depends on: its stack's location, else the
+node of a volume it mounts, else the location every database it references sits in, else the
+workspace default. An app deployed next to its database needs no `location` of its own.
+
+Locations are checked when the plan is built, before anything in the bundle is applied. An unknown
+location, one the workspace's plan does not allow, a cordoned one, a `deployment.runtime: service` app in a
+location that runs no swarm, or an app declared in a different location from its stack fails the
+whole apply. Resources that already exist are not re-checked.
+
+Private networks don't span locations, so an app that references an application or database in
+another location through [interpolation](#interpolation), or mounts a volume there, is refused with
+a message naming both.
+
+A location restricted to platform admins takes an apply only from a platform admin. A GitOps sync acts
+on nobody's behalf, so it never creates anything there; resources already in such a location still
+converge.
+
+Exporting an application leaves out its location when that is the workspace default, so the bundle
+applies unchanged in another workspace.
 
 ## Prune
 

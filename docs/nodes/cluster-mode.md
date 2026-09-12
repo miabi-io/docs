@@ -180,7 +180,7 @@ If your control plane uses a **self-signed or private-CA certificate**, the agen
 
 With cluster mode on, new apps created **in the console** default to the replicated **service** runtime: replicas, rolling updates, and rescheduling across nodes. You can switch any app back to a single **container**.
 
-Declarative sources — [GitOps](/docs/cicd/gitops), Terraform, marketplace templates — are deliberately **excluded** from that default, so a manifest produces the same runtime every apply regardless of whether cluster mode happened to be on. They stay containers unless the manifest says otherwise, and they still join the workspace overlay, so they reach databases on other nodes just fine.
+Declarative sources — [GitOps](/docs/cicd/gitops), Terraform, marketplace templates — are deliberately **excluded** from that default, so a manifest produces the same runtime every apply regardless of whether cluster mode happened to be on. They stay containers unless the manifest sets [`deployment.runtime: service`](/docs/cicd/manifest-reference#application), along with `deployment.replicas`, `deployment.update` and `placement.constraints`, and they still join the workspace overlay, so they reach databases on other nodes just fine.
 
 Miabi also keeps **stateful** apps (those holding node-local storage) as node-pinned containers, so their data is never left behind.
 

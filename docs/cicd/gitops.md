@@ -155,7 +155,7 @@ spec:
       spec:
         engine: postgres
         version: "17-alpine"
-        placement: auto          # auto | dedicated | shared
+        instance: auto           # auto | dedicated | shared
 
     # Dedicated Redis — async job queue + caches. Miabi sets a password on the
     # instance, surfaced below as .databases.posta-redis.password.
@@ -165,7 +165,7 @@ spec:
       spec:
         engine: redis
         version: "8-alpine"
-        placement: dedicated
+        instance: dedicated
 
     # Miabi generates these on the first apply and stores them encrypted — the
     # values never appear in this file or in Git. They are created before the
