@@ -23,7 +23,7 @@ The local node is always present and is the default scheduling target. Remote no
 
 ## How scheduling works
 
-When you deploy an application, Miabi places its containers on an eligible node. Placement considers node availability, resource headroom, and any pinning or labels you've configured. Persistent volumes and databases are bound to the node where they live, so stateful workloads stay put unless you explicitly migrate them.
+When you create an app, database or volume, Miabi first picks its **location** (cluster) — the one you chose, else the workspace default — then a node inside it: the online, uncordoned node with the least container memory already placed on it, within the plan's node pool when [plan placement](/docs/workspaces/plans-and-quotas#placement) applies. Platform admins can pin a node instead. Persistent volumes and databases stay on the node where they live, so stateful workloads stay put unless you explicitly migrate them.
 
 :::note
 Because remote nodes connect over an outbound tunnel, a node behind NAT or a firewall works without port-forwarding. The control plane never needs to reach *into* the node.
