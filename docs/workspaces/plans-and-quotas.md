@@ -57,6 +57,32 @@ Beyond raw counts, a plan can gate **features**. Examples include custom TLS cer
 
 When a feature is gated off, the corresponding controls are disabled in the console and the API returns a structured error explaining which capability is required. A platform admin can also override a capability for a single workspace.
 
+## Placement
+
+A plan can also decide **where** its workspaces run. On the plan's page, under **Placement**:
+
+- **Locations**: the [locations](/docs/nodes/cluster-mode#locations) its workspaces may use. The
+  location picker shows only these, and creating, applying a manifest or installing from the
+  marketplace anywhere else is refused. The first location is the plan's default, used when a
+  workspace has not picked one of its own. With none checked, every location is allowed.
+- **Node pool**: its workspaces' apps, databases and volumes land only on nodes in this
+  [pool](/docs/nodes/cluster-mode#node-pools), and service apps get a Swarm constraint that keeps their
+  replicas there. A plan without a pool runs only on nodes that are in no pool, so pooled hardware
+  stays reserved for the plans that name it.
+
+A location with no usable node in the plan's pool refuses the create with a message naming the pool.
+Placement is decided when a resource is created or a service deploys: changing a plan's placement, or
+a node's pool, moves nothing that is already running.
+
+A platform admin can override placement for a single workspace from **Admin → Workspaces**, like any
+other quota.
+
+:::note Enterprise
+Placement needs an Enterprise licence with plan placement (Business and up), and plan enforcement on.
+Without them, every workspace may use any location and any node. In Community, an admin can still hide
+a cluster from workspaces by restricting it to platform admins.
+:::
+
 ## Viewing usage
 
 Open **Settings → Plan & usage** to see current consumption against each quota. Usage bars highlight resources approaching their limit so you can act before a creation request is rejected.

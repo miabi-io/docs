@@ -110,6 +110,17 @@ Private networks never span locations. Attaching a database, mounting a volume, 
 referencing an app or database from a manifest across two locations is refused with a message naming
 both. Across two nodes of one location it is allowed only when the cluster runs a swarm.
 
+### Node pools
+
+A pool groups nodes by hardware or tier, for example `pro` or `gpu`. Set a node's pool from the
+**pool** chip on its detail page, or clear it to take the node out. Miabi mirrors the pool onto the
+node's Swarm label `miabi.pool`, so service placement can use it.
+
+Pools bind nothing on their own: [plan placement](/docs/workspaces/plans-and-quotas#placement), an
+Enterprise feature, gives them meaning. A plan that names a pool keeps its workspaces on that pool's
+nodes, and a plan without one keeps them off every pooled node. Pools match by name in every location,
+so `pro` in two locations is the same pool. A platform admin pinning a node bypasses the pool.
+
 ## Cluster networking
 
 This is what makes cross-node work.
