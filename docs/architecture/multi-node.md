@@ -52,16 +52,23 @@ hops away.
 
 ## How traffic reaches an app on a remote node
 
-Two shapes, and which one you get depends on how the node was added:
+Two shapes:
 
 | Node connectivity | How visitors reach its apps |
 |---|---|
-| **Port-forward** | The central gateway dials the app at the node's address on an auto-provisioned host port |
 | **Edge gateway** | The node runs its own Goma instance and serves its apps directly |
+| **Cluster gateway** | The node runs no gateway: its swarm cluster's gateway reaches its apps over the overlay network |
 
-New nodes are always added as edge gateways; port-forward is kept only for nodes that already use
-it. A node without public ports 80/443 should join the [cluster](/docs/nodes/cluster-mode) as a
-worker instead, where the central gateway reaches its apps over the overlay network.
+New nodes are always added as edge gateways. A node without public ports 80/443 should join a
+[swarm cluster](/docs/nodes/cluster-mode) as a worker, where it is served by the cluster's gateway.
+
+:::note Port forwarding is retired
+Earlier releases could reach a node's apps through auto-allocated host ports. Upgrading converts such
+a node to an edge gateway, or to a cluster-gateway node when it is a swarm member, and removes the
+host ports Miabi held for it. The cluster page of a converted node then offers to keep its gateway or
+join it to a swarm cluster. Port bindings requested for TCP apps and database port forwarding are
+unchanged.
+:::
 
 An edge gateway is the one to choose when the node is geographically distant or on its own uplink —
 traffic terminates there instead of crossing the network twice. Routing and middleware definitions

@@ -77,6 +77,8 @@ network. Join more nodes from the same page.
 A cluster other than the default one only takes and releases **empty** nodes: a node with apps,
 databases or volumes is refused when it would join or leave, and Swarm is enabled or disabled only on
 an empty cluster. Its workspace networks are overlays from the start, so there is nothing to migrate.
+To bring a node that already runs workloads into a swarm, join it to the default cluster, which accepts
+it, or enable Swarm on an empty node in that location instead.
 
 Each cluster has its own agent service and token, and deploys to a slow cluster cannot take every
 worker slot while deploys to other clusters wait.
