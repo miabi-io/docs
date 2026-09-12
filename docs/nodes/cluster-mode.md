@@ -85,9 +85,9 @@ worker slot while deploys to other clusters wait.
 
 A swarm outside the default cluster serves its own public traffic: the gateway on its **ingress node**,
 by default its manager, serves every route in the cluster, and DNS records for those routes point at
-that node's public address. The ingress node must run its own gateway (edge-gateway connectivity). To
-use another node, or put a load balancer in front, open the cluster, choose **Gateway → Change**, and
-set the node and, optionally, the ingress IP or hostname DNS should point at.
+the cluster's public address. The ingress node must run its own gateway (edge-gateway connectivity). To
+use another node, open the cluster and choose **Gateway → Change**. Nodes of the default cluster never run
+a gateway of their own: the control plane's gateway serves every app there.
 
 ## Locations
 
@@ -105,6 +105,9 @@ From a cluster's **Edit** dialog, administrators can:
 
 - restrict it to **platform admins only**, which hides it from workspaces;
 - **cordon** it, so nothing new lands there while running workloads stay;
+- set its **public address**, the IP (or hostname) that DNS records for its routes point at: its gateway,
+  or a load balancer in front of it. A remote cluster learns the IP from the public address its ingress
+  node's agent connects from until you set one;
 - set its **external domain** for one-click app URLs (see [External access](#external-access));
 - choose how service apps are reached by name (see [Service load balancing](#service-load-balancing)).
 
