@@ -42,6 +42,7 @@ If you want a build with **zero enterprise code** (the deny-all stub), build it 
 | SIEM streaming + retention | — | ✓ |
 | Per-workspace quota overrides | — | ✓ |
 | Plan placement (locations and node pools per plan) | — | ✓ |
+| Database sizes (named CPU and memory sizes, offered per plan) | — | ✓ |
 | Private template registry (custom marketplace URL) | — | ✓ |
 | CLI + MCP server for AI agents (`miabi mcp`) | ✓ | ✓ |
 | Workspace-owned build runners | ✓ unlimited | ✓ unlimited |
@@ -57,7 +58,7 @@ The Community edition includes the entire core platform — deploying apps, cust
 :::
 
 :::note
-Enterprise is about identity, governance, and scale storage: multiple SSO providers with SAML and SCIM, custom roles and per-resource policies, audit export and SIEM streaming, quota overrides and plan placement, S3/MinIO storage for the container registry, a private template registry, full white-labeling, a restricted security profile, and [advanced canary control](/docs/applications/canary-deployments#manual-mode). (A license can also set an explicit node cap; by default both editions are uncapped.)
+Enterprise is about identity, governance, and scale storage: multiple SSO providers with SAML and SCIM, custom roles and per-resource policies, audit export and SIEM streaming, quota overrides, plan placement and database sizes, S3/MinIO storage for the container registry, a private template registry, full white-labeling, a restricted security profile, and [advanced canary control](/docs/applications/canary-deployments#manual-mode). (A license can also set an explicit node cap; by default both editions are uncapped.)
 :::
 
 ## Where to go next

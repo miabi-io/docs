@@ -283,6 +283,10 @@ Omitted, the instance keeps whatever limits it has, so a size set in the console
 default is left alone. A stated limit converges, restarting the instance, and `"0"` removes it. A
 database whose instance also hosts other databases cannot converge a size; change it on the instance.
 
+With Enterprise [database sizes](/docs/workspaces/plans-and-quotas#database-sizes), `resources.size`
+names a size instead of `memory` and `cpu` (setting both is an error). In a workspace whose plan offers
+sizes, plain `memory` and `cpu` get the smallest offered size covering them.
+
 Reference the result from an app's env with `{{ .databases.shop-db.* }}` — see
 [interpolation](#interpolation). The database is also attached to the app that references it, so it
 appears under that app with its scoped connection revealable there.

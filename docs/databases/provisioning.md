@@ -76,6 +76,13 @@ A [manifest](/docs/cicd/manifest-reference#database) or a
 [marketplace template](/docs/marketplace/creating-a-template) can state a size with `resources`
 instead; a sized database always gets an instance of its own.
 
+### Database sizes
+
+With an Enterprise licence, a platform admin can define named **database sizes**, such as `small`
+or `large`, and offer them on a plan. The create form and **Resources** then offer those sizes
+instead of, or alongside, memory and CPU. A database's page shows which size it runs on. See
+[database sizes](/docs/workspaces/plans-and-quotas#database-sizes) for how a plan offers them.
+
 ## What gets generated
 
 After provisioning, Miabi creates and stores (encrypted at rest):

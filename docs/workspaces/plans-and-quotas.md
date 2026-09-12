@@ -84,6 +84,31 @@ Without them, every workspace may use any location and any node. In Community, a
 a cluster from workspaces by restricting it to platform admins.
 :::
 
+## Database sizes
+
+A plan can offer **database sizes**: named CPU and memory limits a platform admin defines under
+**Admin → Database sizes**, such as `small` (0.5 CPU, 1 GB) or `large` (2 CPU, 4 GB). On the plan's
+page, under **Database sizes**, check the sizes its workspaces pick from; the first is the default.
+
+- Creating a database offers only those sizes, and a database created without one gets the default.
+  If the default is too small for the engine (MySQL needs 1 GB, for example), the smallest checked
+  size that is big enough is used instead.
+- A database created with memory and CPU instead, through the API, a
+  [manifest](/docs/cicd/manifest-reference#database) or a marketplace template, gets the smallest
+  checked size covering them. It is refused only when no checked size is big enough.
+- With none checked, sizes are optional: a workspace may pick any size, or set memory and CPU itself.
+
+A size's CPU and memory count against the plan's [database budget](/docs/databases/provisioning#plan-limits)
+like any other limits. Editing a size changes it for databases given it from then on; databases
+already on it keep their limits. A size that a plan or a workspace override offers cannot be deleted.
+
+A platform admin can override the sizes offered to a single workspace from **Admin → Workspaces**.
+
+:::note Enterprise
+Database sizes need an Enterprise licence with database sizes (Business and up). A plan's list is
+enforced only while plan enforcement is on; without it, sizes are optional everywhere.
+:::
+
 ## Viewing usage
 
 Open **Settings → Plan & usage** to see current consumption against each quota. Usage bars highlight resources approaching their limit so you can act before a creation request is rejected.
