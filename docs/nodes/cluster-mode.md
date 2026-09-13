@@ -93,7 +93,7 @@ a gateway of their own: the control plane's gateway serves every app there.
 
 Workspaces see clusters as **locations**. When a workspace can use more than one, the create forms for
 apps, databases, volumes, stacks and marketplace installs show a **Location** picker, and manifests use
-[`spec.location`](/docs/cicd/manifest-reference#locations). A new resource is created in the location it
+[`placement.location`](/docs/cicd/manifest-reference#locations). A new resource is created in the location it
 names, else the workspace's **default location** (set by workspace owners and admins under
 **Settings → General**), else the first location the workspace may use. Only platform admins can pin a
 node.
