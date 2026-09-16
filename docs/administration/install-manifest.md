@@ -129,5 +129,5 @@ sudo miabi upgrade          # converts, then rolls the stack forward
 ## Where to go next
 
 - [Installation](/docs/getting-started/installation) — creating the install this file describes.
-- [Upgrades](/docs/administration/upgrades) — rolling it forward, and the conversion.
+- [Upgrades](/docs/upgrades/upgrading) — rolling it forward, and the conversion.
 - [Configuration](/docs/getting-started/configuration) — the full environment-variable reference.
