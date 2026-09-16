@@ -19,23 +19,34 @@ default user, a strong password, and a connection string, then stores them in th
 workspace's **secret vault** — encrypted at rest and never logged in plaintext. See
 [Encryption](/docs/security/encryption).
 
-You can view the credentials in the database's detail view (with appropriate
-permissions) and rotate the password when needed.
+Workspace admins can reveal the connection details in the database's detail view. Miabi does not
+rotate a managed database's password; the generated credentials stay the same for the life of the
+database, including across [version upgrades](/docs/databases/version-upgrades).
 
 ## How apps consume them
 
 Attach a database to an [application](/docs/applications/overview), and Miabi injects the
-connection details as **environment variables / secrets** at runtime. Typical injected
-values include host, port, database name, username, password, and a full connection URL.
+connection details as **environment variables** backed by the secret vault:
 
-Because the values come from the secret vault as
-[environment variables](/docs/applications/environment-variables), your app reads them
-like any other config — and if you rotate the password, attached apps pick up the new
-value on their next deploy.
+| Variable | Value |
+|---|---|
+| `DATABASE_URL` | The full connection URL, as a reference to its managed secret |
+| `DB_HOST` / `DB_PORT` | The in-network host and port |
+| `DB_NAME` | The logical database |
+| `DB_USER` | The database's own scoped user |
+| `DB_PASSWORD` | That user's password, as a reference to its managed secret |
+
+The password and URL are injected as `${{ secrets.… }}` references to the database's
+[managed secrets](/docs/secrets/overview#managed-secrets), so the plaintext never sits in the app's
+settings. An optional **env prefix**, set when you link the database from the app, namespaces the
+variables so one app can use several databases: prefix `ANALYTICS` gives `ANALYTICS_DATABASE_URL`,
+`ANALYTICS_DB_HOST`, and so on. Your app reads them like any other
+[environment variables](/docs/applications/environment-variables); a newly linked database takes
+effect on the app's next deploy.
 
 :::tip
 Reference the injected connection URL (for example `DATABASE_URL`) instead of hardcoding
-credentials. Rotating the password then requires no code change.
+credentials, so moving the app to another database needs no code change.
 :::
 
 ## libSQL token auth {#libsql-token-auth}
@@ -53,20 +64,20 @@ like every other credential).
   logical databases on it.
 
 The token is injected into attached apps as a secret alongside the host and URL, exactly like
-the other engines' passwords — so your app reads it from the environment and picks up a rotated
-token on its next deploy.
+the other engines' passwords, so your app reads it from the environment.
 
 ## Connecting from your machine
 
 Databases are **not exposed to the host by default** — they're only reachable on the
 workspace's internal network. When you need to connect directly from your laptop (a
 one-off migration, a manual query, an ad-hoc export), use
-[port forwarding](/docs/networking/port-forwarding) to open a **temporary** external port,
-then close it when you're done.
+[port forwarding](/docs/networking/port-forwarding) to open a **temporary** listener on the
+control plane, then close it when you're done. It binds to `127.0.0.1` by default, so reaching it
+from another machine needs `MIABI_FORWARD_BIND_ADDR` set to a routable address.
 
 :::caution
 Don't bake database credentials into images, commit them to Git, or paste them into chat.
-Let Miabi inject them as secrets so they stay encrypted and rotatable.
+Let Miabi inject them as secrets so they stay encrypted at rest.
 :::
 
 :::note

@@ -80,7 +80,7 @@ console **without downtime**.
 | **Applications & deployments** | Deploy from Git, image, or template; builds (incl. buildpacks), releases, one-click rollback, zero-downtime and canary updates, env vars, secret vault, resource limits, jobs, stacks, environments |
 | **Domains, networking & TLS** | DNS-verified domains, routing via Goma Gateway, automatic HTTP-01 SSL, managed wildcard / DNS-01 certificates, uploaded custom certs, middlewares, port forwarding |
 | **Databases** | Provision PostgreSQL, MySQL, MariaDB, Redis, MongoDB, and libSQL with managed credentials and in-place version upgrades |
-| **Storage & backups** | Persistent volumes; scheduled and manual database and volume backups to local, MinIO, or S3; platform (control-plane) disaster-recovery backups |
+| **Storage & backups** | Persistent volumes; scheduled and manual database backups and on-demand volume backups to S3-compatible storage (with a local fallback for database backups); instance recovery points; platform (control-plane) disaster-recovery backups |
 | **Container registry** | Built-in, multi-tenant Docker registry namespaced per workspace, with local or S3/MinIO storage and image distribution across nodes |
 | **Marketplace** | Versioned official templates — WordPress, Ghost, Nextcloud, n8n, Gitea, Umami, and more |
 | **Multi-node & clustering** | Remote Docker hosts via an outbound agent tunnel; optional Docker Swarm cluster mode; housekeeping; Docker import |

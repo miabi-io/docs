@@ -1,7 +1,7 @@
 ---
 sidebar_position: 6
 title: Manifest reference
-description: Every miabi.io/v1 kind and field accepted by apply and GitOps — Application, Stack, Database, Volume, Secret, Config, Registry, Route, Domain and Project.
+description: Every miabi.io/v1 kind and field accepted by apply and GitOps — Application, Stack, Database, Volume, Secret, Config, Registry, Middleware, Route, Domain and Project.
 ---
 
 # Manifest reference
@@ -17,12 +17,15 @@ Manifests are **strictly parsed** — an unknown key is an error, not a silently
 Every document has the same four top-level keys:
 
 ```yaml
-apiVersion: miabi.io/v1     # the only accepted value
+apiVersion: miabi.io/v1     # the only value apply and GitOps accept
 kind: Application           # see the kinds below
 metadata:
   name: web                 # identity, unique per kind within the workspace
 spec: {}                    # kind-specific
 ```
+
+The installer's `install.miabi.io/v1` `ControlPlane` document is a separate format, not a resource you
+apply here — see [Install manifest](/docs/administration/install-manifest).
 
 A file may hold many documents separated by `---`, and a Git source may spread them over many files
 in a directory — they are all parsed into one bundle.
@@ -35,8 +38,8 @@ deploys to staging and production unchanged.
 | Field | Type | Description |
 |---|---|---|
 | `name` | string | **Required.** Lowercase `[a-z0-9-]`, starting alphanumeric. For a `Domain` it is a real hostname instead (`shop.example.com`). |
-| `uid` | string | The resource's portable Miabi uid. Written on export; matched ahead of `name`, so renaming a resource in the manifest updates it instead of replacing it. Omit in hand-written manifests. |
-| `labels` | map | Short identifying key/values for selection and grouping. Keys and values follow the Kubernetes rules (optional `prefix/`, max 63 chars). Reserved `miabi.io/` keys are stripped. |
+| `uid` | string | The resource's Miabi uid, which is specific to one install. Omit it in manifests. |
+| `labels` | map | Short identifying key/values for selection and grouping. Keys and values follow the Kubernetes rules (optional `prefix/`, max 63 chars). Reserved `miabi.io/` keys are stripped. Stored only on `Application` and `Registry` resources. |
 | `annotations` | map | Free-form descriptive metadata — owners, links, tooling hints. Keys are validated; **values are arbitrary text**. |
 
 ## Kinds at a glance
@@ -128,7 +131,7 @@ spec:
 
 | Field | Notes |
 |---|---|
-| `image` | **Required.** Repository without a tag, e.g. `ghcr.io/acme/web`. |
+| `image` | **Required** unless `source` is set — exactly one of the two. Repository without a tag, e.g. `ghcr.io/acme/web`. |
 | `tag` | Defaults to `latest` when composing the pull reference. |
 | `digest` | A `sha256:…` pin. CI writes it; GitOps converges the runtime to it. |
 | `registry` | Names a [`Registry`](#registry) credential. It need not be declared in the same bundle — an undeclared name resolves against the workspace's existing credentials. An unknown name is an error, not a silent anonymous pull. |
@@ -199,7 +202,8 @@ be reused across manifests.
 An application created in the console can be exported as a manifest: **App → Settings → GitOps
 manifest → Generate**. It carries the source (or image), ports, environment, resources and the
 volumes it mounts — a working starting point for moving an app into Git. Secret values are not
-included; each is listed by name under `secretEnv`.
+included; each is listed by name under `secretEnv`. An app created by apply or GitOps, or by a
+marketplace install, cannot be exported — its manifest or template already describes it.
 :::
 
 ### Port exposure
@@ -213,7 +217,9 @@ The two exposure knobs are orthogonal, and a port may use either, both, or neith
   (L4), like `docker -p`. Host ports are bounded by `MIABI_HOST_PORT_MIN`/`MAX` (1024 and up by
   default); omit `hostPort` to auto-allocate one from that window. A **privileged** workspace may
   request any host port (`1`–`65535`), so infrastructure that has to sit on a fixed port — `25`,
-  `53`, `443` — can be published from a manifest.
+  `53`, `443` — can be published from a manifest. In a workspace that is **not** privileged, the
+  binding is created pending and publishes only once a platform admin approves it — see
+  [moderating host ports](/docs/administration/workspace-oversight#moderating-host-ports).
 
 A port with neither is reachable only from inside the app's networks — which is what you want when a
 [label-driven proxy](/docs/networking/reverse-proxy-and-traefik) fronts it.
@@ -329,7 +335,8 @@ manifest-expressible — create those through the API or console.
 
 ## Secret
 
-A named encrypted value, referenced from app env and from credentials.
+A named encrypted value, referenced from app env and from credentials. Creating one needs a `value`
+or `generate: true`.
 
 ```yaml
 apiVersion: miabi.io/v1
@@ -350,11 +357,11 @@ spec:
 | `length` | `32` | Characters to generate. |
 | `symbols` | `false` | Include punctuation (`!#$%&()*+,-./:;<=>?@[]^_{\|}~`). Quotes, backslash and backtick are excluded so a value survives being pasted into a shell, a YAML file or a connection string. |
 | `minNumbers` | `0` | Minimum digits. |
-| `minSpecial` | `0` | Minimum symbols. Setting it implies `symbols: true`. |
+| `minSpecial` | `0` | Minimum symbols. Setting it implies `symbols: true`; an explicit `symbols: false` wins, and no symbols are generated. |
 
 These are the same options the console's [generator](/docs/secrets/overview) exposes, drawing from
 the same alphabet — so a policy written here and the same policy set in the UI produce comparable
-values. Minimums that exceed `length` are trimmed rather than silently ignored, digits first.
+values. Minimums that exceed `length` are trimmed rather than silently ignored, symbols first.
 
 Secret values are **write-only**: never read back, never shown in a plan, and never diffed. An
 existing secret is treated as in sync, so a bundle can safely re-apply without churning values.
@@ -704,11 +711,30 @@ A [`Config`](#config) whose own file format uses `{{ }}` sets `delimiters` to re
 markers, so only the references you meant are substituted.
 
 :::tip Two secret syntaxes
-`{{ .secrets.NAME }}` is resolved once, at apply time, and the value is stored. `${{ secrets.NAME }}`
-— the runtime form used in [env vars](/docs/applications/environment-variables) and credentials — is
-stored as a reference and resolved at every deploy, so rotating the secret takes effect without a
-re-apply.
+In a manifest, application `env`, a Middleware `rule` and Config files take `{{ .secrets.NAME }}`,
+resolved once at apply time and stored as a value — rotating the secret needs another apply. The
+runtime form `${{ secrets.NAME }}`, used in [env vars](/docs/applications/environment-variables) set
+in the console, is accepted in a manifest only as a [Registry](#registry) `password`, where it is kept
+as a reference and read at every pull. Anywhere else in a manifest it is not resolved, and under the
+default `{{ }}` markers it fails the apply.
 :::
+
+---
+
+## Validation rules
+
+Beyond the per-field rules above, a bundle is refused when it is parsed if:
+
+- a `Registry` sets `password` without `username`;
+- a mount `path` is not absolute, or a mount sits inside a path a volume is mounted at — the volume
+  would shadow it;
+- a file `mode`, on a `Config` or a mount, is not 3 or 4 octal digits, or sets the setuid, setgid or
+  sticky bit;
+- `resources.gpu` is outside `0`–`64`;
+- a route's `methods` names something that is not an HTTP method, or its `middlewares` lists one name
+  twice.
+
+A `Secret` with neither `value` nor `generate: true` fails when it is created, rather than at parse.
 
 ---
 
@@ -717,15 +743,16 @@ re-apply.
 The plan compares desired state against a live snapshot. Not every field participates, so a converged
 resource never shows phantom drift:
 
-**Diffed** — image, tag, digest, command, registry, resource caps, non-secret env, container labels,
-the `security` block, and per-port exposure (`externalAccess` / `publish` as present-or-not).
+**Diffed** — image, tag, digest, the build `source`, command, registry, resource caps, non-secret env,
+container labels, the `security` block, and per-port exposure (`externalAccess` / `publish` as present-or-not).
 
 **Diffed only when stated** — `deployment` (runtime, replicas, strategy, update) and `placement`
 (location, constraints). A manifest silent about them leaves what the console set alone.
 
 **Not diffed** — create-time structure that cannot be mapped back unambiguously: ports themselves,
-mounts, and stack membership. Change one and the resource is updated on the next apply that touches
-it for another reason; recreate it to be certain.
+mounts, and stack membership. Ports are set only when the app is created — recreate it to change them.
+A mount change is written by the next apply that updates the app for another reason, as is stack
+membership; recreate it to be certain.
 
 Mounts aren't diffed, but a mounted config's *content* still converges: each app carries a
 fingerprint of every config it mounts, so editing a file plans as an update of the app itself. An app
@@ -775,10 +802,20 @@ applies unchanged in another workspace.
 By default, apply and GitOps only create and update: a resource removed from the manifest is left
 running. Opt into **prune** to have removals converge too.
 
-Prune only ever deletes resources this engine created (labelled `managed-by: gitops`), so a
+Prune only ever deletes resources this engine created (labelled `miabi.io/managed-by: gitops`), so a
 hand-created app or a database provisioned in the console can never be removed by a manifest. Under
 GitOps it is scoped further, to the project that owns the resource — two sources backed by the same
 repository don't see each other's apps as orphans.
+
+`Secret`, `Config`, `Middleware` and `Domain` resources carry no ownership label, so neither prune nor
+deleting a Git source with cascade ever removes them. Delete them explicitly — `miabi delete` or the
+console.
+
+:::caution One-shot prune is not scoped to a source
+`miabi apply --prune` (or `"prune": true` on the apply API) has no owning Git source, so it considers
+**every** resource apply or GitOps created in the workspace — including those a Git source owns. A
+bundle that doesn't declare them deletes them. Preview with `--dry-run` first.
+:::
 
 :::warning
 An empty manifest set with prune enabled would delete everything the source owns. Miabi refuses it

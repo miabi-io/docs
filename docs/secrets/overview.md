@@ -94,15 +94,15 @@ instead of copying connection strings by hand.
 Managed secrets are marked with a **managed** badge in the vault and behave differently from custom
 ones:
 
-- Their **value is derived** from the owning resource — you rotate or remove them **through the
-  owner** (e.g. rotate the database's credentials), not by editing the secret directly. Edit and
-  delete are disabled for them in the vault.
+- Their **value is derived** from the owning resource and written by it, not by you. Edit and
+  delete are disabled for them in the vault. (Managed databases don't offer credential rotation, so a
+  database's secrets keep the values generated at provisioning.)
 - Their **lifecycle follows the owner** — deleting the owning resource removes its managed secrets;
   a hand delete is refused.
 - You reference them exactly like a custom secret, with `${{ secrets.NAME }}`.
 
-This keeps credentials in the vault — encrypted, versioned, and rotatable — while ensuring a managed
-value and its owner can never drift apart.
+This keeps credentials in the vault, encrypted and versioned, while ensuring a managed value and its
+owner can never drift apart.
 
 ## Where secrets can be referenced
 
@@ -115,6 +115,10 @@ Beyond application and job environments, a secret can back:
 - **Declarative manifests.** `{{ .secrets.NAME }}` resolves at apply time in an app's `env` and in a
   `Registry` password — and a [`Secret` resource](/docs/cicd/manifest-reference#secret) can declare
   or generate the value in the same bundle, so a manifest never has to carry one.
+- **Configuration files.** A [config](/docs/secrets/configs#referencing-secrets-and-app-env)'s files
+  can contain `${{ secrets.NAME }}`, resolved for each app that mounts the config when it deploys.
+  Rotating the secret redeploys those apps too, and it can't be deleted while a mounted config still
+  references it.
 - **Pipelines.** A [pipeline's `env`](/docs/cicd/pipelines#defining-your-own), at pipeline or step
   level, so a build gets its npm token or deploy key without the value ever entering the repository.
   Resolved when the job is dispatched, masked in the live logs, and stored on the run unresolved.

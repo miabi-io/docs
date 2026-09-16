@@ -18,30 +18,33 @@ A runner builds an image and **pushes it to a registry by digest**; a deploy the
 
 When a workspace has a usable runner registered, its git-app deploys and pipeline runs are dispatched to that runner automatically — you don't wire anything up per run. The scheduler picks an eligible runner, leases it, streams the job to it over the runner's tunnel, and rolls the resulting image out to the target node as a plain deploy-by-digest.
 
-## The built-in runner
+## Every build needs a runner
 
-Every build runs on a **registered runner** — there is no in-process or on-node fallback. A fresh
-install therefore needs at least one runner before a Git-source app can deploy. Register one from
-**Settings → Runners**.
+Every build runs on a **registered runner** — there is no in-process, on-node, or built-in fallback. A
+fresh install therefore needs at least one runner before a Git-source app can deploy. Register one from
+**GitOps & CI/CD → Runners**.
 
-Runners execute the `miabi/runner` image; override it with `MIABI_RUNNER_IMAGE` (the installer pins
-`RUNNER_IMAGE` in `.env`). `miabi/runner` versions independently of the panel, so its tag does not
-track the Miabi version.
-
-:::caution
-There is no `MIABI_BUILTIN_RUNNER_ENABLED` setting. A co-located "built-in runner" is not wired up
-by any environment variable today.
-:::
-
-The built-in runner is **off by default**. That is deliberate: on a multi-node install a fresh instance has *no* runner, so builds queue until you add one rather than silently falling back to a hosting node.
+The command Miabi shows for a new runner uses the `miabi/runner` image. Set `MIABI_RUNNER_IMAGE` on the
+control plane to change it; the installer pins it from `RUNNER_VERSION`. `miabi/runner` versions
+independently of the panel, so its tag does not track the Miabi version.
 
 ## Registering a dedicated runner
 
-For anything beyond a homelab, register a dedicated build machine:
+Any machine with Docker can be a runner — the control-plane host itself on a small install, or a dedicated build machine:
 
-1. In the console, open **Settings → Runners → Add runner**. Give it a name, optional [labels](#labels-and-targeting), and a concurrency (how many jobs it may run at once).
+1. In the console, open **GitOps & CI/CD → Runners → Add runner**. Give it a name, optional [labels](#labels-and-targeting), and a concurrency (how many jobs it may run at once).
 2. Miabi returns a **one-time registration token**, shown once and stored only as a hash — the same handling as a node [join token](/docs/nodes/adding-a-node). Copy it before you leave the page; you can regenerate it later, which invalidates the old one.
-3. On the build machine, run the `miabi-runner` binary (or container) with the token and your control-plane URL. Like the [node agent](/docs/nodes/agent), it dials **outbound** to the runner gateway — the machine needs no inbound ports open — authenticates, and appears **online** in the console.
+3. On the build machine, run the `miabi-runner` container (or binary) with the token and your control-plane URL. Like the [node agent](/docs/nodes/agent), it dials **outbound** to the runner gateway — the machine needs no inbound ports open — authenticates, and appears **online** in the console.
+
+```bash
+docker run -d --name miabi-runner --restart unless-stopped \
+  -e MIABI_CONTROL_URL=https://miabi.example.com \
+  -e MIABI_RUNNER_TOKEN=mbr_xxxxxxxx \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v /srv/miabi/builds:/srv/miabi/builds \
+  -e MIABI_RUNNER_BUILDS_DIR=/srv/miabi/builds \
+  miabi/runner:latest
+```
 
 A new runner starts **offline** and flips to **online** once its tunnel is live; it reports its OS, architecture, and version on connect. From the runner's page you can edit its labels and concurrency, **cordon** it (hold it out of scheduling without disconnecting it), disable it, or remove it.
 
@@ -49,11 +52,35 @@ A new runner starts **offline** and flips to **online** once its tunnel is live;
 How many runners a workspace may register is a plan limit. If you hit it, raise the workspace's quota or remove an idle runner.
 :::
 
+### Runner configuration
+
+The runner is configured through environment variables:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MIABI_CONTROL_URL` | — | Control plane base URL (falls back to `MIABI_API_URL`). Required. |
+| `MIABI_RUNNER_TOKEN` | — | The runner's registration token (`mbr_…`). Required. |
+| `MIABI_RUNNER_BUILDER` | `docker` | Build backend: `docker` runs container steps and Dockerfile and buildpack builds against a Docker daemon; `buildkit` is rootless and daemonless, and builds Dockerfiles only. |
+| `MIABI_RUNNER_BUILDS_DIR` | the OS temp directory | Parent directory for each job's checkout and build context. Prefer a real, sized volume over `/tmp`. |
+| `MIABI_RUNNER_DEFAULT_BUILDER` | `paketobuildpacks/builder-jammy-base` | Buildpacks builder image, when a job names none. |
+| `MIABI_RUNNER_INSECURE_SKIP_VERIFY` | `false` | Skip TLS verification of the control plane. Development only. |
+| `MIABI_DEV_MODE` | `false` | Debug-level logs. |
+
+:::note
+The `docker` backend drives the host's Docker daemon through the mounted socket, so step containers mount
+the job's workspace **from the host**. In a containerized runner, mount `MIABI_RUNNER_BUILDS_DIR` at the
+**same path** inside and outside the container, as above. The `buildkit` backend needs neither the socket
+nor that mount.
+:::
+
+The runner logs each job's start and finish to its own output, so `docker logs miabi-runner` shows what it
+has been doing; the job's step output itself goes to the control plane.
+
 ## Labels and targeting
 
-Runners carry free-form **labels** — for example `arch=amd64`, `buildkit`, or `gpu`. A job can declare required labels, and the scheduler only considers runners whose label set contains all of them. Among the eligible runners it picks the **least-loaded** one (fewest active leases, up to each runner's declared concurrency). A job with no required labels matches any in-scope runner.
+Runners carry free-form **labels** — for example `arch=amd64`, `buildkit`, or `gpu` — and report their OS and architecture on connect. The scheduler can match a job against required labels, only considering runners whose label set contains all of them, and among the eligible runners picks the **least-loaded** one (fewest active leases, up to each runner's declared concurrency).
 
-Use labels when a build genuinely needs a particular machine — a specific CPU architecture, a GPU, or a build toolchain — and leave them off when any runner will do.
+Pipelines and deploys do not request labels yet, so today every job matches any in-scope runner; labels are for organizing your runners.
 
 ## Builds never touch a hosting node
 
@@ -79,20 +106,20 @@ Runners are built to be safe to run as shared, multi-tenant build infrastructure
 
 - **Outbound only, scoped token.** A runner connects outbound over an encrypted tunnel with a registration token whose scope is distinct from a node's join token. It can register, heartbeat, lease jobs, and stream logs — it cannot reach the panel API, another workspace's data, or a hosting node's Docker.
 - **No logs stored on the runner.** Output is streamed to the control plane, not written to disk on the build machine.
-- **Per-job credentials, minted on lease.** Each job is handed short-lived credentials scoped to just its own work: a registry login limited to this app's repository, and — when `MIABI_JOB_API_TOKEN_ENABLED=true` (the default) — a callback token (`MIABI_JOB_TOKEN`) scoped to deploy only this app and run. Both are ephemeral, expire at the job deadline, and are **revoked the moment the run finishes**. A hardened install can set `MIABI_JOB_API_TOKEN_ENABLED=false` to withhold the callback token while still injecting the registry credential.
+- **Per-job credentials, minted on lease.** Each job is handed short-lived registry credentials for its work and — when `MIABI_JOB_API_TOKEN_ENABLED=true` (the default) — a callback token (`MIABI_JOB_TOKEN`). For a pipeline bound to an application, the registry login is limited to that app's repository and the callback token to deploying that app. Both are ephemeral, expire at the job deadline, and are **revoked the moment the run finishes**. A hardened install can set `MIABI_JOB_API_TOKEN_ENABLED=false` to withhold the callback token while still injecting the registry credential.
 - **Secrets masked in logs.** Every injected credential value is redacted from the live log stream, so a step that echoes one prints `••••`.
 - **Per-job isolation.** On a shared runner each job runs with only its own context — nothing from another workspace's job is visible.
 
-The upshot: a pipeline step can build and push with **zero configured credentials**, and a leaked value is useless minutes later and can only touch that one app's repository.
+The upshot: a pipeline step can build and push with **zero configured credentials**, and a leaked value is useless once the run ends.
 
 ## Managing shared runners
 
 Administrators can register **platform-shared** runners under **Admin → Runners** — runners with no owning workspace that any eligible workspace's jobs can use. Admins manage the shared pool (create, edit, cordon, remove); workspace members can *use* a shared runner but not edit it.
 
-The platform-shared runner pool is **unlimited** — register as many as you need. **Workspace-owned runners are always unlimited** too. A workspace's access to the shared pool is governed by its plan's *platform runners* capability.
+The Community edition allows up to **2** platform-shared runners; the Enterprise *platform runners* entitlement lifts that limit. Workspace-owned runners count against the workspace plan's **runner** limit instead, when plan enforcement is on. A workspace's access to the shared pool is governed by its plan's *platform runners* capability.
 
 ## Related
 
 - [Pipelines](/docs/cicd/pipelines)
-- [Git push deploy](/docs/cicd/git-push-deploy)
+- [Deploy on push](/docs/cicd/git-push-deploy)
 - [Node Agent](/docs/nodes/agent)

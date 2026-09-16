@@ -23,7 +23,7 @@ knows — and refuses to act on a stack it does not own.
 - **Installer / `docker run`** (what `get.miabi.io` builds) → `sudo miabi upgrade`, or
   `docker run … miabi/miabi:<tag> upgrade` if you installed without the CLI. Miabi replaces its own
   container, rolling back if the new one does not come up. (`update` still works, deprecated.)
-- **Compose**, if you set it up yourself → `docker compose pull && docker compose up -d`.
+- **Compose**, if you set it up yourself → bump `MIABI_IMAGE` in `.env`, then `docker compose pull && docker compose up -d`.
 
 If you are not sure which you have, ask:
 
@@ -43,8 +43,9 @@ sudo miabi upgrade
 
 :::note The first upgrade converts your manifest
 An install created before `install.miabi.io/v1` has a flat `/etc/miabi/miabi.yaml` starting
-`version: 1`. The first `miabi upgrade` rewrites it as the current document and keeps the original as
-`miabi.yaml.bak`. Nothing else changes — every value is carried across and none is regenerated — but
+`version: 1`. The first whole-stack `miabi upgrade` (no component named) rewrites it as the current
+document and keeps the original as `miabi.yaml.bak` — even when the stack is already at the target
+version. Upgrading a single component, such as `miabi upgrade miabi-gateway`, never converts. Nothing else changes — every value is carried across and none is regenerated — but
 an older CLI cannot read the new file, so keep the copy if you may roll the CLI back.
 :::
 
@@ -139,36 +140,36 @@ not a side effect of upgrading the panel.
 
 ## Upgrading a Compose install (if you set one up yourself)
 
-The supported path is to **re-run the installer**: it stamps the release's exact image tags into
-`.env` and brings the stack up.
+A Compose install is yours to drive: Compose owns those containers, so `miabi upgrade` refuses to
+touch them, and the one-line installer no longer manages Compose — run on a host with a Compose
+stack, it stops and tells you to upgrade it yourself.
+
+Set the **image** in `.env`, then recreate:
 
 ```bash
 # 1. Back up first (see /docs/storage/backups)
 
-# 2. Re-run the installer — it rewrites MIABI_IMAGE / GOMA_IMAGE / RUNNER_IMAGE
-curl -fsSL https://get.miabi.io | sudo bash
+# 2. Point .env at the new release
+# MIABI_IMAGE=miabi/miabi:1.10.1
 
-# ...or pin an exact release
-curl -fsSL https://get.miabi.io \
-  | sudo MIABI_VERSION=v1.4.0 bash
+# 3. Pull and recreate
+cd /opt/miabi && docker compose pull && docker compose up -d
 
-# 3. Watch the logs for the migration confirmation
-cd /opt/miabi && docker compose logs -f miabi
-```
-
-To upgrade by hand instead, edit `.env` and set the **image**, then recreate:
-
-```bash
-# .env
-MIABI_IMAGE=miabi/miabi:1.4.0
-
-docker compose pull && docker compose up -d
+# 4. Watch the logs for the migration confirmation
+docker compose logs -f miabi
 ```
 
 :::caution
-`MIABI_VERSION` is an **installer** variable (a git tag, e.g. `v1.4.0`) — the server and
-`compose.yaml` never read it. Setting `MIABI_VERSION` in `.env` does nothing. The variable compose
-reads is `MIABI_IMAGE` (an image reference, e.g. `miabi/miabi:1.4.0`, with no leading `v`).
+The variable Compose reads is `MIABI_IMAGE` (an image reference, e.g. `miabi/miabi:1.10.1`, with
+no leading `v`). `MIABI_VERSION` is an **installer** variable — the server and `compose.yaml` never
+read it, so setting it in `.env` does nothing. The gateway, PostgreSQL and Redis images are pinned in
+`compose.yaml` itself; bump those there when a release asks you to.
+:::
+
+:::note Moving to the managed stack
+The Compose stack and the managed stack use **different volumes**. To switch, back up, run
+`docker compose down`, re-run the installer with `MIABI_FORCE_STACK=1`, then restore the backup into
+the new stack — otherwise you get an empty database.
 :::
 
 Wait for a line similar to **`database migrations applied`** in the logs. Once it appears, the schema and data steps are complete and the instance is running the new version.

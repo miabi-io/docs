@@ -170,7 +170,7 @@ one `run:` step away if you outgrow the action:
 ```yaml
   - uses: miabi-io/deploy-action@v1        # installs the CLI and deploys
     with: { app: web, server: '${{ vars.MIABI_SERVER }}', token: '${{ secrets.MIABI_TOKEN }}' }
-  - run: miabi apply -f miabi/            # …then use it directly
+  - run: miabi apply -f miabi/app.yaml    # …then use it directly (repeat -f per file)
     env:
       MIABI_SERVER: ${{ vars.MIABI_SERVER }}
       MIABI_TOKEN: ${{ secrets.MIABI_TOKEN }}
@@ -217,8 +217,8 @@ match the CLI's `--server` flag. Both still work and log a warning; precedence i
 
 ## When to use something else
 
-- **No CI at all** → [Git Push Deploy](/docs/cicd/git-push-deploy) has Miabi build on push, no
-  workflow file needed.
+- **No external CI at all** → [Deploy on Push](/docs/cicd/git-push-deploy): a Miabi pipeline with a push
+  trigger builds and deploys on push, no GitHub workflow needed.
 - **Building on your own hardware** → [Pipelines](/docs/cicd/pipelines) run on Miabi's own
   [runners](/docs/cicd/runners), so images never leave your network.
 - **Managing the whole workspace as code** → [GitOps](/docs/cicd/gitops) reconciles apps, databases,

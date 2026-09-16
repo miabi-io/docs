@@ -22,7 +22,8 @@ sequenceDiagram
     S->>R: Enqueue
     S-->>U: Accepted
     R->>W: Dequeue
-    W->>W: Build or pull the image
+    Note over W: Git app: a runner builds<br/>and pushes the image
+    W->>W: Pull the image
     W->>W: Create the container
     W->>W: Health check
     alt Healthy
@@ -47,9 +48,16 @@ recreate stops first, which is what a published host port forces because two con
 the same port. [Canary](/docs/applications/canary-deployments) runs both at once and splits traffic
 between them.
 
-**Build location is a choice.** Without a [runner](/docs/cicd/runners), the image is built on the
-node running the deploy. With one, the build is handed off — which is what keeps a heavy build from
-competing with the apps already running on that node.
+**Builds never run on a hosting node.** A Git-source deploy hands the build to a registered
+[runner](/docs/cicd/runners), which pushes the image to the registry; the node only pulls it. With no
+runner available the deploy waits, and fails once `MIABI_RUNNER_WAIT_TIMEOUT_MINUTES` (default 30)
+passes — there is no local-build fallback. That is what keeps a heavy build from competing with the
+apps already running on a node.
+
+**Deploys of one app never overlap.** Each deploy takes a per-application lock in Redis; a second
+deploy of the same app waits its turn instead of racing the first for the release version and the
+container swap, even across several workers. Deploys are also rationed per cluster, so a slow
+region cannot hold every worker slot.
 
 ## Following a deploy
 

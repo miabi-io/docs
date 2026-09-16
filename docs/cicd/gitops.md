@@ -35,9 +35,10 @@ in the [full example](#full-example-a-posta-project) below).
 
 Manifests are the source of truth: edit the file, and the change flows into Miabi.
 
-Nine kinds are available — `Application`, `Stack`, `Database`, `Volume`, `Secret`, `Registry`,
-`Route`, `Domain` and `Project`. The [manifest reference](/docs/cicd/manifest-reference) documents
-every field of each; this page covers how they are reconciled.
+Eleven kinds are available — `Application`, `Stack`, `Database`, `Volume`, `Secret`, `Config`,
+`Registry`, `Middleware`, `Route`, `Domain` and `Project`. The
+[manifest reference](/docs/cicd/manifest-reference) documents every field of each; this page covers
+how they are reconciled.
 
 Ordering is automatic. Dependencies are created before their dependants and torn down after them, so
 one bundle can declare a volume, a database, the app that uses both, and the route in front of it,
@@ -47,7 +48,9 @@ and converge in a single pass.
 
 In the pull model, you connect a **Git source** (a repository and path holding your manifests). Miabi then **continuously reconciles** desired state from that source:
 
-1. Miabi watches the Git source for changes.
+1. Miabi does not watch the repository. Every three minutes, a sweep clones each `auto` source at its
+   ref and syncs it — on every run, whether or not a new commit has landed. A `manual` source syncs
+   only when you select **Sync now**, or call `POST /api/v1/workspaces/{workspace}/gitops/{gitSourceID}/sync`.
 2. On each sync, it compares the manifests against the live state of your resources.
 3. It applies whatever changes are needed to converge — creating, updating, or removing resources to match.
 
@@ -70,18 +73,20 @@ separately (or declare them with `generate: true`). And the export covers **that
 volumes**, not the rest of the workspace: a bundle carrying resources the app does not own would
 prune them if applied elsewhere with `--prune`.
 
-Apps managed by a marketplace install or by an existing GitOps source cannot be exported: the first
-is described by its template, and the second already has a manifest.
+Apps created by a marketplace install, or by apply or GitOps — a one-shot `miabi apply` included —
+cannot be exported: the first is described by its template, and the second already has a manifest.
 
 ### Source options
 
-A Git source points at a repository, a **ref** (branch, tag or commit) and a **path** (the
-subdirectory holding the manifests — every `.yaml`/`.yml` file under it is parsed into one bundle).
+A Git source points at a repository, a **ref** (branch, tag or commit; `main` when omitted) and a
+**path** (the subdirectory holding the manifests, `.` when omitted — every `.yaml`/`.yml` file under
+it is parsed into one bundle). For a private repository, select a stored
+[Git credential](/docs/applications/deploy-from-git#git-credentials); the source clones with it.
 Four switches decide how far reconciliation goes:
 
 | Option | Default | Effect |
 |---|---|---|
-| **Sync policy** | `manual` | `auto` reconciles on every detected change; `manual` syncs only when you ask. |
+| **Sync policy** | `manual` | `auto` syncs on the three-minute sweep; `manual` syncs only when you ask. |
 | **Prune** | off | Delete managed resources that disappear from Git. Without it, removals are ignored. |
 | **Self-heal** | off | Re-apply when live state drifts from Git, not only when Git changes. |
 | **Allow empty** | off | Permit a manifest set with no resources to prune everything the source owns. |
@@ -98,6 +103,19 @@ that stops a wiped directory from tearing down a workspace.
 
 Deleting a source can optionally cascade, tearing down exactly the resources that source created and
 leaving everything else untouched.
+
+### Source status
+
+| Status | Meaning |
+|---|---|
+| **Never synced** (`unknown`) | The source has not been reconciled yet. |
+| **Progressing** | A sync is running. |
+| **Synced** | The last sync fetched the source and applied every change. |
+| **Error** | The last sync failed — the clone, the path, parsing, or at least one change. The message names the first failure. |
+
+The source's diff (`GET …/gitops/{gitSourceID}/diff`) shows the plan a sync would run without applying
+it, and `POST …/gitops/{gitSourceID}/resources/{kind}/{name}/sync` converges one resource while leaving
+the rest of the source alone.
 
 ### Last sync vs. last check
 
@@ -124,7 +142,7 @@ When you don't want continuous syncing, Miabi also supports an **imperative appl
 
 | | Pull-based reconciliation | One-shot apply |
 |---|---|---|
-| Trigger | Continuous, from a Git source | Once, on demand |
+| Trigger | A three-minute sweep (`auto`) or **Sync now** | Once, on demand |
 | Source of truth | Git | The manifest you submitted |
 | Drift handling | Corrected on every sync | Not re-checked after apply |
 | Best for | Production, GitOps workflows | Bootstrapping, ad-hoc changes |
@@ -297,7 +315,8 @@ address a sibling dials, with `.host`, `.port` and `.scheme` available separatel
 ```
 
 The target need not be declared in the same bundle, and declaration order does not matter. Both apps
-do have to be on the same node unless [cluster mode](/docs/nodes/cluster-mode) is on — see
+do have to be in the same [location](/docs/nodes/cluster-mode#locations), and on the same node unless
+that location runs a swarm — see
 [Addressing another application](/docs/cicd/manifest-reference#addressing-another-application).
 
 (`{{ .inputs.* }}` is [marketplace-template](/docs/marketplace/creating-a-template) only.)
@@ -322,8 +341,8 @@ POST /api/v1/workspaces/{workspace}/apply
 
 Ordering is handled for you: databases come up before the app that references them, and the domain
 before its route. After apply, verify the domain's DNS to activate TLS. To keep it in sync, commit
-this file to a repository and connect it as a **Git source** — from then on every commit reconciles
-the project automatically.
+this file to a repository and connect it as a **Git source** with the `auto` sync policy — from then
+on every commit is reconciled on the next three-minute sweep.
 
 :::tip
 Start with `dry_run: true` to read the plan, apply once to bootstrap, then connect the Git source
@@ -335,8 +354,11 @@ for continuous reconciliation. The same file drives all three.
 The plan compares the manifest against a live snapshot, and only fields that can be mapped back
 unambiguously take part — so a converged resource never shows phantom drift:
 
-- **Diffed:** image, tag, digest, registry credential, command, resource caps, non-secret env,
-  container labels, and per-port exposure.
+- **Diffed:** image, tag, digest, build `source`, registry credential, command, resource caps,
+  non-secret env, container labels, the `security` block, and per-port exposure. Routes and domains
+  compare every field they declare.
+- **Diffed only when stated:** `deployment` and `placement`, so a manifest silent about them leaves
+  the console's settings alone.
 - **Not diffed:** create-time structure — the ports themselves, mounts, and stack membership.
 - **Never diffed:** secret values (an existing `Secret` is always in sync), and `secretEnv` values,
   which appear in a plan as `(secret)`.
@@ -350,4 +372,4 @@ per kind.
 - [Creating a marketplace template](/docs/marketplace/creating-a-template) — the same resources,
   packaged as a versioned, one-click template with user inputs.
 - [Pipelines](/docs/cicd/pipelines)
-- [Git push deploy](/docs/cicd/git-push-deploy)
+- [Deploy on push](/docs/cicd/git-push-deploy)

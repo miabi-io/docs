@@ -12,7 +12,7 @@ Miabi is **open-core**. The **Community edition** core is free and open source u
 
 Enterprise functionality is gated in two layers:
 
-1. **Build tag.** Enterprise features are compiled behind the `enterprise` build tag, built with `make build-ee`. The standard Community binary (`make build`) links a **deny-all stub** in place of those features.
+1. **Build tag.** Enterprise features are compiled behind the `enterprise` build tag. A binary built without it links a **deny-all stub** in place of those features.
 2. **Signed license key.** Even in the Enterprise binary, features stay locked until they are unlocked at runtime by a **signed license key**, verified **offline** against a public key embedded in the binary.
 
 This means there is no hidden code path to "turn on" Enterprise in a Community build, and no network call is needed to validate a license. See [Licensing](/docs/editions/licensing) for how activation works.
@@ -23,7 +23,7 @@ The official **`miabi/miabi` images and release binaries are the Enterprise buil
 
 Miabi publishes **one edition**. The tags are `miabi/miabi:latest`, `miabi/miabi:<version>`, and their `-rootless` forms (mirrored to `ghcr.io/miabi-io/miabi`). There are no `-ce` or `-ee` image variants.
 
-If you want a build with **zero enterprise code** (the deny-all stub), build it from source: `make build` produces the Community binary, `make build-ee` the Enterprise-capable one. No pure-Community image is published.
+If you want a build with **zero enterprise code** (the deny-all stub), build it from source without the tag: `go build ./cmd/miabi`, or `docker build --build-arg GO_TAGS= -f docker/Dockerfile .` for an image. `make build` and the published images both pass `-tags enterprise`. No pure-Community image is published.
 
 ## Feature comparison
 
@@ -31,34 +31,43 @@ If you want a build with **zero enterprise code** (the deny-all stub), build it 
 |---|---|---|
 | Core PaaS (apps, domains, TLS, DBs, backups, monitoring, marketplace) | ✓ | ✓ |
 | Multi-node & cluster (Docker Swarm) | ✓ unlimited | ✓ unlimited |
+| Plan catalog | 3 plans | ✓ unlimited unless the license sets a cap |
 | Built-in container registry (local storage) | ✓ | ✓ |
 | Registry S3/MinIO storage | — | ✓ |
 | OAuth/OIDC SSO providers | one | multiple |
+| Hide an SSO provider from the login page | — | ✓ |
 | SAML 2.0 + enforced SSO · SCIM 2.0 provisioning | — | ✓ |
+| LDAP / Active Directory sign-in | — | ✓ |
 | Custom RBAC roles | — | ✓ |
 | Per-resource permission policies | — | ✓ |
-| Audit log | ✓ | ✓ |
+| Audit events recorded, with retention pruning | ✓ | ✓ |
+| Viewing the audit log (platform and workspace) | — | ✓ |
 | Audit export (JSON/CSV) | — | ✓ |
-| SIEM streaming + retention | — | ✓ |
+| SIEM streaming | — | ✓ |
 | Per-workspace quota overrides | — | ✓ |
+| Per-user workspace and membership limit overrides | — | ✓ |
 | Plan placement (locations and node pools per plan) | — | ✓ |
 | Database sizes (named CPU and memory sizes, offered per plan) | — | ✓ |
+| Platform announcements to user inboxes | — | ✓ |
+| Platform (control-plane) backup & restore | — | ✓ |
+| Workspace analytics | 7 days | ✓ extended retention + CSV export |
 | Private template registry (custom marketplace URL) | — | ✓ |
+| Platform image registry mirror | — | ✓ |
 | CLI + MCP server for AI agents (`miabi mcp`) | ✓ | ✓ |
 | Workspace-owned build runners | ✓ unlimited | ✓ unlimited |
-| Platform-shared runner pool | ✓ unlimited | ✓ unlimited |
+| Platform-shared runner pool | 2 runners | ✓ unlimited |
 | GPU workloads (NVIDIA passthrough) | ✓ | ✓ |
-| White-label branding | brand | full |
+| White-label [branding](/docs/administration/branding) (accent policy, logos, favicon, sign-in notice) | — | ✓ |
 | Restricted (force non-root) security profile | — | ✓ |
 | Canary deployments (automatic weighted ramp) | ✓ | ✓ |
 | Manual canary control + routing by header/cookie/query/IP | — | ✓ |
 
 :::tip
-The Community edition includes the entire core platform — deploying apps, custom domains, automatic TLS, managed databases, backups, monitoring, the marketplace, and the built-in container registry (local storage) — plus **unlimited nodes**, **unlimited workspace-owned build runners** and an **unlimited platform-shared runner pool**, one SSO provider, the audit log, and brand-level white-labeling. Most individual developers, startups, and homelabs never need anything beyond it.
+The Community edition includes the entire core platform — deploying apps, custom domains, automatic TLS, managed databases, backups, monitoring, the marketplace, and the built-in container registry (local storage) — plus **unlimited nodes**, **unlimited workspace-owned build runners**, up to three plans, two platform-shared runners, one SSO provider, and seven days of workspace analytics. Audit events are recorded and pruned on schedule in every edition. Most individual developers, startups, and homelabs never need anything beyond it.
 :::
 
 :::note
-Enterprise is about identity, governance, and scale storage: multiple SSO providers with SAML and SCIM, custom roles and per-resource policies, audit export and SIEM streaming, quota overrides, plan placement and database sizes, S3/MinIO storage for the container registry, a private template registry, full white-labeling, a restricted security profile, and [advanced canary control](/docs/applications/canary-deployments#manual-mode). (A license can also set an explicit node cap; by default both editions are uncapped.)
+Enterprise is about identity, governance, and scale: multiple and hidden SSO providers with SAML, LDAP and SCIM, custom roles and per-resource policies, the audit log viewer with export and SIEM streaming, quota and per-user limit overrides, plan placement and database sizes, announcements, platform backup, S3/MinIO storage for the container registry, a private template registry and image mirror, an unlimited shared runner pool, white-label branding, a restricted security profile, and [advanced canary control](/docs/applications/canary-deployments#manual-mode). A license can also set explicit node and plan caps; see [Licensing](/docs/editions/licensing#limits).
 :::
 
 ## Where to go next

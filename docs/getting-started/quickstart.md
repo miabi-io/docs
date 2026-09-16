@@ -27,11 +27,13 @@ See [Workspaces](/docs/workspaces/overview) for the full model.
 
 ## 3. Create an application
 
-From the workspace, click **Create application** and choose a source:
+From the workspace, click **New application** and choose a source:
 
-- **Git repository** — Miabi clones and builds your code. See [Deploy from Git](/docs/applications/deploy-from-git).
+- **Git repository** — Miabi builds your code on a [build runner](/docs/cicd/runners). See [Deploy from Git](/docs/applications/deploy-from-git).
 - **Docker image** — Miabi pulls an existing image from a registry. See [Deploy from Image](/docs/applications/deploy-from-image).
-- **Marketplace template** — a one-click install of a pre-packaged app. See [Marketplace](/docs/marketplace/overview).
+
+For a pre-packaged app such as WordPress, install a template from the
+[Marketplace](/docs/marketplace/overview) instead.
 
 ![Create application dialog](/img/screenshots/app-create.png)
 
@@ -50,9 +52,11 @@ Watch progress in the [application timeline](/docs/applications/logs-and-timelin
 
 ## 5. Connect a domain and get SSL
 
-Open the app's **Domains** tab and add a domain (for example `app.example.com`). Miabi guides you
-through [DNS verification](/docs/networking/domains), then routes traffic through Goma Gateway and
-issues an SSL certificate automatically via Let's Encrypt.
+Add your domain (for example `example.com`) under **Networking → Domains** and complete
+[DNS verification](/docs/networking/domains). Then open the app's **Routes** tab, create a route for
+`app.example.com` on the app's container port, and Miabi routes traffic through Goma Gateway and
+issues an SSL certificate automatically via Let's Encrypt. For a generated URL without your own
+domain, use **Network → External access** — see [Exposing an application](/docs/applications/exposing-your-app).
 
 ![Domains with verification status](/img/screenshots/domains.png)
 

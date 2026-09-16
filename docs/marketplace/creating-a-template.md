@@ -13,19 +13,55 @@ install** with **user inputs**. Templates use the same `miabi.io/v1` engine as
 
 ## Anatomy of a template
 
-A template is a single `template.yaml` with four parts:
+A template is a single `template.yaml`. Besides `apiVersion: miabi.io/v1` and `kind: Template`, it
+has these top-level sections, all optional except `metadata`:
 
 - **`metadata`** — catalog identity: `name` (the lowercase handle, `^[a-z0-9][a-z0-9-]*$`),
-  `displayName`, version, description, category, icon, homepage, author, tags, minMiabi. Unknown
+  `displayName`, `version`, description, category, icon, homepage, author, tags, minMiabi. Unknown
   fields are rejected — there is no `slug` key.
 - **`inputs`** — the fields the installer prompts for (with validation, defaults, and secret
-  generation).
-- **`databases`** — managed databases provisioned alongside the app. A database may set
-  `resources` (`memory`, `cpu`) to size its instance; a sized database always gets an instance of its
-  own rather than reusing one.
-- **`configs`** — configuration files created and mounted into the app (optional; see
+  generation). Types are `string`, `password`, `bool`, `select` (with `options`), and `number`.
+- **`databases`** — managed databases provisioned alongside the app (see
+  [below](#databases)).
+- **`volumes`** — managed volumes created before the applications start, each just a `name`. An app
+  mounts one with `mounts: [{ volume: <name>, path: /data }]`.
+- **`configs`** — configuration files created and mounted into the app (see
   [below](#shipping-configuration-files)).
-- **`applications`** — the app(s) to deploy, with their env, ports, and healthcheck.
+- **`stack`** — shared `env`, `secretEnv`, `description` and `annotations` for a
+  [stack](/docs/applications/stacks). A template with more than one application is always installed
+  as a stack; declaring `stack` makes a single-app template one too.
+- **`applications`** — the app(s) to deploy, with their image, tag, command, env, secretEnv, ports,
+  mounts, resources, and healthcheck.
+
+A template must declare at least one application or database. Resources a template creates are named
+after the **install**, not the template: installing it as `shop` creates a volume `shop-data` and a
+config `shop-provisioning` (with a numeric suffix if the name is taken).
+
+## Databases
+
+Each entry names a database the apps reference, its `engine` (`postgres`, `mysql`, `mariadb`,
+`redis`, `mongodb`, or `libsql`), an optional `version` (image tag), and a `placement`:
+
+| Placement | Behaviour |
+|---|---|
+| `auto` (default) | Reuses a running instance of that engine in the workspace (creating a logical database with its own user on it), otherwise provisions a new one. |
+| `dedicated` | Always provisions a new instance for this install. |
+| `shared` | Requires an existing instance. Not allowed for `redis` or `libsql`, which host no logical databases. |
+
+Redis and libSQL are always given an instance of their own. The installer shows each database's
+placement and lets the user override it, or pick a specific instance.
+
+A database may also set `resources` (`memory` such as `256Mi` or `1Gi`, `cpu` in cores such as
+`0.5`) to size its instance. A sized database always gets an instance of its own: `auto` provisions a
+new one instead of reusing, and `shared` with `resources` is rejected. When the workspace's plan caps
+[database resources](/docs/databases/provisioning#plan-limits), an unsized database gets the engine's
+default size.
+
+:::caution Not yet in the public catalog
+Miabi accepts `databases[].resources`, but the [marketplace repository](#contributing-to-the-catalog)'s
+validator and JSON Schema don't yet. A template that uses it installs fine as a custom import, but
+fails `lint` if you contribute it to the catalog. Leave it out of catalog templates for now.
+:::
 
 ## Template variables
 
@@ -154,8 +190,8 @@ applications:
       startPeriodSeconds: 10
 ```
 
-Mark exactly one application `primary: true` — that's the app the catalog links to and the install
-surfaces first.
+Mark at most one application `primary: true` — that's the app the catalog links to and the install
+surfaces first. A single-application template's app is primary automatically.
 
 :::tip
 A template is a packaged version of a [GitOps project](/docs/cicd/gitops). If you already have a
@@ -201,7 +237,7 @@ applications:
 
 | Field | Notes |
 |---|---|
-| `name` | Unique within the template, lowercase `[a-z0-9-]`. The workspace config is created as `<template>-<name>`, owned by the install. |
+| `name` | Unique within the template, lowercase `[a-z0-9-]`. The workspace config is created as `<install>-<name>`, owned by the install. |
 | `files` | **Required**, at least one entry. Keys are relative paths (`ds.yml`, `datasources/ds.yml`) — never absolute, never containing `..`. |
 | `mode` / `sensitive` / `delimiters` | As in a [`Config` resource](/docs/cicd/manifest-reference#config). `delimiters` takes exactly two distinct, non-empty markers. |
 
@@ -222,8 +258,8 @@ redeploy-on-change, and who can read the content.
 Before contributing, install it into a workspace to confirm the inputs, provisioning, and
 healthcheck all work:
 
-- Add it as a **custom template** in your workspace (paste the `template.yaml`), then install it and
-  walk through the inputs form.
+- In the console, open **Marketplace → Import**, paste the `template.yaml`, and install it from the
+  **Custom** tab, walking through the inputs form.
 - Or drive the same resources through a one-shot [apply](/docs/cicd/gitops#one-shot-apply) to verify
   the app boots and connects to its databases.
 
@@ -236,21 +272,43 @@ Official and community templates live in the marketplace repository on GitHub:
 
 **[github.com/miabi-io/marketplace](https://github.com/miabi-io/marketplace)**
 
-To contribute a template:
+To contribute a community template:
 
-1. Fork the repository.
-2. Add your template at `templates/<slug>/<version>/template.yaml` (one directory per version, so
-   older versions stay installable).
-3. Register it in the catalog `index.yaml` (slug → versions → path + digest).
-4. Test the install locally (previous section).
-5. Open a **pull request** describing the app and any required inputs.
+1. Fork the repository and create `community/<name>/`:
 
-See the repository's contributing guide for the review checklist, naming conventions, and how digests
-are generated. Once merged and synced, your template appears in every Miabi instance's Marketplace
-under the **Community** tab.
+   ```
+   community/<name>/
+     metadata.yaml            # optional storefront enrichment (featured, screenshots, sourceRepo)
+     README.md                # optional long description, shown on the detail page
+     <version>/template.yaml  # the install manifest (apiVersion: miabi.io/v1)
+   ```
+
+   `<name>` is the template handle. It must equal the manifest's `metadata.name` and be unique across
+   `official/` and `community/`; CI enforces both. One `template.yaml` per version directory, and a
+   version is immutable once merged. Point your editor's YAML language server at
+   `schema/template.schema.json` for inline validation.
+
+2. Validate locally:
+
+   ```bash
+   go run ./cmd/marketplace lint            # parse + validate every template, verify digests
+   go run ./cmd/marketplace generate-index  # regenerate registry/index.json
+   git diff --exit-code registry/index.json # must be clean (CI runs this)
+   ```
+
+   Then install it for real through **Marketplace → Import** ([previous section](#testing-your-template)).
+
+3. Open a **pull request**. CI re-runs the validator and the index drift check, and a maintainer
+   reviews and merges.
+
+Merging to `main` redeploys the hosted catalog, so the template is live immediately and Miabi
+instances pick it up on their next sync, under the **Community** tab. Changes under `official/`
+require core-maintainer review; promoting a community template to official is a maintainer-reviewed
+folder move. The validator rejects host binds, privileged flags, unknown fields and malformed values,
+so keep templates minimal and pin image tags. See the repository's `CONTRIBUTING.md` for details.
 
 :::note
 Templates are **versioned and immutable** — publish a new version rather than editing a released one,
 so existing installs keep a reproducible definition and users upgrade
-[deliberately](/docs/marketplace/using-templates#updating-to-a-newer-template-version).
+[deliberately](/docs/marketplace/using-templates#upgrading-to-a-newer-template-version).
 :::

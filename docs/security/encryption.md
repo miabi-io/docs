@@ -31,8 +31,16 @@ Miabi AES-encrypts every secret value at rest, including:
 | Custom TLS private keys | Uploaded certificates |
 | S3 / object-storage keys | Backup & storage backends |
 | SSO client secrets | [SSO](/docs/security/sso) configuration |
+| Configuration files | [Configs](/docs/secrets/configs) |
+| Registry, Git repository and DNS provider credentials | Sources and networking |
+| Webhook and notification channel secrets | [Webhooks & notifications](/docs/cicd/webhooks-and-notifications) |
 
 Non-secret values remain readable; only data marked or known to be sensitive is encrypted.
+
+Database **backups** are a separate layer: they are encrypted with a workspace passphrase you set,
+not with the keyring, and recovery points are sealed with a rotatable per-point data key. See
+[Encrypting database backups](/docs/storage/backup-targets#encrypting-database-backups) and the
+[recovery kit](/docs/storage/backup-targets#the-recovery-kit).
 
 ## `MIABI_ENCRYPTION_KEY`
 
@@ -41,6 +49,10 @@ The root encryption key is supplied via the **`MIABI_ENCRYPTION_KEY`** environme
 ```bash
 export MIABI_ENCRYPTION_KEY="<a-strong-random-key>"
 ```
+
+Outside a dev environment Miabi **refuses to start** without `MIABI_ENCRYPTION_KEY`, since secrets would
+otherwise be stored unencrypted. **Admin → Platform → Platform Settings** shows the current encryption
+posture (per-workspace keys, auto-rotation, gateway config encryption) read-only.
 
 :::caution
 Treat `MIABI_ENCRYPTION_KEY` as the master secret for the entire instance. Generate it from a strong random source, store it in a secret manager, and back it up securely. **If you lose it, encrypted data cannot be decrypted.** Never commit it to source control or print it in logs.
@@ -66,7 +78,17 @@ This is independent of `MIABI_ENCRYPTION_KEY` (which protects secrets in Miabi's
 
 ## Key rotation
 
-Miabi supports rotating keys without downtime, both **manually** (on demand) and **automatically** (on a schedule). Rotation re-wraps the workspace DEKs under a new root key version; existing encrypted data is migrated to the new key transparently. Rotate after a suspected exposure or as routine hygiene.
+Rotation replaces a **workspace's DEK**: Miabi creates a new key version, makes it active for new writes,
+and re-encrypts the workspace's existing secrets under it. Once every value has moved, the old versions are
+deleted. If part of the re-encryption fails, the old versions are kept (inactive) so nothing becomes
+unreadable. `MIABI_ENCRYPTION_KEY` itself is not rotated by this.
+
+- **Manually** — a platform admin clicks **Rotate encryption key** on the workspace's page under
+  **Admin → Tenants → Workspaces**.
+- **Automatically** — set `MIABI_KEY_AUTO_ROTATE=true`. A daily job rotates every workspace key older than
+  `MIABI_KEY_ROTATE_MONTHS` (default `6`).
+
+Rotate after a suspected exposure or as routine hygiene.
 
 ## Crypto-shred on delete
 

@@ -6,26 +6,36 @@ description: Connect a GitHub, GitLab, or Bitbucket repository and let Miabi clo
 
 # Deploy from Git
 
-Deploying from Git is the most common way to run an application in Miabi. You connect a repository, pick a branch, and Miabi clones the code and builds an image — automatically detecting how to build it.
+Deploying from Git is the most common way to run an application in Miabi. You connect a repository, pick a branch, and Miabi builds an image from the code on a [build runner](/docs/cicd/runners) — automatically detecting how to build it.
 
 ![The deploy-from-Git configuration screen](/img/screenshots/deploy-from-git.png)
 
 ## Connecting a repository
 
 When creating an application, choose **Git repository** as the source. Any Git host reachable over
-HTTPS or SSH works — GitHub, GitLab, and Bitbucket are simply the common cases; there is no
-provider to select.
+HTTPS works — GitHub, GitLab, and Bitbucket are simply the common cases; there is no provider to
+select.
 
-1. **Repository URL** — paste the clone URL (HTTPS or SSH).
-2. **Auth type** — `public`, an HTTPS **token**, or an **SSH** key.
-3. **Branch** — choose the branch to deploy (for example `main` or `production`).
+1. **Repository** — pick a saved repository to reuse its URL and credentials, or leave it on
+   **Public URL** for a public repo.
+2. **Repository URL** — the HTTPS clone URL (optional when a saved repository is selected).
+3. **Branch / ref** — the branch to deploy (for example `main` or `production`).
+4. **Build method** — see [How builds work](#how-builds-work).
 
 Miabi builds from the repository root. There is currently no per-application build-context or
 subdirectory setting, so monorepos need a `Dockerfile` at the root.
 
 ## Git credentials
 
-For private repositories, Miabi needs access. Stored **Git credentials** (a personal access token or deploy key) are saved per workspace, encrypted at rest, and reused across applications. Add them once and Miabi can clone any private repo you have access to.
+For private repositories, Miabi needs access. Save the repository under **Sources → Git
+Repositories** with an access **token**: the credential is stored per workspace, encrypted at rest,
+and reused across applications.
+
+:::warning SSH keys do not work for app builds
+A saved repository can use the `ssh` auth type, but builds run on a runner, which clones over HTTPS
+with the token embedded — a deploy of an app whose repository uses an SSH key fails. Use a
+token (a read-only deploy token or fine-grained access token) instead.
+:::
 
 :::caution
 Use scoped, read-only deploy keys or tokens where possible. Credentials are never logged and are stored encrypted — see [Encryption](/docs/security/encryption).
@@ -33,12 +43,23 @@ Use scoped, read-only deploy keys or tokens where possible. Credentials are neve
 
 ## How builds work
 
-Miabi inspects the cloned repository and chooses a build strategy:
+The app's **Build method** decides how the image is built:
 
-- **Dockerfile** — if a `Dockerfile` is detected, Miabi builds the image from it directly. This gives you full control over the runtime.
-- **Buildpacks** — if there is no Dockerfile, Miabi uses buildpacks to detect the language and produce a runnable image without you writing any Docker configuration.
+- **Auto** (the default) — builds the repository's `Dockerfile` when there is one, otherwise uses buildpacks.
+- **Dockerfile** — always builds the `Dockerfile`. This gives you full control over the runtime.
+- **Buildpacks** — Cloud Native Buildpacks detect the language and produce a runnable image without you writing any Docker configuration. An optional **Builder image** overrides the platform's default builder.
 
-The result of either path is an immutable image that becomes a new [release](/docs/applications/releases-and-rollbacks).
+Every build runs on a registered [runner](/docs/cicd/runners), which pushes the image to the registry;
+the node only pulls it. There is no fallback to building on the node: with no runner available, the
+deploy waits and then fails. The result is an immutable image that becomes a new
+[release](/docs/applications/releases-and-rollbacks).
+
+### Build cache
+
+Builds reuse cached layers, shared by direct deploys and pipeline runs of the app. When a cached
+layer has gone stale, **Settings → Source → Build cache → Invalidate** makes the next build rebuild
+every layer (nothing is deleted), or tick **Rebuild without cache** when deploying to skip the cache
+once. From the CLI: `miabi apps invalidate-cache web`.
 
 ## Build limits
 
@@ -74,7 +95,7 @@ miabi apps resync-pipeline web
 ## Moving it into GitOps
 
 An app you built here can be described as a manifest and committed alongside your code: **Settings →
-GitOps manifest → Generate**. The generated document carries the repository, ref and build settings
+GitOps manifest → Generate manifest**. The generated document carries the repository, ref and build settings
 under `source`, so applying it elsewhere rebuilds from the same code rather than pulling the image
 this install happened to produce. See the
 [manifest reference](/docs/cicd/manifest-reference#building-from-source).
@@ -87,7 +108,7 @@ Note that switching away from Git removes any pipeline adopted from the reposito
 
 ## Redeploying
 
-Trigger a new build manually from the **Deployments** tab at any time, or set up automatic deploys so a push to your branch builds and ships a release with no manual step. See [Git push-to-deploy](/docs/cicd/git-push-deploy) and [Pipelines](/docs/cicd/pipelines).
+Trigger a new build manually from the **Deployments** tab at any time, or add a pipeline with a push trigger so a push to your branch builds and ships a release with no manual step. See [Deploy on push](/docs/cicd/git-push-deploy) and [Pipelines](/docs/cicd/pipelines).
 
 :::tip
 Every Git deploy produces a tracked release. If a build ships a regression, roll back instantly from the [Releases](/docs/applications/releases-and-rollbacks) tab.

@@ -63,6 +63,10 @@ Devices are allow-listed the same way: `/dev/net/tun`, `/dev/fuse`, `/dev/ttyUSB
 `/dev/ttyACM*`, `/dev/serial/*`, `/dev/i2c-*`, `/dev/gpiochip*`, plus `/dev/bus/usb/*`
 in the system workspace only.
 
+An app may be granted at most **12** capabilities and **8** devices. Host devices can only be
+attached to an app that runs as a single **container**; a replicated swarm service that asks for one
+is refused.
+
 **Raw block devices are never granted.** `/dev/sda`, `/dev/nvme0n1`, `/dev/mapper/*`,
 `/dev/mem` and the like are refused at every tier — they are the host's filesystem and
 memory, which is the thing this feature exists to avoid handing over.

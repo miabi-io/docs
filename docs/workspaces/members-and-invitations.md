@@ -12,39 +12,38 @@ Workspaces are how teams collaborate in Miabi. Each member of a workspace holds 
 
 ## Inviting a member
 
-1. Open your workspace and go to **Settings → Members**.
-2. Click **Invite member**.
-3. Enter the person's **email address**.
-4. Choose a **role**: Admin, Developer, or Viewer. (The **Owner** role is reserved for the workspace creator and cannot be assigned.)
-5. Click **Send invitation**.
+1. Open **Workspace → Members** in the sidebar (Admins and Owners only).
+2. Under **Invite a member**, enter the person's **email address**.
+3. Choose a **role**: owner, admin, developer, or viewer. You can't invite someone above your own role — only an Owner can invite an Owner.
+4. Click **Send invite**.
 
-Miabi emails the invitee a link. Pending invitations appear in the members list with an **Invited** status until they are accepted.
+Miabi emails the invitee a link when an [SMTP server](/docs/getting-started/configuration) is configured, and shows an **Invitation token** once so you can share it yourself. The invitation is listed under **Pending invitations** until it is accepted. An email can only have one pending invitation per workspace, and inviting is refused once the workspace reaches its plan's member limit.
 
 :::tip
-You only need an email address. If the person doesn't yet have a Miabi account, accepting the invitation walks them through registration first.
+The invitee needs a Miabi account with the invited email address. Self-service sign-up is [off by default](/docs/security/authentication#registration), so a platform admin may need to create the account first.
 :::
 
 ## Accepting an invitation
 
-The invitee clicks the link in the email, signs in (or registers), and confirms. Once accepted, they appear as an active member and gain access according to their assigned role. The invitation link is single-use and expires after a set period; you can re-send it from the members list if it lapses.
+The invitee signs in with the invited email address. Their dashboard shows a **Workspace invitations** card; clicking **Accept** makes them a member with the invited role. An invitation is single-use and expires after **7 days**. There is no re-send: once it lapses, invite the person again.
 
 ## Changing a member's role
 
-From **Settings → Members**, open the menu next to a member and choose **Change role**. The new role takes effect immediately on their next request. Role changes are recorded in the [Audit Log](/docs/operations/audit-log).
+On **Workspace → Members**, pick the new role from the member's **Role** dropdown (on Enterprise, [custom roles](/docs/workspaces/roles-and-permissions#custom-roles) appear there too). The new role takes effect on their next request. Role changes are recorded in the [Audit Log](/docs/operations/audit-log).
 
 :::caution
-There is exactly **one Owner** per workspace — the user who created it. The Owner cannot be demoted or removed. To hand off a workspace, transfer ownership before leaving.
+A workspace always keeps **at least one Owner**; the last Owner cannot be demoted or removed. To hand a workspace off, promote another member to Owner, then step down. See [Owners and the rank guard](/docs/workspaces/roles-and-permissions#owners-and-the-rank-guard).
 :::
 
 ## Removing a member
 
-Open the member's menu and choose **Remove**. They immediately lose all access to the workspace and its resources. Any [API tokens](/docs/security/api-tokens) they created in this workspace are revoked along with their membership.
+Click the **Remove** icon on the member's row and confirm. They immediately lose all access to the workspace and its resources. Their [API keys](/docs/security/api-tokens) aren't revoked, but every request is checked against current membership, so the keys can no longer reach this workspace. The console doesn't offer **Remove** for Owners; demote an Owner first.
 
 ## Roles at a glance
 
 | Role | Typical use |
 |------|-------------|
-| **Owner** | The creator; full control, billing, deletion. |
+| **Owner** | Full control, including deleting the workspace. |
 | **Admin** | Manage members, settings, and all resources. |
 | **Developer** | Create and deploy apps, databases, domains. |
 | **Viewer** | Read-only visibility. |

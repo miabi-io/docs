@@ -17,8 +17,9 @@ pick between them.
 Every method below needs Miabi to know **which port your container listens on**. This is
 the single most common reason an app looks deployed but answers nothing.
 
-Open the app → **Settings → Ports** and add the port your process binds inside the
-container — `3000` for a typical Node app, `8080` for many Java services, `80` for nginx.
+Open the app → **Ports → Container ports → Add port** (or **Settings → Configuration →
+Container ports**) and add the port your process binds inside the container — `3000` for a typical
+Node app, `8080` for many Java services, `80` for nginx.
 
 | Field | What it means |
 |---|---|
@@ -113,7 +114,7 @@ makes browsers actually arrive.
 
 ### Step 3 — Create the route
 
-Open the app → **Routes → New route**.
+Open the app → **Routes → Add route**.
 
 ![Creating a route on an application](/img/screenshots/app-route-create.png)
 
@@ -142,8 +143,8 @@ them in does not matter.
 Sometimes the gateway is the wrong tool: a game server on UDP, a TCP database you must
 reach directly, a protocol Goma does not speak. For those, publish a **host port**.
 
-Open the app → **Ports → Request host port**, choose the container port and the host port
-you want.
+Open the app → **Ports → Host port bindings → Request binding**, choose the container port and
+the host port you want (**Suggest** picks one that is currently free).
 
 ![Requesting a host port binding](/img/screenshots/app-host-port-request.png)
 
@@ -151,14 +152,15 @@ you want.
 
 Host ports are a **node-wide shared resource** — two apps cannot both own `:8080` on the
 same machine. So a request enters a review queue and a **platform admin approves it**
-before anything is published. Admins review these under
-[Platform admin → Routes & ports](/docs/administration/workspace-oversight).
+before anything is published. Admins review these under **Platform admin → Infrastructure →
+Ports** — see [Moderating host ports](/docs/administration/workspace-oversight#moderating-host-ports).
 
 Requests are bounded by `MIABI_HOST_PORT_MIN` / `MIABI_HOST_PORT_MAX` (default `1024`
-and above), so a workspace cannot ask for a privileged port.
+and above), so an ordinary workspace cannot ask for a privileged port.
 
-A **privileged workspace** skips the queue and auto-approves — but still only when the
-port is genuinely free on that node; a collision is refused with the current owner named.
+A **privileged workspace** skips the queue and auto-approves, and may ask for any port from 1 to
+65535 — but still only when the port is genuinely free on that node; a collision is refused with the
+current owner named.
 
 ### It publishes on the next deploy
 

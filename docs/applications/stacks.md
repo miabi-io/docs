@@ -28,6 +28,20 @@ A stack has two names, and only one of them can change:
   name, create a new stack and move the apps across.
 - **Display name** — the free-text label shown in the console. Change it whenever you like.
 
+## Shared environment
+
+A stack can carry environment variables of its own. **Shared environment → Add variable** (or
+**Import .env** to paste `KEY=VALUE` lines) sets one, optionally as a **secret**, which is encrypted
+at rest. Every application in the stack receives it on its next deploy.
+
+- **An app's own variable wins.** When a member defines the same key itself, the shared value never
+  reaches it. The list flags such a variable as **overridden in** and names those apps, so a value
+  that looks set but is ignored does not go unnoticed.
+- **Changing a shared variable marks members for redeploy.** Every member already deployed is flagged
+  as running older configuration, and the stack page offers **Redeploy** for just those apps rather
+  than **Deploy all**.
+- **Secret values are masked.** A workspace **Admin** can reveal one; revealing is audited.
+
 ## Talking to each other
 
 Applications in a stack resolve each other by name on the stack's own network — the API is `api` to
@@ -43,9 +57,9 @@ Group apps into a stack because they belong together, not to give them a hostnam
 Use a stack when several apps:
 
 - **Belong to the same system** — they're deployed, versioned, and reasoned about together.
-- **Share configuration** — they reference the same [secrets](/docs/applications/environment-variables) and database credentials.
-- **Are deployed and promoted as a unit** — a worker and the web app it supports move together
-  through dev, staging and production.
+- **Share configuration** — they read the same [shared environment](#shared-environment),
+  [secrets](/docs/applications/environment-variables) and database credentials.
+- **Are deployed as a unit** — **Deploy all** ships every member at once.
 
 If an application is genuinely standalone, it doesn't need a stack — create it on its own.
 
@@ -54,10 +68,6 @@ If an application is genuinely standalone, it doesn't need a stack — create it
 | Web + API + worker for one product | Yes — group them |
 | A self-contained marketing site | No — standalone app |
 | Two unrelated apps that happen to share a server | No — keep separate |
-
-:::tip
-Stacks pair naturally with [Environments](/docs/applications/environments): promote a whole system from dev to staging to production as a unit, rather than moving each app one at a time.
-:::
 
 :::note
 A stack is a grouping within a single workspace. To isolate entirely separate projects or teams, use separate [workspaces](/docs/workspaces/overview) instead.

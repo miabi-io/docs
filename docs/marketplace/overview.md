@@ -70,8 +70,10 @@ keeps installs reproducible and makes upgrades deliberate rather than accidental
 
 ## Installs become normal applications
 
-Installing a template doesn't create a special, locked-down object — it creates a **standard Miabi
-application** in your workspace. Once installed, every application feature applies:
+Installing a template doesn't create a special, locked-down object — it creates **standard Miabi
+applications** in your workspace, grouped into a [stack](/docs/applications/stacks) when the template
+has more than one, along with any databases, volumes and configs it declares. Once installed, every
+application feature applies:
 
 - Custom domains and automatic SSL
 - Environment variables and secrets
@@ -90,6 +92,7 @@ container app; use a managed database when you want Miabi to own credentials, ba
 :::
 
 :::note
-Because a Marketplace install is just an application, deleting it follows the normal app deletion
-flow — and any volumes it created persist until you remove them.
+To remove an install and everything it created, including its volumes and the database instances it
+provisioned, use **Uninstall** under **Marketplace → Installed**. See
+[Using templates](/docs/marketplace/using-templates#uninstalling).
 :::

@@ -18,7 +18,7 @@ Higher roles include every permission of the roles below them. Four roles cover 
 
 | Role | Description |
 |------|-------------|
-| **Owner** | The workspace creator. Full control, including billing, transferring ownership, and deleting the workspace. |
+| **Owner** | Full control, including deleting the workspace. The creator is the first Owner; others can be promoted. |
 | **Admin** | Manages members, settings, and every resource in the workspace. |
 | **Developer** | Creates and operates resources — apps, deployments, databases, domains, volumes. |
 | **Viewer** | Read-only access to resources and their status. |
@@ -32,13 +32,16 @@ Each role inherits everything below it, then adds more:
 | View resources & status | ✅ | ✅ | ✅ | ✅ |
 | Create / deploy apps | | ✅ | ✅ | ✅ |
 | Manage databases, domains, volumes | | ✅ | ✅ | ✅ |
+| Delete apps | | | ✅ | ✅ |
 | Roll back deployments | | ✅ | ✅ | ✅ |
 | Invite / remove members | | | ✅ | ✅ |
 | Change member roles | | | ✅ | ✅ |
 | Edit workspace settings | | | ✅ | ✅ |
-| Manage API tokens (workspace-wide) | | | ✅ | ✅ |
-| Transfer ownership | | | | ✅ |
+| View the audit log (Enterprise) | | | ✅ | ✅ |
+| Promote a member to Owner | | | | ✅ |
 | Delete the workspace | | | | ✅ |
+
+[API keys](/docs/security/api-tokens) aren't a workspace resource: every user manages their own, and a key can only reach workspaces its user belongs to.
 
 ## Dual enforcement
 
@@ -67,7 +70,7 @@ Equal rank is allowed: Admins manage other Admins, Owners manage other Owners. B
 return `403`. Invitations are bounded the same way — an Admin cannot invite someone as an Owner.
 
 :::caution
-Because the Owner can delete the workspace and its encrypted data, transfer ownership deliberately and only to a trusted member.
+Because an Owner can delete the workspace and its encrypted data, promote members to Owner deliberately and only when you trust them.
 :::
 
 ## Enterprise: custom roles & per-resource policies

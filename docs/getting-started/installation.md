@@ -39,7 +39,7 @@ the exact same stack.
 
 Miabi requires **Docker Engine 25.0 or newer** on the control-plane host and on every node.
 25.0 is the floor of the versions Miabi tests — its CI runs the engine integration suite on
-Docker **25, 26, 27 and 28**.
+Docker **25, 26, 27, 28 and 29**.
 
 
 ## How Miabi runs
@@ -260,9 +260,10 @@ base config):
 sudo miabi stack restart miabi-gateway
 ```
 
-`gateway.env` is the gateway's environment: `GOMA_LOG_LEVEL` and `GOMA_ANALYTICS_ENABLED` (both
-seeded), plus anything your config interpolates. `TZ` is **not** here — it is stack-wide (top-level
-`env:`) and already reaches the gateway, so the whole stack's log timestamps agree.
+`spec.gateway.env` is the gateway's environment: `GOMA_LOG_LEVEL` and `GOMA_ANALYTICS_ENABLED`
+(both seeded), plus anything your config interpolates. `TZ` is **not** here — it lives in
+`spec.server.env`, applies to the whole stack and already reaches the gateway, so the whole stack's
+log timestamps agree.
 
 `GOMA_ANALYTICS_ENABLED` is seeded to `true` because Miabi's analytics consumer runs by default;
 without the gateway emitting its event stream, every [Workspace
@@ -270,16 +271,19 @@ Analytics](/docs/operations/analytics) dashboard would sit empty. Set it to `"fa
 stream off — it is a seeded default, not a managed variable, so your value stands.
 
 ```yaml
-gateway:
-  config: goma.yml
-  env:
-    MY_UPSTREAM: https://internal.example.com
-    GOMA_CONFIG_ENCRYPTION_KEY: …
+spec:
+  gateway:
+    config: goma.yml
+    env:
+      MY_UPSTREAM: https://internal.example.com
+  secrets:
+    gomaConfigEncryptionKey: …
 ```
 
-`GOMA_CONFIG_ENCRYPTION_KEY` belongs here, not in the top-level `env:` — Miabi encrypts the config
-that Goma decrypts, so it forwards the key to **both** containers. Set on one side only, routing
-breaks with no obvious cause.
+The gateway config key has exactly one home: `spec.secrets.gomaConfigEncryptionKey` (`gateway.env`
+in the older flat manifest). Miabi encrypts the config that Goma decrypts, so it forwards the key to
+**both** containers. `spec.server.env` refuses `GOMA_CONFIG_ENCRYPTION_KEY` — set on one side only,
+routing would break with no obvious cause.
 
 :::tip Extra routes don't belong in `goma.yml`
 Goma watches `/etc/goma/providers`, where Miabi writes your apps' routes. Additional routes and
@@ -287,16 +291,22 @@ middlewares belong there — hot-reloaded, and untouched by upgrades — rather 
 config you then have to maintain.
 :::
 
-`control_url` is separate from `web_url` because it does not have to equal it. A node on a private
-network may reach the control plane at an internal address the public panel URL never resolves to —
-welding the two together would force that traffic out over the internet and back. Leave it unset and
-it follows `web_url`, which is right for a single public hostname.
+`endpoints.control` is separate from `endpoints.web` because it does not have to equal it. A node on
+a private network may reach the control plane at an internal address the public panel URL never
+resolves to — welding the two together would force that traffic out over the internet and back.
+Leave it unset and it follows `endpoints.web`, which is right for a single public hostname.
 
-The `env:` block takes anything Miabi reads that the manifest does not already model — SMTP, OAuth,
+`spec.server.env` takes anything Miabi reads that the manifest does not already model — SMTP, OAuth,
 `HTTP_PROXY`, and so on. Variables Miabi sets itself (the database password, the domain, the
 encryption key, the registry) are **refused** there rather than merged, so a setting can never have
 two disagreeing sources of truth. `TZ` applies to the *whole* stack, so every container's log
 timestamps agree.
+
+The document models more than the example above shows — the managed-network pool, the host-port
+range, the default cluster's external domain, platform backup, the license file and the ACME
+directory. Where the console also edits such a setting, stating it here locks the console's field.
+See
+[Install Manifest](/docs/administration/install-manifest) for every field.
 
 ### `--no-host-proc`
 
@@ -343,11 +353,14 @@ answer, so `--yes` is not optional there.
 
 ### Which image it installs
 
-`setup` installs `miabi/miabi` at the CLI's own version, so a CLI and the stack it installs agree by
-default. That decoupling is deliberate — a standalone CLI can be older or newer than the stack it
-manages, and `miabi stack status` shows both.
+`setup` installs `miabi/miabi` at the **latest published Miabi release**, looked up when it runs —
+the version is not baked into the CLI. That decoupling is deliberate: the CLI releases on its own
+cadence, so a CLI built months ago still installs today's Miabi, and `miabi stack status` shows both.
+The lookup goes to GitHub's releases API (or `MIABI_RELEASE_API`); if it cannot be reached, `setup`
+warns and falls back to `miabi/miabi:latest`, which costs you automatic rollback and drift detection.
 
-To install something else, including from a private registry, pass it verbatim:
+To pin a release, pass `--version 1.8.0`. To install something else, including from a private
+registry, pass the image verbatim:
 
 ```bash
 sudo miabi setup --domain miabi.example.com --image registry.example.com/miabi:1.7.3
@@ -398,7 +411,7 @@ Two things this path does *better*:
 
 - **The tag you invoke is the tag you get.** The image asks Docker for its own reference, so
   `miabi/miabi:1.7.3 install` lands exactly 1.7.3, private registry included, with no inference.
-  The CLI has no container to inspect and uses its build-stamped default instead.
+  The CLI has no container to inspect and looks up the latest release instead.
 - **No root required.** See [Running the installer container as non-root](#running-the-installer-container-as-non-root)
   below — uid 10001 plus the host's docker group is enough.
 
@@ -448,9 +461,10 @@ host that already has other containers on it.
 ```bash
 git clone https://github.com/miabi-io/miabi && cd miabi/examples/compose
 cp .env.example .env
-# Create the shared app network with a roomy CIDR (Compose references it as
-# external; the one-line install.sh does this for you). See Networks & Subnets.
-docker network create --driver bridge --subnet 10.63.0.0/16 miabi
+# Optional but recommended: pre-create the shared app network with a roomy CIDR so
+# it isn't capped by Docker's small default pool. Compose creates it for you
+# otherwise. See Networks & Subnets.
+docker network create --driver bridge --subnet 10.63.0.0/16 miabi || true
 docker compose up -d
 docker compose logs -f miabi
 ```
@@ -461,18 +475,17 @@ Compose creates the private one for you, and `.env.example` already sets the mat
 `MIABI_INTERNAL_NETWORK`. See
 [The platform's private network](/docs/networking/networks-and-subnets#the-platforms-private-network).
 
-`compose.yaml` refuses to start until these are set in `.env` — `docker compose up` aborts with
-`required variable ... is missing a value` rather than starting a half-configured stack:
+Fill these in `.env` before the first `docker compose up`:
 
-| Variable | How to produce it |
-|----------|-------------------|
-| `MIABI_DB_PASSWORD` | `openssl rand -hex 32` |
-| `MIABI_REDIS_PASSWORD` | `openssl rand -hex 32` |
-| `MIABI_JWT_SECRET` | `openssl rand -hex 32` |
-| `MIABI_ENCRYPTION_KEY` | `openssl rand -hex 32` |
-| `MIABI_ADMIN_PASSWORD` | The platform admin's password. Miabi **refuses to boot** outside dev on an empty or default value |
-| `MIABI_DOMAIN` | Your panel host, e.g. `miabi.example.com` |
-| `MIABI_WEB_URL` | `https://<MIABI_DOMAIN>` — also the CORS allowlist, so it must be a concrete origin |
+| Variable | How to produce it | If it is missing |
+|----------|-------------------|------------------|
+| `MIABI_DB_PASSWORD` | `openssl rand -hex 32` | Compose aborts with `set MIABI_DB_PASSWORD` |
+| `MIABI_REDIS_PASSWORD` | `openssl rand -hex 32` | Compose aborts |
+| `MIABI_DOMAIN` | Your panel host, e.g. `miabi.example.com` | Compose aborts |
+| `MIABI_JWT_SECRET` | `openssl rand -hex 32` | Miabi **refuses to boot** outside dev |
+| `MIABI_ENCRYPTION_KEY` | `openssl rand -hex 32` | Miabi **refuses to boot** outside dev |
+| `MIABI_ADMIN_PASSWORD` | The platform admin's password | Miabi **refuses to boot** outside dev on an empty or default value |
+| `MIABI_WEB_URL` | `https://<MIABI_DOMAIN>` | It is also the default CORS allowlist: unset (and no `MIABI_CORS_ORIGINS`), the allowlist becomes `*` and Miabi **refuses to boot** outside dev |
 
 Also set `DOCKER_GID` to the host's docker group id (`stat -c '%g' /var/run/docker.sock`). It is not
 required — it defaults to `999` — but a mismatch means the container cannot read the Docker socket.
@@ -489,8 +502,7 @@ The Miabi container mounts the Docker socket to manage app and database containe
 :::tip Want the optional pieces wired up?
 The [`examples/compose/`](https://github.com/miabi-io/miabi/tree/main/examples/compose) stack turns
 on the built-in registry, one-click wildcard app URLs, an externalized log volume, and an optional
-scaled-out worker — plus a **Traefik** variant. It's the "show me the features" counterpart to the
-minimal `deploy/` stack.
+scaled-out worker — plus a **Traefik** variant. It is the only Compose stack Miabi ships.
 :::
 
 :::caution
@@ -513,7 +525,7 @@ Docker GID:
 ```
 
 A fresh named volume inherits `10001:10001` from the image, so there's no chown dance. For a
-purpose-built rootless image, use the Debian variant (`docker/Dockerfile.debian`).
+purpose-built rootless image, use the rootless variant (`docker/Dockerfile.rootless`).
 
 ## First run
 

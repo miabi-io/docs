@@ -1,12 +1,14 @@
 ---
 sidebar_position: 9
 title: Environments
-description: Promote applications through dev, staging, and production stages with isolated configuration.
+description: Define promotion stages such as dev, staging and production, and gate promoting a release behind approvals.
 ---
 
 # Environments
 
-**Environments** are promotion stages for your application — typically **dev → staging → production**. They let you run the same app at multiple maturity levels, each with its own configuration, so you can validate changes before they reach users.
+**Environments** are the promotion stages of a workspace — typically **dev → staging → production**.
+Each one is an ordered stage with an optional **approval gate**: before a release can be promoted
+into it, it needs a set number of approvals.
 
 ![The environments view showing dev, staging, and production stages](/img/screenshots/environments.png)
 
@@ -18,28 +20,43 @@ A change that looks fine in development should be tested before it serves real t
 - **Staging** — a production-like stage for final verification.
 - **Production** — what your users actually hit.
 
-Each stage runs the same application but with its own [environment variables and secrets](/docs/applications/environment-variables), its own [domains](/docs/networking/domains), and its own [scaling](/docs/applications/scaling-and-resources). Database credentials, API keys, and resource limits differ per stage, so a dev deploy never touches production data.
+## Defining environments
 
-## Promoting between stages
+Open **GitOps & CI/CD → Environments** and create one per stage:
 
-Promotion moves a verified [release](/docs/applications/releases-and-rollbacks) forward — for example, taking the exact build that passed in staging and shipping it to production. Because you promote the same immutable release, production runs precisely what you tested; only the per-stage configuration changes.
+| Field | What it means |
+|---|---|
+| **Name** | The environment's handle, unique in the workspace (for example `production`). |
+| **Description** | Optional free text. |
+| **Order** | Orders the stages: a lower order promotes into a higher one (dev `0`, prod `2`). |
+| **Required approvals** | How many approvals a release needs before it can be promoted into this environment. `0` means no gate. |
 
-A typical flow:
+## Promoting a release
 
-1. Deploy a change to **dev** and iterate.
-2. **Promote** the resulting release to **staging** and verify against production-like data.
-3. **Promote** the same release to **production**.
+**GitOps & CI/CD → Releases** lists the workspace's releases across its applications. **Promote**
+on a release opens the gate for a target environment: it shows how many approvals the release has
+for that environment and how many it needs.
+
+- **Approve** records your approval of the release for that environment. Developers and above can
+  approve.
+- **Promote** is enabled once the gate is satisfied. It redeploys that release's image on its
+  application through the ordinary deploy pipeline — the same mechanism as a
+  [rollback](/docs/applications/releases-and-rollbacks#one-click-rollback) — and records who
+  promoted it.
+
+:::note Promotion does not copy anything between applications
+A release belongs to one application, and promoting it redeploys it **on that application**. Its
+configuration comes from the application, as on every deploy. To run separate stages with their
+own variables, secrets, domains and limits, give each stage its own application — see
+[Environment Variables & Secrets](/docs/applications/environment-variables).
+:::
 
 :::tip
-Promote releases rather than rebuilding for each stage. Rebuilding can introduce differences between what you tested and what ships; promoting the same artifact eliminates that risk.
+Promote releases rather than rebuilding for each stage. Rebuilding can introduce differences between what you tested and what ships; promoting the same image eliminates that risk.
 :::
 
 ## Environments and the rest of Miabi
 
-- Combine environments with [Stacks](/docs/applications/stacks) to promote a whole multi-app system as a unit.
-- Keep stage-specific secrets in the workspace vault; reference them per environment. See [Encryption](/docs/security/encryption).
-- Wire promotions into your delivery flow with [Pipelines](/docs/cicd/pipelines).
-
-:::note
-Promotion never carries configuration across stages — production keeps its own secrets and limits. Only the immutable release artifact moves forward.
-:::
+- Group the applications of one system into a [Stack](/docs/applications/stacks).
+- Keep stage-specific secrets in the workspace vault. See [Encryption](/docs/security/encryption).
+- Wire deploys into your delivery flow with [Pipelines](/docs/cicd/pipelines).

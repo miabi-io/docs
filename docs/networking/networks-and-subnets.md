@@ -56,19 +56,16 @@ The gateway and every routed app/database container share one bridge network —
 this single network, it needs plenty of address space, so it is treated differently from the
 per-workspace networks above:
 
-- **Created up front as an external network.** `install.sh` runs `docker network create` for it
-  before the stack starts, and the Compose files reference it as `external: true`. This gives it a
-  **controllable, roomy CIDR** (`MIABI_NETWORK_CIDR`, default `10.63.0.0/16` — ~65k addresses)
-  instead of a slice of Docker's small default pool, and it **survives `docker compose down`**
-  rather than being recreated.
+- **A roomy, explicit CIDR on a managed install.** `install.sh` and `miabi setup` create it with
+  `10.63.0.0/16` (~65k addresses) instead of a slice of Docker's small default pool. Choose another
+  range with `MIABI_SUBNET` or `--subnet` — see [Changing the subnets](#changing-the-subnets).
 - **Distinct from the workspace pool.** Its CIDR must not overlap `MIABI_NETWORK_POOL_CIDR` (the
   `10.64.0.0/12` pool below) or your LAN. The default `10.63.0.0/16` sits just outside the pool.
 
-If you run Compose by hand instead of `install.sh`, create it first:
-
-```bash
-docker network create --driver bridge --subnet 10.63.0.0/16 miabi
-```
+The [Compose files](https://github.com/miabi-io/miabi/tree/main/examples/compose) declare `miabi` as
+an ordinary Compose network, so Compose creates it (and `docker compose down` removes it) with a subnet
+from Docker's default address pools. Add an `ipam` block to the network in your Compose file if you
+need a specific range.
 
 ## The platform's private network
 
@@ -84,7 +81,7 @@ managed one (`install.sh`, `miabi setup`) creates it with an explicit `10.62.0.0
 | `miabi` (control plane) | — | ✅ |
 | `miabi-postgres` | — | ✅ |
 | `miabi-redis` | — | ✅ |
-| `mb-registry` (built-in registry) | ✅ | ✅ |
+| `mb-registry` (built-in registry) | — | ✅ |
 | your routed apps | ✅ | — |
 
 (On the Traefik Compose variant, Traefik takes the gateway's row.)
@@ -95,6 +92,10 @@ secret, and Redis holds the background job queue — so one exposed application 
 should not put them within reach. After the split, the only way into the platform is through the
 gateway, where your [routes and middlewares](/docs/networking/routing-and-middlewares) — rate limits,
 IP allowlists, security policies — actually apply.
+
+The built-in registry sits on the private network only for the same reason: it relies on the gateway
+to authenticate every request, so app containers must not be able to reach it directly. A Compose
+stack needs `MIABI_INTERNAL_NETWORK` set for this — see the upgrade note below.
 
 Nothing about deploying, routing, or connecting apps changes: your containers still join `miabi`
 when they have a route, exactly as before.
@@ -122,7 +123,9 @@ spec:
 ```
 
 The same block also carries the [managed subnet pool](#managed-subnet-allocation) (`pool`), the host
-port range (`hostPorts`), the wildcard domain for one-click app URLs (`external`) and the managed-DNS
+port range (`hostPorts`), the **default cluster's** wildcard domain for one-click app URLs (`external`
+— other clusters set theirs in the cluster's **Edit** dialog, see
+[Cluster mode](/docs/nodes/cluster-mode#external-access)) and the managed-DNS
 interval (`dns`) — see the [Install Manifest](/docs/administration/install-manifest).
 
 :::note Upgrading an existing install
@@ -186,7 +189,7 @@ set `MIABI_NETWORK_POOL_CIDR` to a free range — for example a spare `/16` like
 
 ## Monitoring the pool
 
-Pool utilization is visible on the **admin dashboard** (a *Network pool* panel showing used vs.
+Pool utilization is visible on the **admin dashboard** (a *Subnet pool* panel showing used vs.
 total subnets, with a warning as it nears capacity) and via Prometheus:
 
 | Metric | Meaning |

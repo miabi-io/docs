@@ -23,7 +23,9 @@ so an admin always already exists.
 
 The one-line installer generates a password, prints it once at the end of the run, and stores it in
 `/etc/miabi/miabi.yaml` — the **only** copy, so back that file up. Sign in with those credentials;
-every self-service sign-up afterwards is an ordinary user until invited into a workspace.
+every account created afterwards — by an admin, through SSO, or by
+[self-service sign-up](/docs/administration/users-and-accounts#opening-self-service-sign-up) if you
+open it — is an ordinary user unless an admin makes it a platform admin.
 
 On a stack install you never set those two variables yourself: Miabi derives them and writes them
 into the manifest, which is what it feeds the container. The login is whichever email you installed
@@ -40,53 +42,68 @@ sign-in, enable any available SSO/MFA, and reserve it for platform tasks rather 
 ## What the platform admin manages
 
 Platform administration is global: *the server, the fleet, and the configuration everything
-else runs on* — not the contents of any one workspace. The admin console is organised
-around that, and this table is the map.
+else runs on* — not the contents of any one workspace. It has its own console, separate from the
+workspace console: platform admins switch between the two, and a bare `/admin` lands on the
+dashboard. The sidebar is grouped as below, and this table is the map.
+
+### Overview
+
+| Section | Responsibility |
+|---|---|
+| **Dashboard** | Instance health at a glance: an overall status with the reasons behind it, nodes online (and offline or cordoned), clusters (swarm vs standalone, and converted nodes awaiting a gateway decision), workers, containers, volume storage, the subnet pool, an inventory of apps, databases, stacks, volumes, routes, users and sessions, and recent activity. `/admin/metrics` redirects here. |
+| **Events** | The platform-wide activity feed (Enterprise). See [Audit log](/docs/operations/audit-log). |
+| **Jobs** | The background sweeps that keep the platform consistent. See [Scheduled Jobs](/docs/administration/scheduled-jobs). |
+| **Reconciliation** | Apps, swarm services, node gateways and data volumes that disappeared from under Miabi, as the control manager sees them. See [Reconciliation](/docs/operations/reconciliation). |
+
+### Identity
+
+| Section | Responsibility |
+|---|---|
+| **Users** | Create accounts, reset credentials, revoke sessions, set per-user limits, and schedule deletions. See [Users & Accounts](/docs/administration/users-and-accounts). |
+| **OAuth Providers** | External identity providers for sign-in. See [SSO](/docs/security/sso). |
+| **LDAP / AD** | Directory-backed authentication (Enterprise). See [SSO](/docs/security/sso). |
 
 ### Tenants
 
 | Section | Responsibility |
 |---|---|
-| **Users** | Create accounts, reset credentials, revoke sessions, set per-user limits, and schedule deletions. See [Users & Accounts](/docs/administration/users-and-accounts). |
 | **Workspaces** | Cross-workspace visibility, privileged workspaces, and key rotation. See [Workspace Oversight](/docs/administration/workspace-oversight). |
 | **Plans** | Define what a workspace may consume and which capabilities it unlocks. See [Plans & Quotas](/docs/workspaces/plans-and-quotas). |
+| **Database sizes** | Named CPU and memory sizes plans offer (Enterprise). See [Database sizes](/docs/workspaces/plans-and-quotas#database-sizes). |
+| **Announcements** | Broadcast a notice to user inboxes — to everyone or selected workspaces, scheduled or immediate, with an optional expiry and a pinned banner (Enterprise). |
 
 ### Infrastructure
 
 | Section | Responsibility |
 |---|---|
-| **Nodes** | The fleet: status, health, capacity, container inventory, housekeeping and Docker import. See [Nodes & Capacity](/docs/administration/nodes-and-capacity). |
-| **Runners** | The build machines pipelines execute on. See [Runners](/docs/cicd/runners). |
-| **Registry** | The built-in multi-tenant OCI registry. See [Registry administration](/docs/registry/administration). |
-| **Platform backup** | Backing up and restoring the platform itself. See [Backups](/docs/storage/backups). |
-
-### Traffic
-
-| Section | Responsibility |
-|---|---|
+| **Clusters** | Standalone and swarm clusters, the locations workspaces deploy to. See [Cluster Mode](/docs/nodes/cluster-mode). |
+| **Nodes** | The fleet: status, health, pools, container inventory, housekeeping and Docker import. See [Nodes & Capacity](/docs/administration/nodes-and-capacity). |
+| **Ports** | Every host port on every node, and the host-port approval queue. See [Workspace Oversight](/docs/administration/workspace-oversight#moderating-host-ports). |
+| **Kernel grants** | Every application holding an extra Linux capability or host device. See [Capabilities & devices](/docs/applications/capabilities-and-devices). |
+| **Shared Runners** | The platform-shared build machines pipelines execute on. See [Runners](/docs/cicd/runners). |
+| **Container Registry** | The built-in multi-tenant OCI registry. See [Registry administration](/docs/registry/administration). |
 | **Domains** | Verify, force-verify or ban a domain in any workspace. See [Workspace Oversight](/docs/administration/workspace-oversight#moderating-domains). |
-| **Routes & ports** | Every route on the instance, and the host-port review queue. See [Workspace Oversight](/docs/administration/workspace-oversight#moderating-routes-and-host-ports). |
+| **Routes** | Every route on the instance. See [Workspace Oversight](/docs/administration/workspace-oversight#moderating-routes). |
 
-### Configuration & operations
+### Platform
 
 | Section | Responsibility |
 |---|---|
-| **Settings** | The typed, cached key-value configuration governing instance-wide behaviour. See [Platform Settings](/docs/operations/platform-settings). |
+| **Platform Settings** | The typed, cached key-value configuration governing instance-wide behaviour. See [Platform Settings](/docs/operations/platform-settings). |
 | *(fields pinned by the install manifest)* | A setting stated in `/etc/miabi/miabi.yaml` — a backup destination, the external base domain, the registry host — is **read-only in the console**, shown with the variable that decides it. That is deliberate: it keeps an install described by infrastructure-as-code authoritative. Remove the field from the manifest and converge to hand the setting back. |
-| **Deployment config** | Registry mirror and platform image pins. See [Scheduled Jobs & Image Defaults](/docs/administration/scheduled-jobs#image-defaults). |
-| **Jobs** | The background sweeps that keep the platform consistent. See [Scheduled Jobs](/docs/administration/scheduled-jobs). |
-| **Metrics** | Instance-wide resource and activity overview. |
-| **Events** | The platform-wide activity feed. See [Audit log](/docs/operations/audit-log). |
-| **Upgrades** | Roll the instance forward to a newer image. See [Upgrades](/docs/upgrades/upgrading). |
+| **Branding** | The sign-in page and console identity: name, logos, favicon, accent policy and sign-in notice (Enterprise). See [Branding](/docs/administration/branding). |
+| **Deployment Config** | Registry mirror and platform image pins. See [Scheduled Jobs & Image Defaults](/docs/administration/scheduled-jobs#image-defaults). |
+| **Platform Backup** | Backing up and restoring the platform itself (Enterprise). See [Backups](/docs/storage/backups). |
 
-### Identity & compliance
+### Enterprise
 
 | Section | Responsibility |
 |---|---|
-| **OAuth providers** | External identity providers for sign-in. See [SSO](/docs/security/sso). |
-| **Directory (LDAP)** | Directory-backed authentication. See [SSO](/docs/security/sso). |
-| **SIEM** | Streaming audit events to an external SIEM. See [SIEM](/docs/security/siem). |
 | **License** | Enterprise entitlement. See [Licensing](/docs/editions/licensing). |
+| **SIEM Streaming** | Streaming audit events to an external SIEM. See [SIEM](/docs/security/siem). |
+
+Upgrading the instance is not a console action: it runs from the host. See
+[Upgrades](/docs/upgrades/upgrading).
 
 ## What a platform admin cannot do
 
@@ -131,6 +148,7 @@ For the full breakdown of workspace-level capabilities, see [Roles & Permissions
 
 - [Users & Accounts](/docs/administration/users-and-accounts) — creating accounts and recovering locked-out users.
 - [Workspace Oversight](/docs/administration/workspace-oversight) — privileged workspaces, and moderating domains and ports.
+- [Branding](/docs/administration/branding) — white-labeling the sign-in page and console.
 - [Nodes & Capacity](/docs/administration/nodes-and-capacity) — the operational view of your fleet.
 - [Scheduled Jobs & Image Defaults](/docs/administration/scheduled-jobs) — background sweeps and platform image pins.
 - [Platform Settings](/docs/operations/platform-settings) — instance-wide configuration.

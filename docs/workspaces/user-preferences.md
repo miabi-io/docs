@@ -1,7 +1,7 @@
 ---
 sidebar_position: 6
 title: User Preferences
-description: Set your default workspace, theme, time zone and landing view — settings that follow your account rather than one browser.
+description: Set your default workspace, theme, accent colour, time zone, language and landing view — settings that follow your account rather than one browser.
 ---
 
 # User Preferences
@@ -62,9 +62,15 @@ your account preference on first sign-in rather than being reset.
 
 | Setting | Effect |
 |---|---|
+| **Accent** | The console's highlight colour: **Purple** (the default), **Blue**, **Indigo**, **Slate**, **Orange** or **Lime**. It applies immediately and follows your account to other browsers. Status colours — success, warning, danger — keep their own meaning. |
 | **Open on** | The console section a new session opens on inside your default workspace — Dashboard, Applications, Databases, Routes, and so on. |
 | **Time zone** | How timestamps are *displayed*. They are always stored and served in UTC. The page offers your browser's detected zone in one click. |
-| **Language** | A BCP 47 tag such as `en` or `fr-CA`, used for date and number formatting. |
+| **Language** | **English** or **Français**. Translations are still on the way, so the console stays in English for now. A value saved before this became a fixed choice is mapped to its language (`fr-CA` → French), or to English. |
+
+:::note
+If a platform admin enforces the brand accent under [Branding](/docs/administration/branding), the
+**Accent** picker is locked and shows *Set by your organization for every account*.
+:::
 
 ## API
 

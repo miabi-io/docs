@@ -25,8 +25,9 @@ splits traffic between them at the gateway.
 The setting applies to **every** deploy of that app, however it was triggered — the console, the
 CLI, a [pipeline](/docs/cicd/pipelines) run, or a [GitOps](/docs/cicd/gitops) reconcile. A manifest
 can state it directly with
-[`spec.strategy`](/docs/cicd/manifest-reference#application); leaving that field out keeps whatever
-the app is configured with.
+[`spec.deployment.strategy`](/docs/cicd/manifest-reference#application); leaving that field out keeps
+whatever the app is configured with. The older top-level `spec.strategy` still parses, but setting
+both is an error.
 
 The **first** deploy of an app is always a straight rollout, whatever the setting says: a canary
 splits traffic against the running release, and on a first deploy there is none.
@@ -50,6 +51,14 @@ By default the platform drives the rollout on a timer. Three settings control it
 
 The weight climbs until it reaches 100%, at which point the canary is promoted automatically. You
 can watch it and step in with Promote or Abort at any time, but the ramp decides when traffic moves.
+
+### Pausing the ramp
+
+**Pause** holds an automatic rollout at its current split — the canary keeps its share, and the ramp
+stops adding to it. **Resume** hands the rollout back to the ramp from the same weight. Both are
+recorded on the app's timeline, and the panel shows how long the rollout has been paused. Pausing is
+part of the automatic ramp, so it is available in Community; to hold a canary with no intention of
+ramping it, use manual mode below.
 
 ## Manual mode
 

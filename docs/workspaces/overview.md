@@ -57,5 +57,5 @@ For the full picture of how these resources relate to one another, see the [Reso
 ## Next steps
 
 - Invite collaborators in [Members & Invitations](/docs/workspaces/members-and-invitations).
-- Group multiple workspaces under an [Organization](/docs/workspaces/organizations).
+- Learn how the built-in [Organization](/docs/workspaces/organizations) holds identity settings such as SSO.
 - Understand per-workspace limits in [Plans & Quotas](/docs/workspaces/plans-and-quotas).

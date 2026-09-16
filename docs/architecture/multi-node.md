@@ -143,7 +143,7 @@ many, or from one cluster to several, adds rows — it never rewrites what is al
 | ORM / DB | GORM over PostgreSQL |
 | Cache / queue | Redis — cache, rate limiting, asynq queue, analytics stream |
 | Scheduler | robfig/cron via a cron manager |
-| Runtime | Docker Engine via the Docker SDK for Go (optional Swarm cluster mode) |
+| Runtime | Docker Engine via the Moby Go client (`github.com/moby/moby/client`); Docker Swarm opt-in per cluster |
 | Reverse proxy / TLS | Goma Gateway (routing + ACME); managed DNS-01 certs via go-acme/lego |
 | Object storage | S3 (`aws-sdk-go-v2`) or filesystem |
 | Metrics / logging | Prometheus client · `jkaninda/logger` |

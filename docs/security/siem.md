@@ -36,8 +36,9 @@ top of that:
 - **Compliance evidence** — frameworks such as SOC 2 and ISO 27001 expect a tamper-evident, exported
   record of administrative activity; a live stream to an immutable sink satisfies that.
 
-The in-app audit log is unchanged and remains available in every edition; streaming is purely
-additive.
+Streaming is purely additive: the in-app audit log is unchanged. Note that viewing the in-app log is
+itself an Enterprise entitlement (`audit_log`), separate from `siem_stream` — see
+[Audit Log](/docs/operations/audit-log).
 
 ## How events flow
 
@@ -67,7 +68,7 @@ or slows a user action — a dead sink can never fail a deployment.
 
 ## Configuring a stream
 
-Streaming targets are managed in the admin console under **Administration → SIEM**. Each target has:
+Streaming targets are managed in the admin console under **Admin → Enterprise → SIEM Streaming**. Each target has:
 
 | Field | Description |
 |-------|-------------|
@@ -115,7 +116,7 @@ Each streamed event carries the audit fields your SIEM needs to attribute and co
 SIEM streaming does not replace the [audit log](/docs/operations/audit-log) — it reads from it. The
 audit log stays the local source of truth (append-only, queryable per workspace); the stream is a
 durable copy pushed to an external system. If you don't have a SIEM but still need exported records,
-the audit log can also be exported directly (see the audit and export controls in the admin console).
+the audit log can also be [exported](/docs/operations/audit-log#exporting) as JSON or CSV (Enterprise, `audit_export`).
 
 ## Learn more
 

@@ -39,13 +39,25 @@ one line. Each links to the resource and, where possible, an action.
 | App crash-looping | critical | repeated container exits in a window | it stays healthy / a good deploy |
 | App OOM-killed | critical | a container is OOM-killed | it recovers |
 | App unhealthy | warning | the health check fails | it reports healthy |
+| Workload missing | warning | an app's container or swarm service disappeared from its node or cluster | it exists again |
+| Cannot be brought back | critical | the control manager gave up redeploying a missing app | the workload exists again |
+| Data volume lost | critical | the volume holding an app's or database's data is gone, or was recreated outside Miabi | the volume exists again |
 | Volume near full | warning → critical | usage ≥ 85% / ≥ 95% | usage drops back |
+| Database crash-looping | critical | repeated database container exits in a window | it reports healthy / it starts |
+| Database OOM-killed | critical | a database container is OOM-killed | it reports healthy / it starts |
+| Database unhealthy | warning | the database health check fails | it reports healthy |
+| Database provisioning failed | critical | an instance does not finish provisioning | it is provisioned |
+| Database upgrade failed | critical | a version upgrade does not complete | an upgrade succeeds |
 | Database backup failed | critical | a backup run fails | the next backup succeeds |
 | TLS certificate expiring | warning → critical | &lt; 14 days / &lt; 3 days to expiry | it is renewed |
 | Certificate issuance failed | critical | ACME issuance/renewal fails | it is issued |
 | Approaching quota | warning | a resource passes 90% of the plan limit | usage drops back |
 | Node offline | critical | an agent tunnel drops | the node reconnects |
 | Runner offline | warning | a runner tunnel drops | the runner reconnects |
+
+The workload-missing, cannot-be-brought-back and data-volume-lost alerts come from
+[Reconciliation](/docs/operations/reconciliation); they fire unless the control manager is off (or the
+app is set to **Leave this app alone**).
 
 :::tip Dedup and auto-resolve are the feature
 A repeat signal **folds** into the existing alert (its count climbs) instead of
@@ -66,7 +78,7 @@ never floods and never lies.
 Notifications are **workspace- and role-scoped** — you only ever see alerts for a
 workspace you belong to:
 
-- **Developers** get their apps' deploy/runtime/backup/TLS/disk alerts.
+- **Developers** get their apps' and databases' deploy/runtime/backup/TLS/disk and reconciliation alerts.
 - **Admins/Owners** additionally get quota alerts.
 - **Platform alerts** — a **node** going offline or a **shared runner** dropping —
   aren't tied to any tenant workspace. They are attributed to the built-in

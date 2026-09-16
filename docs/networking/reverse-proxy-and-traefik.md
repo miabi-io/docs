@@ -53,6 +53,7 @@ own ACME certificates, so use its resolver for wildcard domains.
 |---|---|---|
 | Basic app routing | ✅ (manual) | You add `traefik.*` labels per app |
 | Automatic domain → route config | ❌ | Goma-only; add labels manually instead |
+| One-click external access URLs | ❌ | Generated routes are Goma routes; expose each app with labels |
 | Managed DNS-01 / wildcard certs | ❌ | Traefik issues its own certs (ACME) |
 | **Rolling deployments** | ❌ | Requires Goma — see below |
 | **Canary deployments** | ❌ | Requires Goma — see below |
@@ -97,8 +98,8 @@ for traffic visibility instead.
 
 ## Which should I choose?
 
-- **Choose Goma (default)** if you want automatic routing, managed wildcard certificates,
-  zero-downtime rolling/canary deploys, the built-in registry, or Workspace Analytics. This is the
-  recommended path.
+- **Choose Goma (default)** if you want automatic routing, one-click app URLs, managed wildcard
+  certificates, zero-downtime rolling/canary deploys, the built-in registry, or Workspace Analytics.
+  This is the recommended path.
 - **Choose Traefik** if you already run Traefik as your edge and prefer label-based routing, and you
   can accept manual per-app labels and the Recreate deploy strategy.

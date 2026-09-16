@@ -56,9 +56,13 @@ to the rest of your workspace.
 
 - **Access from your machine** — databases aren't exposed to the host by default; use
   [port forwarding](/docs/networking/port-forwarding) for temporary external access.
-- **Backups** — scheduled and manual backups are covered in
-  [Storage & Backups](/docs/storage/backups).
-- **Upgrades** — in-place engine [version upgrades](/docs/databases/version-upgrades).
+- **Backups** — manual and scheduled backups, and instance-wide recovery points, are covered in
+  [Backups](/docs/storage/backups).
+- **Upgrades** — engine [version upgrades](/docs/databases/version-upgrades), with an automatic
+  safety backup and rollback.
+- **Lost data volumes** — if a database's data volume disappears, Miabi raises an alert and refuses
+  to start the database on an empty one. See
+  [Volumes](/docs/storage/volumes#when-a-volumes-data-goes-missing).
 
 :::note
 Redis backups are **not yet supported**. Treat Redis as a cache/queue you can rebuild,

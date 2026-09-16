@@ -198,7 +198,7 @@ Metrics and exec have no manager-side equivalent in Docker — there is no `dock
 
 You do not have to SSH to each host. Swarm can carry the agent for you:
 
-**Clusters → default cluster → Manage cluster nodes** deploys the agent as a **global service** — one task on every node in the cluster, and on every node that **joins later**. Every node becomes managed, with no per-host step and no drift as the cluster grows.
+**Clusters → *a swarm cluster* → Manage cluster nodes** deploys the agent as a **global service** — one task on every node in the cluster, and on every node that **joins later**. Every node becomes managed, with no per-host step and no drift as the cluster grows.
 
 Nodes that register this way appear in the Nodes list with a **`cluster`** badge: the swarm brought them in, an admin did not. Filter the Nodes list by cluster to see a cluster's nodes.
 
@@ -247,7 +247,7 @@ Setting a node back to **active** does **not** move its tasks back. Swarm never 
 
 Cluster networking fails in a way that is almost impossible to read from the outside: the swarm forms, DNS resolves, and packets vanish. An app comes up, resolves its database to a plausible overlay IP, and hangs — which looks like a broken app, not a broken network.
 
-**Nodes → Run network check** probes the real overlay between **every pair of nodes** and separates the three failures that look identical from inside an app:
+**Run network check**, on a swarm cluster's page under **Clusters**, probes the real overlay between **every pair of nodes** in that cluster and separates the three failures that look identical from inside an app:
 
 | Check | What it proves | Fix if it fails |
 |---|---|---|

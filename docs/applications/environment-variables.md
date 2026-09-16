@@ -16,7 +16,7 @@ Applications are configured through environment variables. Miabi distinguishes b
 |---|----------------|--------|
 | Example | `LOG_LEVEL`, `PORT`, `NODE_ENV` | `DATABASE_PASSWORD`, `API_KEY`, `JWT_SECRET` |
 | Stored | As written | Encrypted at rest |
-| Shown in console | Value visible | Masked |
+| Shown in console | Value visible | Masked; a workspace **Admin** can reveal it |
 | In logs / audit | Value may appear | Never shown |
 
 Use plain variables for non-sensitive configuration and secrets for anything that grants access or must stay private.
@@ -25,10 +25,13 @@ Use plain variables for non-sensitive configuration and secrets for anything tha
 
 Secrets live in a **workspace secret vault**, shared across the apps in that [workspace](/docs/workspaces/overview). Define a secret once and reference it from any application with `${{ secrets.NAME }}` — rotate it in one place and every consumer picks up the new value on its next deploy. See [Secrets](/docs/secrets/overview) for managing the vault, including custom vs. managed secrets.
 
-All secret values are **encrypted at rest** and are never logged or returned in plain text. See [Encryption](/docs/security/encryption) for how Miabi protects them.
+All secret values are **encrypted at rest** and are never logged. They are returned in plain text
+only to a workspace **Admin** or **Owner** who explicitly reveals one — every other role sees a
+masked value. See [Encryption](/docs/security/encryption) for how Miabi protects them.
 
 :::caution
-Once a value is stored as a secret, the console masks it. Treat secrets as write-only — to change a secret, set a new value rather than expecting to read the old one back.
+Once a value is stored as a secret, the console masks it. For anyone below Admin a secret is
+write-only — to change it, set a new value rather than expecting to read the old one back.
 :::
 
 ## Referencing database credentials

@@ -6,50 +6,60 @@ description: Reconcile drift between Miabi's desired state and real Docker, and 
 
 # Housekeeping
 
-**Housekeeping** keeps your nodes tidy and consistent. It does two things: it **reconciles drift** between what Miabi expects and what Docker is actually running, and it **reclaims disk** by pruning unused images, containers, and volumes.
+**Housekeeping** keeps your nodes tidy and consistent. It does two things: it **reconciles drift** between what Miabi expects and what Docker is actually running on a node, and it **reclaims disk** by pruning what is always safe to remove.
 
 ![Housekeeping panel](/img/screenshots/housekeeping.png)
 
 ## Drift reconciliation
 
-Miabi maintains a **desired state** for every workload — which containers should exist, on which node, with which configuration. Over time the real Docker state can drift from that desired state: a container was stopped by hand, a node restarted, or something was changed outside Miabi.
+Miabi keeps a record of every workload it manages, and labels the Docker objects it creates with their owner. Over time a node can drift from those records: a container was removed by hand, a node was rebuilt, or something was deleted in Miabi while the node was unreachable.
 
-Reconciliation compares desired state against the live Docker state on each node and reports the differences, such as:
+Housekeeping joins the node's live Docker state against those records and sorts what it finds into three classes:
 
-- Containers Miabi expects but that are missing or stopped.
-- Containers running with a configuration that no longer matches.
-- Resources that exist in Docker but are unknown to Miabi.
+| Class | What it is | Action offered |
+|---|---|---|
+| **Orphan** | A container, volume, or swarm config Miabi created whose owning app, database, volume, stack, or config no longer exists | **Remove** it |
+| **Missing** | An app that should be running on this node with nothing running for it: no container, or, for a [service app](/docs/nodes/cluster-mode#runtimes), no swarm service according to its cluster's manager | **Redeploy** it |
+| **Untracked** | A container Miabi does not manage | [Import](/docs/nodes/docker-import) it |
 
-You can review the detected drift and let Miabi **reconcile** — recreating or restarting what's missing so the node matches the desired state again.
+Stopped containers still count as present. Housekeeping does not compare a running container's configuration against the app's settings: a redeploy applies those.
+
+A redeploy goes through the ordinary deploy path, on the node the app already runs on. If a volume holding the app's data is gone, that deploy is **refused** — Docker would otherwise create an empty volume in its place — and the data has to be restored from a backup first.
 
 :::note
-Resources that exist in Docker but aren't managed by Miabi are surfaced here too. To bring them under management instead of treating them as drift, use [Docker import](/docs/nodes/docker-import).
+Unmanaged volumes and networks are not listed as drift. To bring them, or untracked containers, under management, use [Docker import](/docs/nodes/docker-import).
 :::
 
 ## Reclaiming disk
 
-Long-running Docker hosts accumulate dangling images, stopped containers, and orphaned volumes that consume disk. Housekeeping lets you **prune** these to reclaim space:
+The **Disk usage** card shows how much space images, volumes, build cache, and containers take on the node. **Reclaim disk** offers the categories that are always safe to prune:
 
 | Prune target | What it removes |
 |---|---|
-| Images | Dangling and unused images not referenced by any managed workload |
-| Containers | Stopped containers no longer tracked by Miabi |
-| Volumes | Orphaned volumes not attached to any managed resource |
+| Dangling images | Untagged images — typically the old layers left behind by rebuilds |
+| Build cache | Build cache entries not in use |
+
+Volumes are never pruned wholesale. An orphaned volume — one Miabi created for a volume or database that has since been deleted — appears under drift and is removed only if you select it there.
 
 :::caution
-Volume pruning permanently deletes data in unattached volumes. Review the list before pruning, and make sure anything you still need is either attached to a managed workload or backed up.
+Removing an orphaned volume permanently deletes its data. Review the list before applying, and back up anything you still need.
 :::
 
 ## Running housekeeping
 
-Housekeeping is a platform-admin task (see [Platform Administration](/docs/administration/platform-admin)). You can:
+Housekeeping is a platform-admin task (see [Platform Administration](/docs/administration/platform-admin)). Open a node and choose **Housekeeping**, then:
 
-- **Run it on demand** per node from the Housekeeping panel.
-- **Review before applying** — Miabi shows what it found before you confirm reconciliation or pruning.
+- **Select** the reclaim categories, orphans to remove, and missing workloads to redeploy.
+- **Preview** the selection — Miabi shows exactly what would be removed or redeployed.
+- **Apply** it. Every selected item is checked again against the node's current state first, so nothing that has stopped being an orphan, or is running again, is touched.
 
 :::tip
-Run a reconcile after any manual Docker work or node reboot, and prune images periodically on build-heavy nodes to keep disk usage in check.
+Open Housekeeping after manual Docker work or a node rebuild, and reclaim dangling images and build cache periodically on build-heavy nodes.
 :::
+
+## Continuous reconciliation
+
+Housekeeping is on demand, one node at a time. The **control manager** watches every node in the background: it reports apps whose container or service disappeared and volumes whose data is gone, and — when set to enforce — redeploys a missing app in place. Each app can opt out or in from its settings (**If this app disappears**). See [Reconciliation](/docs/operations/reconciliation).
 
 ## Related
 

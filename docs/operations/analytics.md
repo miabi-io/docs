@@ -54,8 +54,10 @@ absolute window the relative range resolves to — all four tabs share them.
 - **Performance** — request vs. upstream latency percentiles (p50/p95/p99),
   gateway overhead (total − upstream), p95 over time, and the slowest routes.
 - **Web Analytics** — cookieless visitors, page views, and audience breakdowns:
-  browsers, operating systems, devices, referrers, countries, and a
-  human-vs-bot split.
+  top pages, referrers, countries, browsers, operating systems, devices, and a
+  human-vs-bot split. `curl` is reported as its own browser family, and a **Top
+  user agents** panel lists the raw `User-Agent` strings (clipped to 180
+  characters), so you can see exactly which clients and scripts are calling.
 
 :::tip 4xx and 5xx are not the same
 Client errors (4xx — 404s, failed auth, bots) are usually noise; server errors
@@ -108,10 +110,23 @@ lighter summary endpoint than the full dashboards, so it costs a fraction of a
 report, and it hides itself if analytics isn't reachable rather than showing an
 error on an otherwise-working dashboard.
 
+## Apps on edge-gateway nodes
+
+An app served by a node's own [edge gateway](/docs/nodes/adding-a-node) is counted too. That gateway
+publishes its events into the node's local Redis as a store-and-forward buffer, and the node's agent
+drains it to the control plane, which appends them to the same `goma:analytics` stream. Nothing extra
+needs configuring, and a node that is briefly disconnected catches up when it reconnects.
+
+The control plane only accepts events for routes the reporting node actually serves; anything else is
+dropped and counted in `miabi_analytics_rejected_events_total{node}` (see
+[Monitoring](/docs/operations/monitoring#prometheus-integration)), since a node claiming someone else's
+traffic is a compromise signal.
+
 ## Enabling it
 
 Analytics is on by default, but it needs the gateway to emit events and both
-sides to share the **same Redis database**.
+sides to share the **same Redis database**. This applies to the manager's gateway; edge-gateway
+nodes forward through their agent instead (see above).
 
 1. **Goma Gateway** — enable the event stream (and, for the country panels, mount
    a GeoIP database). Either in `goma.yml`:
