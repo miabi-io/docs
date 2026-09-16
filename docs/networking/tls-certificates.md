@@ -6,7 +6,7 @@ description: Automatic HTTP-01, managed wildcard DNS-01, and uploaded custom cer
 
 # TLS Certificates
 
-Miabi serves all traffic over HTTPS. There are **three certificate paths**, and most
+Miabi serves traffic over HTTPS by default. There are **three certificate paths**, and most
 of the time you don't have to think about any of them — verified
 [domains](/docs/networking/domains) get a certificate automatically.
 
@@ -18,9 +18,27 @@ of the time you don't have to think about any of them — verified
 
 By default, [Goma Gateway](/docs/networking/routing-and-middlewares) terminates TLS
 and obtains certificates from **Let's Encrypt using the HTTP-01 challenge**. This runs
-**globally inside Goma** — when a verified domain is attached to an app, Goma requests,
+**globally inside Goma** — when a route serves a host under a verified domain, Goma requests,
 installs, and renews the certificate with no extra configuration. This is the right
 choice for ordinary single-hostname domains.
+
+A route can also be set to TLS **None** (`tls: off` in a manifest), in which case it answers plain
+HTTP only.
+
+#### Choosing the issuer
+
+The gateway's `certManager` can define more than one named provider — a public ACME issuer
+and an internal CA, say — with one of them as the default. Routes use the default unless
+told otherwise:
+
+- **Per route** — a [declarative Route](/docs/cicd/manifest-reference) sets `tlsProvider` to
+  pick the provider for its automatic certificate.
+- **Per cluster** — the one-click URLs generated for apps in a cluster use that cluster's
+  **certificate provider**, set by a platform admin next to its external domain in the
+  cluster's **Edit** dialog (`MIABI_EXTERNAL_BASE_PROVIDER` pins it for the default cluster). See
+  [Cluster mode](/docs/nodes/cluster-mode#external-access).
+
+Leaving either empty uses the gateway's default provider.
 
 ### 2. Managed wildcard / DNS-01 certificates
 
@@ -51,12 +69,14 @@ logged or returned in plaintext. See [Encryption](/docs/security/encryption) for
 on how secrets are protected.
 
 :::caution
-Miabi never exposes app or database ports directly to the host. All TLS termination
-happens at Goma on the internal network, so certificates live in one place rather than
-being copied into each container.
+All TLS termination for routed traffic happens at Goma, so certificates live in one place
+rather than being copied into each container. A [published host port](/docs/applications/exposing-your-app)
+bypasses the gateway — any TLS on it is the application's own.
 :::
 
 :::note
-A single domain uses one active certificate at a time. If both a managed wildcard and a
-specific cert could match a hostname, the more specific certificate wins.
+A single domain uses one active certificate at a time. When both a managed wildcard and a
+more specific certificate match a hostname, **Goma Gateway 0.15.1 or newer** serves the more
+specific one. Older gateways can serve the wildcard instead, so on those avoid overlapping
+certificates for the same host.
 :::

@@ -8,8 +8,9 @@ description: The single built-in organization — Miabi's identity realm for SSO
 
 :::info Not a multi-workspace grouping feature — yet
 Miabi seeds **one built-in `default` organization** that every workspace belongs to. You cannot
-create organizations, and you cannot group workspaces under separate ones. There are no organization
-endpoints in the API today.
+create organizations, and you cannot group workspaces under separate ones. The only organization
+endpoints are `GET` and `PUT /api/v1/admin/organization` (platform admin), which read the default
+organization and toggle its enforced-SSO policy.
 :::
 
 Today an organization is an **identity realm**, not a folder. It owns the account-wide identity
@@ -17,6 +18,7 @@ configuration:
 
 - **SSO / OAuth 2.0 / OIDC** providers — see [SSO](/docs/security/sso).
 - **SAML 2.0** providers and the **enforced-SSO** policy (Enterprise).
+- **LDAP / Active Directory** sign-in (Enterprise).
 - **SCIM 2.0** user provisioning (Enterprise).
 
 Workspaces carry a nullable organization reference so that multi-organization support can arrive

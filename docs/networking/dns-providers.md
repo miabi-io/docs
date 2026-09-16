@@ -19,9 +19,9 @@ host, and supply the API credentials it needs (typically an API token or key/sec
 pair). Credentials are **encrypted at rest** — see
 [Encryption](/docs/security/encryption) — and scoped to your workspace.
 
-Once connected, the provider can be selected when adding
-[domains](/docs/networking/domains) and is used automatically for certificate
-challenges.
+Once connected, link the provider to a [domain](/docs/networking/domains) from the **DNS**
+column of the domain list or the domain's detail page; it is also used automatically for
+certificate challenges.
 
 ## What it unlocks
 
@@ -29,12 +29,14 @@ A connected DNS provider enables three things:
 
 - **Ownership checks** — Miabi publishes the verification record for you, so verifying
   a [domain](/docs/networking/domains) is a single click instead of a manual
-  copy-paste. The check itself always queries the domain's **authoritative
-  nameservers**, never the provider's API — a record that exists only in a pending
-  zone proves nothing.
-- **Automatic A/AAAA records** — when you attach a domain to an app, Miabi can create
-  and maintain the `A`/`AAAA` records that point the hostname at the right node,
-  keeping them in sync if the node's address changes.
+  copy-paste. The check itself reads live DNS — the domain's **authoritative
+  nameservers** first, then the system resolver — never the provider's API: a record
+  that exists only in a pending zone proves nothing.
+- **Automatic address records** — when a route serves a host under a verified, connected
+  domain, Miabi creates the `A`/`AAAA` (or `CNAME`) record pointing it at the public
+  address of the gateway that serves the route, re-syncs it when the route changes, and
+  removes it when the route goes away. A reconcile job restores managed records deleted
+  out of band.
 - **DNS-01 challenges** — required for issuing **wildcard** (`*.example.com`) and
   other [managed certificates](/docs/networking/tls-certificates) via DNS-01. Only a
   connected provider can solve these challenges.

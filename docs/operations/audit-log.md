@@ -13,6 +13,13 @@ when*.
 
 ![Audit log](/img/screenshots/audit-log.png)
 
+:::info Enterprise feature
+Entries are recorded in every edition, but **viewing** the audit log needs an Enterprise license with the
+`audit_log` entitlement (Professional tier and up); without it the audit endpoints return **HTTP 402**.
+**Exporting** it needs the separate `audit_export` entitlement. See
+[Community vs Enterprise](/docs/editions/community-vs-enterprise).
+:::
+
 ## What's recorded
 
 Every action that changes state produces an audit entry, including:
@@ -35,8 +42,25 @@ listing resources is not an audit event.
 ## Querying per workspace
 
 The audit log is scoped **per workspace**, so each workspace sees its own history and nothing from
-other tenants. Open **Operations → Audit log** to browse and filter entries — narrow by actor,
-action, affected resource, or time range to answer a specific question quickly.
+other tenants. Open **Workspace → Audit Log** to browse entries, narrow them to a **From**/**To** date
+range, and sort newest or oldest first. Open an entry to see its details, including the actor's name and
+email. Reading a workspace's audit log requires the **Admin** role.
+
+Platform administrators see the **platform-wide** feed, with search and an action filter, under
+**Admin → Overview → Events**.
+
+## Exporting
+
+With the `audit_export` entitlement, the log can be downloaded as **JSON** or **CSV**, streamed so an
+export of any size stays cheap:
+
+- **Platform-wide** — the **JSON** and **CSV** buttons on **Admin → Events**, or
+  `GET /api/v1/admin/audit/export?format=csv&from=…&to=…`.
+- **One workspace** — `GET /api/v1/workspaces/{workspace}/audit/export?format=json&from=…&to=…`
+  (workspace Admin).
+
+`from` and `to` accept a date (`2026-09-01`) or an RFC 3339 timestamp. To ship events continuously
+instead, use [SIEM streaming](/docs/security/siem).
 
 ## Why it matters
 

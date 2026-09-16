@@ -1,36 +1,49 @@
 ---
 sidebar_position: 5
 title: Releases & Rollbacks
-description: Every deploy is an immutable release with full history, one-click rollback, and zero-downtime canary switching.
+description: Every successful deploy is a release with full history, one-click rollback to its image, and zero-downtime switching.
 ---
 
 # Releases & Rollbacks
 
-Every time you deploy an application, Miabi creates a **release** — an immutable snapshot of the image and configuration that was shipped. Releases give you a complete, auditable history and the ability to roll back instantly when something goes wrong.
+Every time a deploy of an application succeeds, Miabi records a **release** — the image that shipped. Releases give you a complete, auditable history and the ability to roll back instantly when something goes wrong.
 
 ![The deployment history with release list and rollback controls](/img/screenshots/releases.png)
 
 ## What a release is
 
-A release captures everything needed to reproduce a running version of your app:
+A release records **what ran**, not how it was configured:
 
-- The **image** that was built or pulled.
-- The **environment variables and secrets** in effect at deploy time.
-- The **resource limits** and runtime settings.
+- The **image** that was built or pulled, and its **digest** when known.
+- The source **commit** and the pipeline run that produced it, when known.
+- Its **version** number and the deployment that shipped it.
 
-Because releases are immutable, an older release always represents exactly what ran — nothing is mutated in place.
+Environment variables, secrets, resource limits and other settings belong to the application, not
+to a release. They are read from the app each time it deploys.
 
 ## Deployment history
 
-The **Deployments** tab lists every release in order, newest first. Each entry shows when it shipped, who triggered it, the source (Git commit, image tag, or template version), and its outcome. This history is your timeline of what changed and when.
+The **Deployments** tab lists every deploy, newest first, with its trigger, status and live log —
+including the ones that failed and never became a release. The **Releases** tab lists the releases
+themselves, and marks the one that is active.
 
 ## One-click rollback
 
-If a new release misbehaves, click **Rollback** on any earlier release. Miabi redeploys that exact snapshot — same image, same configuration — bringing your app back to a known-good state in seconds. Rolling back creates a new release entry pointing at the old snapshot, so history stays linear and honest.
+If a new release misbehaves, click **Activate** on an earlier release in the **Releases** tab. Miabi
+redeploys **that release's image** with a rolling switch, whatever strategy the app is set to. The
+redeploy becomes a new release with the next version number, so history stays linear and honest.
+
+:::caution Rollback restores the image, not the configuration
+The app's current environment variables, secrets, limits and settings are used. If the bad deploy
+came from a configuration change, revert that change as well.
+:::
 
 :::tip
 Rollback is the fastest way to recover from a bad deploy. There's no need to rebuild — the prior image is already available.
 :::
+
+Old releases can be deleted from the **Releases** tab. **Pin** a release to protect it: a pinned
+release, like the active one, cannot be deleted.
 
 ## Zero-downtime updates
 
@@ -46,7 +59,7 @@ Weighted **canary** rollout — running the new release beside the stable one an
 traffic to it — is a separate, opt-in strategy, not what an ordinary deploy does. See
 [Canary Deployments](/docs/applications/canary-deployments).
 
-Because the switch happens only after the new version is ready, users never hit a stopped service. The same mechanism applies to rollbacks, so reverting is just as smooth.
+Because the switch happens only after the new version is ready, users never hit a stopped service. Rollbacks always use this rolling switch, so reverting is just as smooth.
 
 :::note
 Zero-downtime switching means a deploy briefly runs both the old and new containers. Make sure your app's resource limits leave headroom for this overlap — see [Scaling & Resources](/docs/applications/scaling-and-resources).

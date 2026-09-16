@@ -44,7 +44,8 @@ does nothing.
 | `secrets` | Every credential the install holds, in plaintext — see below. |
 | `networking` | The two Docker networks, the managed subnet pool, the host-port range, one-click app URLs, and the managed-DNS interval. |
 | `backup` | The platform's own backup destination, schedule, encryption and retention (Enterprise). |
-| `license` | Path to a signed Enterprise license on disk. |
+| `license` | Path to a signed Enterprise license on disk, installed only while the database holds none. |
+| `runnerImage` | The build-runner image shown in runner enrollment commands (`MIABI_RUNNER_IMAGE`). The stack does not run it. |
 
 Every field's type and description is published as a JSON Schema at
 `https://docs.miabi.io/schema/install.miabi.io-v1.schema.json`, generated from the same types the
@@ -110,15 +111,22 @@ sudo miabi stack env unset MIABI_SMTP_HOST
 ```
 
 Each shows what changes, asks, then converges — recreating only the component whose environment
-moved. Settings with their own section (the registry, the networks, the backup destination) are
-refused there, and the error names where the value lives.
+moved. The error names where the value lives when a variable is refused:
+
+- **Always refused:** anything Miabi derives from the manifest (domain, secrets, images, networks),
+  every `MIABI_REGISTRY_*` variable, and `GOMA_CONFIG_ENCRYPTION_KEY`, whose only home is
+  `spec.secrets.gomaConfigEncryptionKey`.
+- **Refused while the manifest states it:** a variable an install section compiles to — the host-port
+  range, subnet pool, external domain, DNS interval, license file or a backup field. Leave the
+  section field out and the raw variable is available again as an escape hatch.
 
 ## Converting an older manifest
 
 An install created before this release has a flat file starting `version: 1`. Both shapes load, and
 `miabi setup` writes back whichever it read — it never converts a file underneath you.
 
-**`miabi upgrade` converts it**, keeping the original as `/etc/miabi/miabi.yaml.bak`. Every value is
+**A whole-stack `miabi upgrade` converts it** (not one that names a single component), keeping the
+original as `/etc/miabi/miabi.yaml.bak`. Every value is
 carried across and none is regenerated. Keep the copy: a converted file cannot be read by an older
 CLI, so rolling the CLI back means restoring it.
 

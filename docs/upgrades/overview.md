@@ -23,8 +23,8 @@ Because both happen automatically, upgrading is just a matter of starting the ne
 
 Once a day, Miabi asks GitHub whether a newer release exists and shows platform admins a dismissible
 notice with a link to the release notes. **The check only notifies — nothing upgrades on its own.**
-An upgrade is always something you ask for, whether by re-running the installer (Compose) or by
-running `miabi upgrade` (stack).
+An upgrade is always something you ask for, whether by running `miabi upgrade` (stack) or
+bumping the image and running `docker compose pull && docker compose up -d` (Compose).
 
 The check is channel-aware: a pre-release build is offered newer pre-releases and stable releases; a
 stable build is never nudged onto a pre-release. Dismissing a notice hides it until the *next*
@@ -37,37 +37,6 @@ version appears.
 Nothing about your install is sent: it is an unauthenticated `GET` to `api.github.com` identified
 only by `User-Agent: miabi/<version>`. No install id, no telemetry. A `dev` build never checks.
 Admins can read the cached result at `GET /api/v1/admin/update`.
-
-### Runners and agents
-
-[Build runners](/docs/cicd/runners) and [node agents](/docs/administration/nodes-and-capacity) ship
-and version **independently of the panel** — upgrading Miabi does not upgrade them, and a fleet
-quietly drifts years behind if nobody looks. The same daily check therefore also reads the newest
-release of each, and compares it against the version every instance reports when it connects.
-
-Where it shows up:
-
-- A **banner** for platform admins: *"3 of 5 runners are behind v0.0.9."*
-- An **outdated** badge on the runner's page and on the node's agent version, linking to that
-  project's release notes.
-- `GET /api/v1/admin/update/components` — the newest release of each, and how many instances are
-  behind it.
-
-Only the **stable** line is used as the yardstick. A component has no single running version to
-infer a channel from — a workspace may run ten runners on ten versions — so a release candidate
-never marks a fleet outdated, and an instance running one is not flagged for being ahead.
-
-**Only instances that are up are considered.** An offline runner or an unreachable node is not
-something you can upgrade right now — it may be decommissioned, or a laptop that is simply shut —
-so it is neither badged nor counted. A runner that is *draining* still counts: its tunnel is live,
-it is just finishing its jobs.
-
-An instance that has never reported a version is not counted either way. Silence means *unknown*,
-not *current*; a badge that guesses is a badge people learn to ignore.
-
-Upgrading is manual and per component, as it is for Miabi itself: pull the newer runner image and
-restart it, or re-run the agent install script on the node. `MIABI_UPDATE_CHECK=false` disables all
-of it together.
 
 ## Downgrades are not supported
 

@@ -51,8 +51,17 @@ Log storage handles every kind of execution log:
 - **Jobs** — cron and one-off job output.
 - **Database backups**, **volume backups**, and **platform backups** — backup and restore output.
 
-A predictable, per-workspace path scheme (`ws_<id>/…`) keeps logs browsable, greppable, and easy
-to ship to an external log pipeline by prefix.
+A predictable path scheme — the log kind, then the workspace — keeps logs browsable, greppable, and
+easy to ship to an external log pipeline by prefix:
+
+| Log | Path under `MIABI_LOG_DIR` |
+|-----|----------------------------|
+| Deployment | `deployment/ws_<id>/app-<id>/dep-<id>.log` |
+| Pipeline step / run | `pipeline/ws_<id>/run-<id>/step-<n>.log`, `pipeline/ws_<id>/run-<id>/run.log` |
+| Job | `job/ws_<id>/job-<id>.log` |
+| Database backup | `backup/ws_<id>/backup-<id>.log` |
+| Volume backup | `volume-backup/ws_<id>/vbackup-<id>.log` |
+| Platform backup | `platform/pbackup-<id>.log` |
 
 ## Configuration
 
@@ -76,9 +85,10 @@ interface with no change to how logs are produced or read.
 
 ## Retention and size caps
 
-- **Retention sweep.** A daily cron deletes stored logs older than `MIABI_LOG_RETENTION_DAYS`,
-  keyed by when the owning resource finished, and clears the reference on the row. Set it to `0`
-  to keep logs indefinitely.
+- **Retention sweep.** A daily cron deletes stored log files last modified more than
+  `MIABI_LOG_RETENTION_DAYS` ago. It works on the files alone: the database row keeps its tail and its
+  reference, and viewing or downloading a swept log falls back to that tail. Set it to `0` to keep logs
+  indefinitely.
 - **Per-log cap.** The writer stops appending once a single log reaches `MIABI_LOG_MAX_BYTES`. It
   keeps the head and tail, inserts a `… truncated …` marker in the middle, and flags the log as
   truncated — so one runaway build can't fill the volume.

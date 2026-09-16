@@ -13,15 +13,37 @@ an ad-hoc dump), use **port forwarding** instead of permanently exposing the dat
 
 ![Port forwarding](/img/screenshots/port-forwarding.png)
 
+:::info This page is about databases
+Port forwarding is a short-lived connection to a managed database. To make an
+**application** reachable — a generated URL, your own domain, or a published host port that
+a platform admin approves — see [Exposing an Application](/docs/applications/exposing-your-app).
+Admins review host port requests on the **Ports** page; see
+[Workspace oversight](/docs/administration/workspace-oversight#moderating-host-ports).
+:::
+
 ## How it works
 
-From a database's detail page, choose **Forward port**. Miabi opens a **temporary
-external port** that maps to the database's internal port for the duration of your
-session. You get a host, port, and the managed credentials needed to connect — see
+From a database's detail page, choose **Connect externally**. Miabi opens a **temporary
+listener on the control plane** and relays each connection to the database over the
+node's tunnel — no host port is published on the database's node. The new forward appears
+under **External forwards** with its `host:port` endpoint and when it expires. Connect with
+the database's credentials — **Admin connection** reveals them; see
 [Access & credentials](/docs/databases/access-and-credentials).
 
-When you're done, **close** the forward (or let it expire). The external port is removed
-and the database returns to being internal-only.
+When you're done, **close** the forward, or let it expire — after 30 minutes by default
+(`MIABI_FORWARD_TTL_MINUTES`). The listener is removed and the database returns to being
+internal-only.
+
+## Where the listener is reachable
+
+The listener binds a random port on `MIABI_FORWARD_BIND_ADDR`, which defaults to `127.0.0.1`.
+With the default it accepts only local connections to the control plane itself, so connecting
+from another machine means setting a routable bind address. The endpoint shown is
+`MIABI_FORWARD_ADVERTISE_HOST` when set, otherwise the bind address. See
+[Configuration](/docs/getting-started/configuration).
+
+On a routable bind address, a forward accepts connections only from the **IP address that
+opened it**; any other client is refused.
 
 ## Why temporary instead of permanent
 
@@ -31,7 +53,7 @@ and the database returns to being internal-only.
 - **Auditable** — each forward is an explicit, logged action tied to a workspace member.
 
 :::caution
-A forwarded port is still a real, internet-reachable port while it's open. Connect over
+On a routable bind address, an open forward is a real port on the network. Connect over
 TLS where the engine supports it, use the managed credentials, and close the forward as
 soon as you finish.
 :::

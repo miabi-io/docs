@@ -1,57 +1,83 @@
 ---
 sidebar_position: 2
 title: API Tokens
-description: Create workspace-scoped API tokens, understand hashed storage, use them with the API, and revoke them.
+description: Create personal API keys, bind them to a workspace, restrict them by IP and expiry, use them with the API, and revoke them.
 ---
 
 # API Tokens
 
-API tokens let scripts, CI pipelines, and integrations talk to Miabi without a browser session. Every token is **workspace-scoped** and stored **only as a hash** — Miabi never keeps the plaintext.
+API keys let scripts, CI pipelines, and integrations talk to Miabi without a browser session. A key belongs to
+**your account**: it acts as you, can optionally be bound to a single workspace, and is stored **only as a
+hash** — Miabi never keeps the plaintext.
 
 ![API tokens](/img/screenshots/api-tokens.png)
 
-## Creating a token
+## Creating a key
 
-1. Open the workspace and go to **Settings → API Tokens**.
-2. Click **Create token** and give it a descriptive name.
-3. Optionally set an **expiry**.
-4. Click **Create**.
+1. Open **Developers → API Keys** in the sidebar.
+2. Click **New API key**.
+3. Fill in the form:
+   - **Name** — a label such as `CI pipeline`.
+   - **Workspace access** — one of your workspaces (the default is the one you are in), or
+     **Account-wide (all my workspaces)**.
+   - **Expiration** — **Never**, **30 days**, **60 days**, **90 days**, **180 days** or **365 days**.
+   - **Scopes** — the key's labels: **Read**, **Write**, **Deploy**, **Admin**, **Registry: Pull**,
+     **Registry: Push**. Scopes can't be changed later; create a new key instead.
+   - **Allowed IPs** *(optional)* — IP addresses or CIDR ranges, comma- or newline-separated. A request from
+     any other address is refused. Leave it empty to allow all.
+4. Click **Create key**.
 
-Miabi displays the token **once**, at creation time. Copy it immediately and store it in a secret manager.
+Miabi displays the key (it starts with `mb_`) **once**, at creation time. For a workspace-bound key it also
+shows the workspace ID to use with the API, CLI, or Terraform. Copy both immediately and store the key in a
+secret manager.
 
 :::caution
-The plaintext token is shown only once and cannot be retrieved later. If you lose it, revoke the token and create a new one.
+The plaintext key is shown only once and cannot be retrieved later. If you lose it, revoke the key and create a new one.
 :::
+
+### Registry-only keys
+
+A key carrying only **Registry: Pull** and/or **Registry: Push** is limited to the built-in
+[container registry](/docs/registry/overview) (`docker login`, pull, push) and is refused by the rest of the
+API — a good fit for a CI job that only publishes images.
 
 ## Hashed storage
 
-Miabi stores only a cryptographic **hash** of each token, never the token itself. On each request, Miabi hashes the presented token and compares it to the stored hash. Because the original value is never persisted, a database leak does not expose usable tokens.
+Miabi stores only a SHA-256 **hash** of each key, never the key itself, plus a short prefix so you can tell
+keys apart in the list. On each request, Miabi hashes the presented key and compares it to the stored hash.
+Because the original value is never persisted, a database leak does not expose usable keys.
 
-## Workspace scoping
+## What a key can reach
 
-A token can only access the **workspace it was created in**, and only within the permissions of the role it was granted. This is enforced by the same dual mechanism as the console:
+A key acts as the user who created it, so it can never do more than that user:
 
-- **Middleware** validates the token and its role on every request.
-- **Repository-layer `workspace_id` scoping** ensures the token can never read or write another workspace's data.
+- **Workspace-bound** keys are refused for any other workspace.
+- **Account-wide** keys reach every workspace the user belongs to.
+- Every request re-checks the user's **current membership and role** in the target workspace, with the
+  same dual enforcement as the console — middleware plus repository-layer `workspace_id` scoping. See
+  [Roles & Permissions](/docs/workspaces/roles-and-permissions).
 
-See [Roles & Permissions](/docs/workspaces/roles-and-permissions) for how role scope applies.
+Workspace-bound keys count toward the workspace's **API keys** [quota](/docs/workspaces/plans-and-quotas);
+account-wide keys don't.
 
-## Using a token with the API
+## Using a key with the API
 
-Send the token as a **bearer token** in the `Authorization` header:
+Send the key as a **bearer token** in the `Authorization` header:
 
 ```bash
-curl -H "Authorization: Bearer <YOUR_TOKEN>" https://your-instance.example.com/api/...
+curl -H "Authorization: Bearer <YOUR_KEY>" https://your-instance.example.com/api/...
 ```
 
 The complete, interactive API reference — every endpoint, parameter, and response — is auto-generated and served at `/docs` on any running Miabi instance. Explore it at [https://demo.miabi.io/docs](https://demo.miabi.io/docs).
 
-Prefer a command-line tool? The [Miabi CLI](/docs/cicd/cli) authenticates with these tokens and wraps the common flows (deploy, rollback, logs, apply). A least-privilege, app-scoped **deploy** token is the recommended credential for CI.
+Prefer a command-line tool? The [Miabi CLI](/docs/cicd/cli) authenticates with these keys and wraps the common flows (deploy, rollback, logs, apply). For CI, create a dedicated key bound to the one workspace the pipeline deploys to, with an expiry and, where possible, an IP allowlist.
 
-## Revoking a token
+## Revoking a key
 
-From **Settings → API Tokens**, open a token's menu and choose **Revoke**. Revocation takes effect immediately, and any request using the token is rejected from that point on. Tokens are also revoked automatically when the member who created them is removed from the workspace.
+On **Developers → API Keys**, click **Revoke** on an active key. Revocation takes effect immediately, and any request using the key is rejected from that point on. Revoked and expired keys stay listed with their status until you **Delete** them.
+
+Removing a member from a workspace does not revoke their keys, but those keys immediately lose access to that workspace, because membership is checked on every request.
 
 :::tip
-Create one token per integration so you can revoke a single credential without disrupting the others.
+Create one key per integration so you can revoke a single credential without disrupting the others.
 :::

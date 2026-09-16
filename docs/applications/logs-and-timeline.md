@@ -1,7 +1,7 @@
 ---
 sidebar_position: 10
 title: Logs & Timeline
-description: Stream live container logs and follow the per-app lifecycle timeline of deploys, scales, jobs, and rollbacks.
+description: Stream live container logs and follow the per-app lifecycle timeline of deploys, rollbacks, container restarts, and configuration changes.
 ---
 
 # Logs & Timeline
@@ -14,7 +14,7 @@ The **Logs** tab streams output from your application's containers in real time,
 
 ![Live streaming container logs in the console](/img/screenshots/app-logs.png)
 
-Logs cover the running [release](/docs/applications/releases-and-rollbacks) and, during a [zero-downtime switch](/docs/applications/releases-and-rollbacks), the new container as it starts. [Job](/docs/applications/jobs) output streams the same way while a one-off command runs.
+Logs cover the running [release](/docs/applications/releases-and-rollbacks) and, during a [zero-downtime switch](/docs/applications/releases-and-rollbacks), the new container as it starts. [Job](/docs/applications/jobs) output streams live on the **Jobs** page while a one-off command runs.
 
 :::tip
 Have your app write to stdout/stderr — that's what Miabi streams. Structured (JSON) log lines are easiest to scan in the console.
@@ -22,13 +22,15 @@ Have your app write to stdout/stderr — that's what Miabi streams. Structured (
 
 ## Application timeline
 
-The **timeline** is a per-app record of lifecycle events — what happened to the application and when:
+The **timeline** — the app's **Events** tab — is a per-app record of lifecycle events: what happened
+to the application and when:
 
-- Deploys and new releases shipping
+- Deploys starting, succeeding or failing, and releases being activated
 - [Rollbacks](/docs/applications/releases-and-rollbacks) to a prior release
-- [Scaling](/docs/applications/scaling-and-resources) and resource-limit changes
-- [Job](/docs/applications/jobs) runs
-- Configuration and [environment](/docs/applications/environment-variables) changes
+- Container lifecycle — started, stopped, died, out of memory, health changes, removed
+- [Settings](/docs/applications/scaling-and-resources) and [environment](/docs/applications/environment-variables) changes
+- Domains, volumes and config files being attached or detached
+- A workload that disappeared, and what [reconciliation](/docs/operations/reconciliation) did about it
 
 ![The application timeline of lifecycle events](/img/screenshots/app-timeline.png)
 

@@ -36,17 +36,22 @@ disabled once you are at the cap, and the admin page shows how many of your slot
 
 A quota is an upper bound on a countable resource. Typical quotas include:
 
-| Quota | Limits the number of… |
-|-------|------------------------|
+| Quota | Limits… |
+|-------|---------|
 | Applications | Apps deployed in the workspace. |
-| Databases | Provisioned database instances. |
+| Database instances / Databases per instance | Provisioned database servers, and logical databases inside one. |
 | Database CPU & memory | The CPU and memory limits of all database instances added up, a budget separate from apps and jobs. See [plan limits](/docs/databases/provisioning#plan-limits). |
-| Domains | Custom domains attached. |
-| Members | Users invited to the workspace. |
-| Volumes & storage | Persistent volumes and total disk used. |
-| API tokens | Active workspace-scoped tokens. |
+| DB instance size | The declared data-volume size of one instance. |
+| CPU & memory | CPU and memory across all apps. A replicated service app counts once per replica. |
+| Cron jobs | Scheduled jobs. |
+| Volumes / Total storage | Managed volumes, and total disk across volumes and database data volumes. |
+| Networks | Custom Docker networks. |
+| API keys | [API keys](/docs/security/api-tokens) bound to the workspace. Account-wide keys don't count. |
+| Members | Workspace members, Owners included. |
+| Runners | Build and pipeline runners the workspace may register. |
+| GPUs | GPU units the workspace's running apps may hold. |
 
-Quotas are checked **at creation time**. If creating a resource would exceed a quota, Miabi **rejects the request** with a clear error rather than silently degrading service.
+Quotas are checked **when a resource is created** — and, for CPU and memory, also when an app's limits or replica count change. If the change would exceed a quota, Miabi **rejects the request** with a clear error rather than silently degrading service.
 
 :::note
 Because the check happens at creation, you never end up with a half-provisioned resource. Free up capacity (delete an unused app or database) or raise the workspace's plan, then retry.
@@ -56,7 +61,9 @@ Because the check happens at creation, you never end up with a half-provisioned 
 
 Beyond raw counts, a plan can gate **features**. Examples include custom TLS certificates, privileged host mounts, shell access into containers, shared (NFS/CIFS) storage, connecting DNS providers, [custom container labels](/docs/applications/container-labels), and [GPU access](/docs/applications/gpus) (with a separate **GPUs** quota counting the units a workspace's running apps may hold). Advanced security capabilities such as multiple SSO providers, SAML 2.0, and SCIM provisioning are gated to higher editions. See [Community vs Enterprise](/docs/editions/community-vs-enterprise) for the full breakdown.
 
-When a feature is gated off, the corresponding controls are disabled in the console and the API returns a structured error explaining which capability is required. A platform admin can also override a capability for a single workspace.
+When a feature is gated off, the corresponding controls are disabled in the console and the API returns a structured error explaining which capability is required.
+
+A platform admin can override a plan's quotas and capabilities for a single workspace from **Admin → Workspaces**. Setting overrides requires an Enterprise licence with quota overrides (`quota_override`; **HTTP 402** in Community). Reading and clearing them stays open, so a lapsed licence never strands a workspace with an override it can't remove.
 
 ## Placement
 
@@ -111,10 +118,10 @@ enforced only while plan enforcement is on; without it, sizes are optional every
 
 ## Viewing usage
 
-Open **Settings → Plan & usage** to see current consumption against each quota. Usage bars highlight resources approaching their limit so you can act before a creation request is rejected.
+Open the workspace's **Usage** tab (**Workspace → Settings → Usage**) to see live consumption and current usage against each quota. Usage bars highlight resources approaching their limit so you can act before a creation request is rejected.
 
 :::tip
-Plan your workspace layout early. Splitting workloads across [multiple workspaces](/docs/workspaces/overview) under an [organization](/docs/workspaces/organizations) can keep each workspace comfortably within its quotas.
+Plan your workspace layout early. Splitting workloads across [multiple workspaces](/docs/workspaces/overview) can keep each workspace comfortably within its quotas.
 :::
 
 ## When a limit is hit

@@ -81,7 +81,7 @@ In an app's **Settings → Resources**, set:
   substring like `A100`). Leave empty to use any enabled GPU on the app's node.
 
 The GPU controls are shown **only when the workspace's plan allows GPUs** — there is no dangling
-field that always errors. The request also rides the [declarative manifest](/docs/cicd/git-push-deploy)
+field that always errors. The request also rides the [declarative manifest](/docs/cicd/manifest-reference)
 under `resources.gpu` / `resources.gpuKind`, so a GPU app is reproducible from a manifest.
 
 ```yaml

@@ -10,8 +10,9 @@ Miabi is configured entirely through **environment variables**, loaded from the 
 Compose directory (or the process environment). This page covers the variables you are most likely
 to set; the official image ships with sensible defaults for the rest.
 
-Every service in the shipped Compose files reads that single `.env` via Docker Compose's `env_file`
-directive, so the workflow is: **rename `.env.example` → `.env`, fill in the values, and
+The control plane (and the optional worker) in the shipped Compose files reads that single `.env`
+via Docker Compose's `env_file` directive, and the gateway and PostgreSQL interpolate what they need
+from it, so the workflow is: **rename `.env.example` → `.env`, fill in the values, and
 `docker compose up`** — no per-service edits.
 
 :::caution If you installed with the installer, there is no `.env`
@@ -19,17 +20,21 @@ A stack install (the [one-liner](/docs/getting-started/installation) or `docker 
 keeps its configuration in the manifest at **`/etc/miabi/miabi.yaml`**, and passes it to the
 containers itself. Creating a `.env` file there changes nothing — nothing reads it.
 
-Set these variables under the manifest's `env:` block instead, then apply them:
+Set these variables under the manifest's `spec.server.env` instead, then apply them — either with
+one command, or by editing the file and converging:
 
 ```bash
-sudo vi /etc/miabi/miabi.yaml     # env: { MIABI_LOG_LEVEL: debug, … }
+sudo miabi stack env set MIABI_LOG_LEVEL=debug   # writes the value, shows the change, converges
+
+sudo vi /etc/miabi/miabi.yaml     # spec: { server: { env: { MIABI_LOG_LEVEL: debug, … } } }
 sudo miabi setup                  # re-converges; recreates only what actually changed
 ```
 
-Use `install`, **not** `restart`. An env var is part of a container's spec, and a spec can only be
-changed by recreating the container — `restart` restarts the ones you already have, so an edited
-manifest would appear to do nothing (it prints a note when it spots this). Re-running `install` on a
-live stack is safe and idempotent: it leaves containers whose spec is unchanged alone.
+Use `setup` (`install` on the `docker run` path), **not** `restart`. An env var is part of a
+container's spec, and a spec can only be changed by recreating the container — `restart` restarts
+the ones you already have, so an edited manifest would appear to do nothing (it prints a note when it
+spots this). Re-running `setup` on a live stack is safe and idempotent: it leaves containers whose
+spec is unchanged alone.
 
 The variable names and meanings below are the same either way; only where you write them differs.
 Miabi owns a handful of keys in that file (the database URL, the secrets, the domain) and rejects
@@ -43,9 +48,11 @@ attempts to override them from `env:` — see [The manifest](/docs/getting-start
 | `MIABI_PORT` | `9000` | API listen port |
 | `MIABI_ENV` | `dev` | `dev` or `production` |
 | `MIABI_JWT_SECRET` | — | **Required in production.** Signs access tokens |
-| `MIABI_ENCRYPTION_KEY` | — | AES key for secrets at rest (env vars, DB passwords, custom certs). Without it, those values are only base64-encoded |
+| `MIABI_ENCRYPTION_KEY` | — | **Required in production.** AES key for secrets at rest (env vars, DB passwords, custom certs). Miabi refuses to start outside dev without it; in dev, those values are then only base64-encoded |
 | `MIABI_WEB_URL` | — | Public URL of your instance (used for links, OAuth callbacks, invitations). Also the CORS allowlist, so it must be a concrete origin |
-| `MIABI_CORS_ORIGINS` | `*` | Comma-separated allowed origins; a `*` wildcard is rejected in production |
+| `MIABI_CORS_ORIGINS` | `MIABI_WEB_URL`, else `*` | Comma-separated allowed origins; a `*` wildcard is rejected in production |
+| `MIABI_LOGIN_TOKEN_TTL_HOURS` | `24` | Lifetime of the API key minted by `miabi login` and **Copy login command** — see [Signing in from the CLI](/docs/security/authentication) |
+| `MIABI_LOGIN_TOKEN_MAX_TTL_HOURS` | `168` | Longest lifetime a caller may request for that key |
 | `MIABI_ADMIN_EMAIL` | `admin@example.com` | Login of the platform admin seeded on first boot |
 | `MIABI_ADMIN_PASSWORD` | — | **Required in production.** Password for the seeded platform admin. Miabi refuses to start outside dev while this is empty or left at its built-in default |
 | `MIABI_LOG_LEVEL` | — | How chatty Miabi's own logs are: `debug`, `info`, `warn`, `error`. Empty follows the environment — `debug` in dev, `info` in production |
@@ -120,18 +127,20 @@ Off by default. See [GPUs](/docs/applications/gpus) for the full workflow.
 | `MIABI_METRICS_SCRAPE_SECONDS` | `60` | Metrics sampling interval |
 | `MIABI_METRICS_RETENTION_HOURS` | `24` | Metrics history window |
 | `MIABI_PROXY_NETWORK` | `miabi` | Docker network shared by the gateway and app containers so the proxy can reach backends (legacy alias: `MIABI_GOMA_NETWORK`) |
-| `MIABI_INTERNAL_NETWORK` | *(unset)* | The platform's [private network](/docs/networking/networks-and-subnets#the-platforms-private-network), where the control-plane database and cache live. Set by `miabi setup` (`spec.networking.internal`); leave unset on a Compose stack, which has no such network |
+| `MIABI_INTERNAL_NETWORK` | *(unset)* | The platform's [private network](/docs/networking/networks-and-subnets#the-platforms-private-network), where the control-plane database and cache live. Set by `miabi setup` (`spec.networking.internal`); on a Compose stack `.env.example` sets it to `miabi-internal`, the network `compose.yaml` creates |
+| `MIABI_GOMA_PROVIDER_DIR` | `/etc/goma/providers` | Directory where Miabi writes per-route Goma config files that the gateway hot-reloads |
+| `MIABI_WEB_DIR` | — | Directory of the built web UI; when set, Miabi serves it as an SPA at `/`. The official image serves the UI from the embedded binary |
+| `DOCKER_HOST` | `unix:///var/run/docker.sock` | Docker Engine endpoint |
+| `MIABI_WORKER_HEALTH_ENABLED` | `true` | A dedicated `miabi worker` serves `/healthz` and `/readyz` on `MIABI_PORT`. Set `false` when a worker runs beside the server on one host, where both would bind the same port |
+| `MIABI_CONTROL_MANAGER_MODE` | — | How far [reconciliation](/docs/operations/reconciliation) goes when a workload disappears: `observe` reports it, `enforce` also redeploys it in place, `off` stops watching. Unset leaves it to **Platform Settings → Control manager** (default `observe`); set here it is pinned |
 
 :::note On a managed install, the manifest sets these for you
-Many of the variables below have a field in the [install manifest](/docs/administration/install-manifest)
+Many of the variables on this page have a field in the [install manifest](/docs/administration/install-manifest)
 — `spec.networking.pool`, `spec.networking.hostPorts`, `spec.backup`, `spec.license` and others.
 `miabi setup` compiles those into the control plane's environment, so you configure them in one place
 rather than exporting variables by hand. A field stated there also **pins** the matching console
 setting read-only, which is what keeps an infrastructure-as-code install authoritative.
 :::
-| `MIABI_GOMA_PROVIDER_DIR` | `/etc/goma/providers` | Directory where Miabi writes per-route Goma config files that the gateway hot-reloads |
-| `MIABI_WEB_DIR` | — | Directory of the built web UI; when set, Miabi serves it as an SPA at `/`. The official image serves the UI from the embedded binary |
-| `DOCKER_HOST` | `unix:///var/run/docker.sock` | Docker Engine endpoint |
 
 ## Public app URLs
 
@@ -180,7 +189,18 @@ miabi server
 miabi worker
 ```
 
-Multiple worker instances share the same Redis queue, so you can scale them horizontally.
+Multiple worker instances share the same Redis queue, so you can scale them horizontally. Scaling
+out never runs two deploys of the same application at once: each deploy holds a per-app lock in
+Redis, and one cluster may hold at most half of a worker's `MIABI_WORKER_CONCURRENCY` slots, so a
+slow region cannot starve the rest.
+
+Scheduled jobs, periodic scans and [reconciliation](/docs/operations/reconciliation) are not queue
+work: they run in the **server** process that holds a leader lease in Redis. A second control plane
+started against the same Redis stands by instead of running them twice. This is not multi-replica
+high availability — agent and runner tunnels still belong to the process they dialled.
+
+A dedicated worker answers `/healthz` and `/readyz` on `MIABI_PORT`; set
+`MIABI_WORKER_HEALTH_ENABLED=false` if it shares a host with the server.
 
 ## Reverse proxy & TLS
 
@@ -280,15 +300,14 @@ tab. See [Registry](/docs/registry/administration).
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `MIABI_NODE_GATEWAY_IMAGE` | `jkaninda/goma-gateway:latest` | Goma image deployed on edge-gateway nodes. The shipped compose drives this from `GOMA_IMAGE` so it always matches the local gateway |
+| `MIABI_NODE_GATEWAY_IMAGE` | `jkaninda/goma-gateway:0.15.1` | Goma image deployed on edge-gateway nodes. The default is the gateway version this Miabi build is tested against |
 | `MIABI_CONTROL_URL` | falls back to `MIABI_API_URL` | Public URL remote nodes reach the control plane at |
-| `MIABI_NETWORK_CIDR` | `10.63.0.0/16` | CIDR of the shared `miabi` reverse-proxy bridge (gateway + routed app/database containers). `install.sh` pre-creates it as an **external** network with this subnet so it isn't capped by Docker's default pool; must not overlap `MIABI_NETWORK_POOL_CIDR` or your LAN |
-| `MIABI_NETWORK_POOL_CIDR` | `10.64.0.0/12` | Address pool workspace networks are carved from |
+| `MIABI_NETWORK_POOL_CIDR` | `10.64.0.0/12` | Address pool workspace networks are carved from. Must not overlap the shared `miabi` network (`10.63.0.0/16` by default — set with `miabi setup --subnet` or `spec.networking.proxy.subnet`), your LAN or a VPN |
 | `MIABI_NETWORK_SUBNET_PREFIX` | `24` | Prefix length per workspace network (a `/12` pool ⇒ 4096 networks) |
 | `MIABI_HOST_PORT_MIN` | `1024` | Lowest host port Miabi may allocate |
 | `MIABI_HOST_PORT_MAX` | `65535` | Highest host port Miabi may allocate |
 | `MIABI_FORWARD_TTL_MINUTES` | `30` | How long a temporary database port-forward lives |
-| `MIABI_FORWARD_BIND_ADDR` | `127.0.0.1` | Address the forward relay binds to |
+| `MIABI_FORWARD_BIND_ADDR` | `127.0.0.1` | Address the database forward listener binds to on the control plane. On a non-loopback address, only the IP that opened the forward may connect |
 | `MIABI_FORWARD_ADVERTISE_HOST` | — | Host shown to the user in the forward's connection string |
 | `MIABI_FORWARD_RELAY_IMAGE` | `alpine/socat:latest` | Image used for the forward relay container |
 | `MIABI_HOST_PROC` | `/host/proc` | procfs path for real host CPU/memory. The compose binds `/proc:/host/proc:ro` |
@@ -328,7 +347,7 @@ Self-service sign-up is off until you turn it on. See [Authentication](/docs/sec
 | `MIABI_DELETION_GRACE_DAYS` | `7` | Days an admin-scheduled account deletion waits before the data is purged |
 | `MIABI_RESTORE_MAX_MB` | `1024` | Max size of an uploaded database dump for restore |
 | `MIABI_STORAGE_USAGE_ENABLED` | `true` | Periodically measure each volume's real on-disk usage (`docker system df`) and cache it, so the UI shows declared-vs-used. Off ⇒ no filesystem walks; the UI shows declared sizes only |
-| `MIABI_STORAGE_USAGE_MINUTES` | `30` | Cadence of that measurement sweep. Raise it on nodes with many/large volumes where the `df` walk is heavy |
+| `MIABI_STORAGE_USAGE_MINUTES` | `60` | Cadence of that measurement sweep. Raise it on nodes with many/large volumes where the `df` walk is heavy |
 | `MIABI_DATABASE_SIZE_CRON` | `20 2 * * *` | Cron schedule (platform timezone) for the nightly sweep that measures every **running** database instance's on-disk size. Without it, sizes refresh only when a detail page is opened and the value is over a day old — so a database nobody looks at is never measured. Set to an empty value to disable |
 | `MIABI_WEBHOOK_ALLOW_PRIVATE_TARGETS` | `false` | Allow outbound webhooks to RFC1918/ULA addresses. Loopback and link-local (incl. cloud metadata) are always blocked |
 | `MIABI_ALLOW_DOWNGRADE` | `false` | Boot even when the binary is older than the version recorded in the database |

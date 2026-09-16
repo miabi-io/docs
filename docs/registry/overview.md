@@ -39,7 +39,7 @@ docker login registry.example.com -u jane -p mb_xxx
 - A **workspace-scoped token** can only act on that one workspace.
 - An **account-wide token** can act on any workspace you're a **member** of, gated by your role (any member may pull; **developer and above** may push).
 
-Your **Workspace → Registry** page shows a ready-to-copy snippet pre-filled with the registry host and your workspace name.
+The **Developers → Container Registry** page shows a ready-to-copy snippet pre-filled with the registry host and your workspace name.
 
 ## Tagging & pushing
 
@@ -52,9 +52,10 @@ docker push registry.example.com/miabi/guestbook:1.0
 
 You can then deploy `registry.example.com/miabi/guestbook:1.0` as an [image-source app](/docs/applications/deploy-from-image).
 
-Miabi's **own** Git-source and pipeline builds push here automatically, named after the app:
-`registry.<domain>/<workspace-name>/<app-name>:<deployment-number>`, plus a `:v<release-version>`
-tag once the deployment succeeds.
+Miabi's **own** Git-source and pipeline builds push here automatically, named after the app and
+stored under the workspace's immutable id: `registry.<domain>/ws_<workspace-id>/<app-name>:<deployment-id>`,
+plus a `:v<release-version>` tag once the deployment succeeds. The same image is also visible under
+your workspace name.
 
 :::note Rename-safe by design
 Images are **stored** under your workspace's immutable id while you **address** them by the workspace name. Renaming a workspace changes the URL you push/pull with (like renaming a GitHub org) but never orphans already-pushed images.
@@ -66,7 +67,7 @@ A token can only push or pull within its own workspace's namespace. A token for 
 
 ## Browsing & deleting
 
-The **Workspace → Registry** page lists your repositories and their tags. Members with **developer** role or higher can **delete a tag** (this removes its manifest from the registry). Tag deletion and space reclamation require the admin to enable deletes — see [Administration → Garbage collection](/docs/registry/administration#garbage-collection).
+The **Developers → Container Registry** page lists your repositories and their tags. Members with **developer** role or higher can **delete a tag** (this removes its manifest from the registry). Tag deletion and space reclamation require the admin to enable deletes — see [Administration → Garbage collection](/docs/registry/administration#garbage-collection).
 
 ## Image distribution
 

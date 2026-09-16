@@ -12,7 +12,7 @@ platform fall into place.
 ## Workspaces own everything
 
 A **workspace** is the unit of multi-tenancy. Every resource — applications, deployments, domains,
-certificates, databases, volumes, backups, networks, nodes (when assigned), pipelines, webhooks,
+certificates, databases, volumes, backups, networks, stacks, secrets, configs, pipelines, webhooks,
 and members — belongs to exactly one workspace. Resources in one workspace are invisible to another.
 
 This isolation is enforced in two places:
@@ -35,7 +35,10 @@ See [Workspaces](/docs/workspaces/overview) for personal spaces, organizations, 
 | **Volume** | Workspace | A persistent Docker volume. |
 | **Backup** | Workspace | A database dump or volume archive, local or in object storage. |
 | **Network** | Workspace | A Docker network apps can join. |
-| **Node** | Platform / Workspace | A Docker host (local or remote via agent). |
+| **Stack** | Workspace | A group of related applications with shared environment variables. |
+| **Secret / Config** | Workspace | Encrypted values and configuration files that apps reference or mount. |
+| **Cluster** | Platform | Nodes that share private networking and a gateway. Workspaces see clusters they may use as **locations**. |
+| **Node** | Platform (a cluster) | A Docker host — the control-plane node, or a remote one connected by its agent. |
 | **Member** | Workspace | A user with a role in the workspace. |
 
 ## Lifecycle and cascade
@@ -56,5 +59,5 @@ containers](/docs/nodes/docker-import).
 ## Plans and quotas
 
 Each workspace has an effective [plan](/docs/workspaces/plans-and-quotas) that caps how many of each
-resource it can create (apps, databases, nodes, members, and so on). Exceeding a quota is rejected
+resource it can create (apps, databases, volumes, members, runners, and so on). Exceeding a quota is rejected
 at creation time.

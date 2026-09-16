@@ -13,17 +13,21 @@ container, credentials, and networking for you.
 
 ## Creating a database
 
-From **Databases → New database**:
+From **Data → Databases → New database**:
 
-1. **Name** — a human-friendly label, unique within the workspace.
-2. **Engine** — PostgreSQL, MySQL, MariaDB, Redis, MongoDB, or libSQL. See the
+1. **Name** — a human-friendly label. If another instance in the workspace already uses it, Miabi
+   adds a numeric suffix (`app-db-1`) rather than refusing.
+2. **Location** — shown when the workspace can deploy to more than one
+   [location](/docs/nodes/cluster-mode#locations). Private networks don't span locations, so keep a
+   database in the same location as the apps that use it.
+3. **Engine** — PostgreSQL, MySQL, MariaDB, Redis, MongoDB, or libSQL. See the
    [overview](/docs/databases/overview) for what each is good for.
-3. **Version** — choose the engine version. You can perform an in-place
-   [version upgrade](/docs/databases/version-upgrades) later.
-4. **Resources** — optionally, memory and CPU limits, and the size of the persistent
-   volume that stores the data.
+4. **Version / tag** — optional; left blank, the engine's default image tag is used. You can
+   [upgrade the version](/docs/databases/version-upgrades) later.
+5. **Size** or **Resources** — optionally, memory and CPU limits (see [below](#resource-sizing)).
+6. **Data volume size (MB)** — optional declared capacity of the data volume.
 
-Click **Create**, and Miabi pulls the image, starts the container on the workspace's
+Click **Create database**, and Miabi pulls the image, starts the container on the workspace's
 internal network, and provisions credentials.
 
 ## Resource sizing

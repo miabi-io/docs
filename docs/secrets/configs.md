@@ -100,14 +100,21 @@ directory bind, so it can't shadow the image's own contents at that path the way
 Mounting the same config twice (once as a directory, once as a pinned key with a different mode) is
 fine and common.
 
-:::note
-Mounting is **declarative**: the mount is expressed in a manifest applied with
-[`miabi apply`](/docs/cicd/gitops#one-shot-apply) or reconciled from
-[GitOps](/docs/cicd/gitops), or shipped in a
-[marketplace template](/docs/marketplace/creating-a-template#shipping-configuration-files). The
-console manages a config's **files**; it does not attach one to an app. An app's Volumes tab lists
-the config mounts it already has.
-:::
+### From the console
+
+Open the application's **Volumes** tab and find the **Config files** card:
+
+1. Pick the **Config**.
+2. Under **Mount**, choose **All files** (the whole set under a directory) or **A single file**, then
+   pick the **File**.
+3. Enter the **Directory in the container** or the **File path in the container**. The form previews
+   the exact **Files in the container** the mount produces.
+4. Select **Mount config**, then redeploy the app.
+
+The card lists the app's existing config mounts, each with **Remove mount**. A mount can also come
+from a manifest applied with [`miabi apply`](/docs/cicd/gitops#one-shot-apply), from
+[GitOps](/docs/cicd/gitops), or from a
+[marketplace template](/docs/marketplace/creating-a-template#shipping-configuration-files).
 
 ## Interpolation
 
@@ -140,6 +147,39 @@ spec:
 ```
 
 `delimiters` takes exactly two distinct, non-empty entries.
+
+## Referencing secrets and app env
+
+The interpolation above runs when a manifest is applied, and its result is what gets stored. A config
+can also carry references that stay in the stored file and are resolved **for each app that mounts
+it, at deploy time**:
+
+| Reference | Resolves to |
+|---|---|
+| `${{ secrets.NAME }}` | A workspace [secret](/docs/secrets/overview) |
+| `${{ env.NAME }}` | An environment variable of the app mounting the config |
+
+```yaml
+# app.conf
+database_password = ${{ secrets.shop-db-password }}
+public_url        = ${{ env.PUBLIC_URL }}
+```
+
+- **Resolved per app.** One config mounted by three apps can render three different `env` values.
+- **A secret wins** over an app variable of the same name, whichever namespace you wrote, so moving a
+  value from env into the vault needs no edit to the file.
+- **Unresolvable is fatal.** A reference that resolves to nothing fails the deploy rather than
+  mounting a file with the placeholder still in it.
+- **Rotation reaches the file.** Rotating a referenced secret redeploys every app mounting the
+  config, and the secret can't be deleted while a mounted config still references it.
+- **Sensitive by default.** A config whose files reference a secret is marked **sensitive**
+  automatically, since its rendered content is secret material.
+
+:::tip In a manifest
+Apply-time interpolation parses `{{ }}`, so it would try to read `${{ secrets.NAME }}` too. Set
+`delimiters` (for example `["<<", ">>"]`) on a `Config` resource whose files carry deploy-time
+references, so they are stored untouched.
+:::
 
 ## Changing a config
 
@@ -206,6 +246,8 @@ miabi configs rm prom-conf [--yes]
 | `GET` | `/api/v1/workspaces/{ws}/configs/{id}/reveal` | Admin (audited) |
 | `GET` | `/api/v1/workspaces/{ws}/configs/{id}/usage` | Viewer |
 | `DELETE` | `/api/v1/workspaces/{ws}/configs/{id}` | Developer |
+| `PUT` | `/api/v1/workspaces/{ws}/apps/{appID}/configs` | Developer (mount into an app) |
+| `DELETE` | `/api/v1/workspaces/{ws}/apps/{appID}/configs/{configID}` | Developer (remove a mount) |
 
 ## Related
 

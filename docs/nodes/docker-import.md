@@ -24,31 +24,43 @@ Rather than recreating these from scratch, import lets Miabi **discover** them a
 
 | Resource | Result after import |
 |---|---|
-| Containers | Adopted as managed workloads with their current config |
-| Volumes | Tracked by Miabi and protected from accidental pruning |
-| Networks | Recognized so connected workloads are wired correctly |
+| Containers | Adopted as applications, with their image, environment variables, attached volumes and published ports |
+| Volumes | Tracked as Miabi volumes, attachable like any other |
+| Networks | Recorded as workspace networks, so connected workloads are wired correctly |
+
+Containers that belong to the Miabi platform itself — its database, gateway, agents — are never offered, and are refused if a request names them.
 
 ## How import works
 
-1. Open the node's **Import** panel in the console (a platform-admin area — see [Platform Administration](/docs/administration/platform-admin)).
-2. Miabi scans the node's Docker engine and lists resources it found that aren't yet managed.
-3. Select the containers, volumes, and networks you want to adopt. Miabi reads their existing configuration so it can manage them in place.
-4. Confirm. The selected resources become managed and appear alongside everything else Miabi runs.
+1. Open the node in the console and choose **Import existing** (a platform-admin area — see [Platform Administration](/docs/administration/platform-admin)).
+2. Miabi scans the node's Docker engine and lists resources it found that aren't yet managed. Containers are grouped by **Compose project**, and environment variables that look like secrets are flagged.
+3. Pick the **workspace** to import into and the **mode** (below).
+4. Select the containers, volumes, and networks you want to adopt. Each Compose project becomes a **stack** of the same name — rename it, or leave ungrouped containers out of any stack.
+5. Confirm. Each item reports its own result, so one failure never aborts the rest.
+
+### Adopt or reconcile
+
+| Mode | What happens to a container |
+|---|---|
+| **Adopt in place** (default) | Miabi records the live container as the app's current release. It keeps running, with no downtime, and becomes fully native on its next deploy. |
+| **Reconcile now** | Miabi adopts it, then immediately deploys the app under Miabi's conventions, replacing the original container. |
 
 :::note
-Import is **non-destructive**. Your containers keep running and your volume data is untouched — Miabi simply starts tracking and managing the resources you select.
+**Adopt in place is non-destructive**: your containers keep running and your volume data is untouched. **Reconcile now** recreates each container, so expect a restart.
 :::
+
+Environment variables are imported as plain app variables. Move anything sensitive into [secrets](/docs/secrets/overview) after importing. Host ports the container already publishes are recorded as approved bindings.
 
 ## After importing
 
 Once adopted, imported resources behave like any Miabi workload:
 
 - They appear in the console and are subject to [drift reconciliation](/docs/nodes/housekeeping).
-- Their volumes are protected from disk-reclaim pruning.
+- An adopted app keeps its original container until its first deploy through Miabi.
 - You can update, restart, or remove them through Miabi.
 
 :::tip
-Import early when onboarding an existing host, then run a [reconcile](/docs/nodes/housekeeping). Anything still flagged as unmanaged drift afterward is a candidate for import or cleanup.
+Import early when onboarding an existing host, then open [Housekeeping](/docs/nodes/housekeeping). Any container still listed as **untracked** is a candidate for import or cleanup.
 :::
 
 ## Related

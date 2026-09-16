@@ -17,8 +17,10 @@ nothing extra to deploy.
 - **Workspace switcher** — every screen operates in the context of the [active
   workspace](/docs/workspaces/overview). Switch workspaces (or your personal space) from the
   switcher; the rest of the UI re-scopes instantly.
-- **Sidebar navigation** — grouped by resource type: Applications, Domains, Databases, Volumes,
-  Backups, Marketplace, Nodes, Pipelines, Monitoring, and Settings.
+- **Sidebar navigation** — grouped into sections: **Overview**, **Analytics**, **Deploy**
+  (Applications, Stacks, Jobs, Marketplace), **Data** (Databases, Volumes), **Networking**,
+  **Sources** (Secrets, Configs, Registries, Git Repositories), **GitOps & CI/CD**, **Developers**,
+  and **Workspace** (members, events, audit log, notifications, settings).
 - **Dashboard** — an at-a-glance overview of the workspace, roughly in the order you care about
   it: anything failing (as a banner you can act on), quick actions for the things you start most,
   the app/database/stack counts, a [**Traffic** card](/docs/operations/analytics#on-the-workspace-dashboard)
@@ -26,6 +28,15 @@ nothing extra to deploy.
   and then the inventory — applications, stacks, and a running feed of workspace activity.
 
 ![Sidebar navigation](/img/screenshots/web-console-nav.png)
+
+## The platform admin console
+
+Platform administration is a **separate console** with its own sidebar, not a section appended to
+the workspace menu. A platform admin enters it from the workspace switcher → **Platform admin**, and
+leaves it the same way. Its sections are **Overview** (dashboard, events, jobs, reconciliation),
+**Identity**, **Tenants**, **Infrastructure** (clusters, nodes, ports, kernel grants, shared runners,
+registry, domains, routes), **Platform** (settings, branding, deployment config, platform backup) and
+**Enterprise**. See [Platform Admin](/docs/administration/platform-admin).
 
 ## Search and jump
 
@@ -50,10 +61,22 @@ value — only its name and description.
 
 The same search is available on the API as `GET /api/v1/workspaces/{workspace}/search?q=`.
 
-## Dark and light mode
+## Theme and preferences
 
-The console ships with a polished dark theme (the default) and a light theme. The toggle lives in
-the top bar; your preference is remembered per browser.
+The console has a light and a dark theme, plus **System**, the default, which follows your operating
+system. Switch from the user menu, or from the sign-in page before you log in.
+
+**Account → Preferences** holds the rest, all saved to your account so they follow you to other
+browsers:
+
+- **Default workspace** — the workspace a new session opens in, and **Open on**, the section it
+  opens on.
+- **Appearance** — light, dark or system.
+- **Accent** — the console's accent colour. When an operator enforces the brand accent, the choice
+  is locked for every account.
+- **Time zone** — how times are displayed; they are always stored in UTC.
+- **Language** — English or French. Translations are still landing, so the console stays in English
+  until they do.
 
 ## Everything is an API
 

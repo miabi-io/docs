@@ -16,15 +16,16 @@ it — so no one can claim a name they don't own.
 
 From the **Networking → Domains** view, choose **Add domain** and enter the
 hostname you want to use. The domain is created in a **pending** state and belongs
-to your current workspace. You can add apex domains (`example.com`), subdomains
-(`app.example.com`), or wildcards (`*.example.com`) when a
-[DNS provider](/docs/networking/dns-providers) is connected.
+to your current workspace. You can add apex domains (`example.com`) or subdomains
+(`app.example.com`). Tick **Wildcard** to also cover every host under it (`*.example.com`);
+serving those over HTTPS needs a wildcard certificate, which requires a
+[DNS provider](/docs/networking/dns-providers) or an uploaded certificate.
 
 ## Verifying ownership
 
 Miabi requires **DNS-verified ownership** before a domain can serve traffic. When
-you add a domain, Miabi shows the record you must publish — typically a `TXT`
-record with a unique token, or the A/AAAA record pointing at your node.
+you add a domain, Miabi shows the record you must publish — a `TXT` record at
+`_miabi-challenge.<domain>` carrying a unique token.
 
 ![Domain verification](/img/screenshots/domain-verify.png)
 
@@ -33,12 +34,16 @@ You have two paths:
 - **Manual** — copy the record into your DNS host, then click **Verify**. Miabi
   re-checks the public DNS and flips the domain to **verified**.
 - **Automatic** — if you've connected a
-  [DNS provider](/docs/networking/dns-providers), Miabi can publish and check the
-  records for you, including the A/AAAA records that point the domain at the node.
+  [DNS provider](/docs/networking/dns-providers), clicking **Verify** publishes the `TXT`
+  record for you and checks it. Once the domain is verified, Miabi also manages the address
+  records for the routes you create under it.
+
+Either way, the check reads live DNS — the domain's authoritative nameservers first — never
+the DNS provider's API.
 
 :::tip
 DNS changes can take a few minutes to propagate. If verification fails on the first
-try, wait and retry — Miabi also re-checks pending domains periodically.
+try, wait and click **Verify** again — Miabi does not retry pending domains on its own.
 :::
 
 ### How a domain was verified
@@ -96,13 +101,14 @@ and your own domain, and the route fields — see
 :::
 
 
-Once verified, open the domain and **attach** it to an
+Once verified, create a **route** for a hostname under the domain — **Networking → Routes →
+New route**, or from the application — and pick the target
 [application](/docs/applications/overview). Traffic for that hostname is then routed
 through [Goma Gateway](/docs/networking/routing-and-middlewares) to the app's
-container. Miabi never exposes app ports directly on the host — everything flows
-through Goma on the internal network.
+container on the internal network. Every route serving a host under the domain is listed on
+the domain's detail page.
 
-Attaching a verified domain also triggers **automatic TLS**: Goma requests an
+A route on a verified domain also gets **automatic TLS**: Goma requests an
 HTTP-01 certificate from Let's Encrypt, or serves a managed wildcard / uploaded
 certificate if one applies. See [TLS certificates](/docs/networking/tls-certificates).
 
@@ -113,10 +119,12 @@ certificate if one applies. See [TLS certificates](/docs/networking/tls-certific
 | **Pending** | Added but ownership not yet confirmed. |
 | **Serving · unverified** | Unproven, but served anyway because the workspace is privileged. |
 | **Verified** | Ownership confirmed; the badge names whether by DNS, a DNS provider, or an admin override. |
-| **Active** | Attached to an app and serving traffic. |
-| **Error** | Verification or certificate issuance failed — check the record and DNS provider. |
+| **Banned** | Blocked platform-wide by a platform administrator: its routes are forced offline and it cannot be verified. |
+
+The detail page also shows when ownership was last checked and why the last check failed.
 
 :::note
-Only Owners, Admins, and Developers can add or attach domains. Viewers have
+Owners, Admins, and Developers can add, edit and verify domains and create routes under them.
+Linking a DNS provider and deleting a domain require **Admin or Owner**. Viewers have
 read-only access.
 :::

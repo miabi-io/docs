@@ -21,21 +21,24 @@ domain, or publishing a host port — start at
 
 ## How routing works
 
-When you attach a verified [domain](/docs/networking/domains) to an
-[application](/docs/applications/overview), Miabi **writes a route file into Goma's watched
+When you create a route for a host under a verified [domain](/docs/networking/domains) and point it
+at an [application](/docs/applications/overview), Miabi **writes a route file into Goma's watched
 file-provider directory** (`MIABI_GOMA_PROVIDER_DIR`, default `/etc/goma/providers`) that maps the
 hostname to the app's container on the **internal network**. Goma's file provider continuously
 watches that directory and hot-reloads the routes; it handles TLS termination (see
 [TLS certificates](/docs/networking/tls-certificates)) and forwards the request to the right
 container.
 
-Miabi drives Goma **purely through that directory — there is no API endpoint or auth token** between
-the two. Miabi writes YAML; Goma watches and reloads it. The gateway's own `goma.yml` supports
+Miabi drives the control plane's gateway **purely through that directory — there is no API endpoint
+or auth token** between the two (gateways on other nodes work differently; see
+[Gateways per cluster](#gateways-per-cluster)). Miabi writes YAML; Goma watches and reloads it. The gateway's own `goma.yml` supports
 `${VAR}` environment-variable substitution (hosts, ACME email, Redis password, …), so a single
 `.env` configures both Miabi and the gateway. See [Configuration](/docs/getting-started/configuration).
 
-Because everything goes through Goma, **app and database ports are never published on the
-host**. The only public surface is the gateway itself.
+Routed traffic never needs a published port: apps and databases stay on internal networks and the
+gateway is the public surface. The one exception is a
+[host port](/docs/applications/exposing-your-app) an application explicitly requests and a platform
+admin approves — that traffic bypasses the gateway, and with it TLS and middlewares.
 
 ## Maintenance mode
 
@@ -173,12 +176,18 @@ Stack middlewares to compose behavior — for example, rate limiting *and* an au
 the same route. They run in order on each request.
 :::
 
-## Edge gateways
+## Gateways per cluster
 
-Goma also provides a **per-node edge gateway**. In a multi-node deployment each node runs
-its own Goma instance handling traffic for the apps scheduled on it, while routing and
-middleware definitions remain workspace-level. See [Nodes](/docs/nodes/overview) for how
-work is distributed across nodes.
+Not every node runs a gateway. Apps in the **default cluster** are served by the control plane's
+gateway, through the file-provider directory described above; nodes joined to it never run one of their
+own. A standalone node outside it has **edge-gateway** connectivity: it runs its own Goma instance, with
+its own public ingress and TLS, for the apps placed there. A **swarm in another cluster** is served by
+the gateway on its ingress node. These gateways pull their routes from the control plane over HTTP
+rather than from a directory.
+
+Routing and middleware definitions stay workspace-level either way; Miabi renders them for whichever
+gateway serves the app. See [Adding a node](/docs/nodes/adding-a-node#connectivity) and
+[Cluster mode](/docs/nodes/cluster-mode) for how work is distributed.
 
 :::note
 Routes are generated from your domains and apps — you don't hand-edit Goma config. Manage

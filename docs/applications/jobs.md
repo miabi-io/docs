@@ -1,7 +1,7 @@
 ---
 sidebar_position: 7
 title: Jobs
-description: Run one-off commands in your application's runtime context — migrations, maintenance tasks, and interactive shells.
+description: Run one-off or scheduled commands in your application's runtime context — migrations, maintenance tasks, and cron jobs.
 ---
 
 # Jobs
@@ -24,7 +24,8 @@ When you start a job, Miabi launches a container from your app's current [releas
 | **Diagnostics** | Run a read-only command to inspect state |
 
 Jobs are **not interactive** — they run a fixed command to completion and stream output one way. For
-a shell into a running container, use the app's Exec/terminal feature (Admin only) instead.
+a shell into a running container, use the app's terminal instead — workspace Admins and above, on a
+plan that allows shell access.
 
 :::tip
 Run migrations as a job right after a deploy, or wire them into your [pipeline](/docs/cicd/pipelines) so they run automatically on the way to production.
@@ -32,11 +33,33 @@ Run migrations as a job right after a deploy, or wire them into your [pipeline](
 
 ## Running a job
 
-1. Open the application and go to its **Jobs** view.
-2. Enter the command to run (for example, your framework's migrate command).
-3. Start the job — Miabi spins up a container from the current release.
+1. Open **Deploy → Jobs** and click **Run job**.
+2. Pick the **Application** and enter the **Command** to run (for example, your framework's migrate command).
+3. Optionally set:
+   - **Image** — run a different image instead of the app's current one, with a **Registry**
+     credential for a private image. Useful for a one-off tool the app's image does not ship.
+   - **Run as user** — the account the command runs as, like `docker run --user`. Blank inherits
+     the app's.
+   - **Timeout** — how long the job may run.
+4. **Run** — Miabi spins up a container from the app's active release (or the image you named).
 
-The job runs to completion and then the container is cleaned up. It does not affect your serving containers.
+A Git-source app needs at least one successful deploy before it can run a job. The job runs to
+completion and then the container is cleaned up. It does not affect your serving containers.
+
+## Scheduled jobs
+
+The **Scheduled** tab turns a job into a **cronjob**: **New cronjob** takes the same application,
+command, image and user as a run, plus:
+
+| Field | What it means |
+|---|---|
+| **Schedule** | A cron expression, evaluated in **UTC**. Ticks missed while the control plane was down are not run afterwards. |
+| **Concurrency** | What a tick does while the previous run is still active: **Allow** starts another, **Forbid** skips the tick, **Replace** cancels the running one and starts a new one. |
+| **Timeout (s)** | The limit for each run. |
+| **Keep last** | How many past runs of this schedule to keep. |
+| **Enabled** | Untick to pause the schedule without deleting it. |
+
+How many cronjobs a workspace may have is a [plan](/docs/workspaces/plans-and-quotas) limit.
 
 ## Viewing output
 
@@ -46,4 +69,4 @@ Job output streams live to the console while the command runs, and the full outp
 Jobs run with your app's real credentials and can modify live data — a migration or maintenance command affects production just as the app would. Review the command before running it, and prefer testing destructive operations in a non-production [environment](/docs/applications/environments) first.
 :::
 
-Job runs also appear in the app's [timeline](/docs/applications/logs-and-timeline) and the workspace [audit log](/docs/operations/audit-log).
+Starting, cancelling and scheduling jobs is recorded in the workspace [audit log](/docs/operations/audit-log).

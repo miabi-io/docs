@@ -14,10 +14,14 @@ The built-in [container registry](/docs/registry/overview) is managed by a **pla
 
 Turn it on under **Admin → Container Registry → Configuration**: set a **Host**, tick **Enable the registry**, and save. Point DNS for that hostname at the gateway. Miabi then:
 
-1. runs the registry container on the gateway network, and
+1. runs the registry container on the platform's [private network](/docs/networking/networks-and-subnets#the-platforms-private-network) (`MIABI_INTERNAL_NETWORK`), and
 2. seeds its gateway route + middlewares (TLS redirect, authentication, and namespace rewrite) automatically.
 
 Changes apply immediately — the container is recreated and the gateway route rewritten on save. No restart.
+
+:::caution Keep the registry off the shared app network
+The registry container serves without authentication; every token and namespace check happens in the gateway in front of it. That is why it joins only the private network, which app containers never join. On a stack that predates the private network (no `MIABI_INTERNAL_NETWORK` set), Miabi falls back to the shared proxy network and logs a warning, because there any app container could pull any workspace's images straight from `mb-registry:5000`. Set `MIABI_INTERNAL_NETWORK` to close that gap.
+:::
 
 Everything on that page can equally be set in the environment, which is what an install declared by docker-compose, a Helm chart, or any other infrastructure-as-code needs:
 
@@ -129,7 +133,7 @@ To let other nodes pull **Git-built** images (so deploys and rollbacks work acro
 MIABI_REGISTRY_PLATFORM_TOKEN=<a long random secret>
 ```
 
-With the registry enabled, a successful Git build is tagged and pushed as `registry.<domain>/ws_<workspace-id>/<app-name>:<deployment-number>`, and a `:v<release-version>` tag is added once the deployment succeeds; both are recorded on the release. On deploy, a node that lacks the image pulls it from the registry. The push is **best-effort** — if it fails, the image stays node-local and the deploy proceeds, so single-node installs are unchanged.
+With the registry enabled, a successful Git build is tagged and pushed as `registry.<domain>/ws_<workspace-id>/<app-name>:<deployment-id>` (the deployment's platform-wide id), and a `:v<release-version>` tag is added once the deployment succeeds; both are recorded on the release. On deploy, a node that lacks the image pulls it from the registry. The push is **best-effort** — if it fails, the image stays node-local and the deploy proceeds, so single-node installs are unchanged.
 
 The recorded reference uses the immutable `ws_<id>` namespace rather than the workspace name you push to by hand, so a workspace rename cannot break a rollback to an older deployment. Both forms address the same storage.
 
@@ -150,7 +154,8 @@ Setting any of these **pins** the matching field: it becomes read-only in the co
 | `MIABI_REGISTRY_STORAGE` | ✓ | `filesystem` or `s3`; `s3` requires the `registry_s3` entitlement. |
 | `MIABI_REGISTRY_S3_ENDPOINT` / `_BUCKET` / `_REGION` / `_ACCESS_KEY` / `_SECRET_KEY` / `_FORCE_PATH_STYLE` | ✓ | S3/MinIO storage (Enterprise). Pinned individually. |
 | `MIABI_REGISTRY_IMAGE` | — | Override the registry image (default `registry:3`). |
-| `MIABI_REGISTRY_AUTH_URL` | — | Address the gateway uses to reach Miabi's auth endpoint (falls back to `MIABI_CONTROL_URL`). |
+| `MIABI_REGISTRY_AUTH_URL` | — | Address the gateway uses to reach Miabi's auth endpoint (default `http://miabi:9000`). |
+| `MIABI_REGISTRY_HTTPS_REDIRECT` | — | Redirect plaintext registry requests to HTTPS (default `true`). Set `false` when a TLS terminator in front of the gateway (Cloudflare, nginx, a cloud load balancer) forwards plain HTTP and the gateway's trusted proxies aren't configured; otherwise every push and pull loops on the redirect. |
 | `MIABI_REGISTRY_PLATFORM_TOKEN` | — | Shared secret enabling multi-node build distribution. |
 
 The quota and the tag-deletion switch have no environment variable — they are console-only, and apply without a restart.

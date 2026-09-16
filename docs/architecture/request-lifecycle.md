@@ -25,7 +25,7 @@ sequenceDiagram
         G-->>V: 503 maintenance
     else Route matches
         G->>G: Middlewares, in order
-        G->>C: Forward on the workspace network
+        G->>C: Forward on the proxy network
         C-->>G: Response
         G-->>V: Response
     end
@@ -48,12 +48,17 @@ is **offline** and never reaches step 3. See
 
 ## Why the gateway is the only listener
 
-App and database containers publish nothing on the host. They are reachable only on their workspace's
-Docker network, which the gateway is also attached to. That has three consequences worth knowing:
+App and database containers publish nothing on the host. An app lives on its workspace's Docker
+network; while it has a route, Miabi also attaches its container to the shared proxy network
+([`miabi`](/docs/networking/networks-and-subnets#the-shared-gateway-network)) under a stable alias, and that is where the gateway reaches it. A replicated service is
+reached over its cluster's ingress overlay instead. The control plane, its database and its cache
+sit on a separate private network no app joins. That has three consequences worth knowing:
 
 - **Scanning the host finds nothing but the gateway.** There is no accidental exposure of a database
   because someone forgot a firewall rule.
-- **Two workspaces cannot reach each other**, because they are different Docker networks.
+- **Apps without a route are isolated per workspace.** Workspace networks are separate Docker
+  networks. Routed apps share the proxy network, so do not rely on the network alone to keep an
+  exposed app's unauthenticated ports private.
 - **Reaching an app without the gateway means asking for it explicitly** — a
   [host port binding](/docs/applications/exposing-your-app#method-3--a-published-host-port), which a
   platform admin has to approve.

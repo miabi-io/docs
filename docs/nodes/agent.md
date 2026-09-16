@@ -15,7 +15,7 @@ The **node agent** is a small, standalone program (Go module `github.com/miabi-i
 The agent has one job — let the control plane drive Docker on the remote host. It:
 
 - Dials the control plane over an **outbound WebSocket tunnel**.
-- Authenticates with a [join token](/docs/nodes/adding-a-node) during enrollment.
+- Authenticates with the node's [join token](/docs/nodes/adding-a-node#about-the-join-token) each time it connects.
 - Relays Docker API calls (pull, create, start, stop, inspect, prune…) to the **local Docker socket**.
 - Reports node status, container state, and resource usage back over the same tunnel.
 - **Says which node it is.** On connect it reads its own Docker `/info` — over the socket it already
@@ -23,6 +23,7 @@ The agent has one job — let the control plane drive Docker on the remote host.
   id**. The control plane cannot work that out for itself, and without it a service's replica cannot
   be traced back to the node running it, so its logs and metrics become unreachable. The node is the
   authority on which node it is.
+- **Forwards gateway analytics.** On a node that runs its own [gateway](/docs/nodes/adding-a-node#connectivity), it drains the gateway's request events from the node-local Redis to the control plane, so those apps appear in [Workspace Analytics](/docs/operations/analytics).
 
 It runs no scheduling logic of its own — all decisions live in the control plane. That keeps the agent tiny and easy to audit.
 
@@ -32,8 +33,8 @@ The agent is designed to be safe to run on hosts behind NAT or a firewall:
 
 - **Outbound only.** The agent initiates the connection; the node needs **no inbound ports** open. The control plane never connects *to* the node.
 - **Local socket only.** The agent exposes the host's Docker socket to the tunnel and nothing more — no shell, no arbitrary file access, no extra listeners.
-- **Token-authenticated enrollment.** A single-use, time-limited join token authorizes the agent. After joining, the tunnel is authenticated for that node.
-- **Encrypted transport.** The WebSocket tunnel runs over TLS to the control plane.
+- **Token-authenticated.** The node's join token authorizes the agent on every connection. Miabi keeps only its hash; **Regenerate token** on the node page invalidates the old one.
+- **Encrypted transport.** With an `https://` control URL, the WebSocket tunnel runs over TLS to the control plane.
 
 :::caution
 Exposing the Docker socket is equivalent to root on the host. Run the agent only on machines you trust and control, and protect the join token like any other secret.
@@ -72,9 +73,15 @@ curl -fsSL https://get.miabi.io/agent | \
 ```
 
 You can also pass the values as flags (`--control-url`, `--token`), override the image with
-`--image` / `MIABI_AGENT_IMAGE`, or point it at your certificate authority with `--ca-cert` /
-`MIABI_CA_CERT` (see [Private certificate authorities](#private-certificate-authorities)). Run with
-no values on an interactive shell and it prompts for them.
+`--image` / `MIABI_AGENT_IMAGE` (or just its tag with `AGENT_VERSION`), rename the container with
+`--name` / `MIABI_AGENT_NAME`, or skip TLS verification with `--insecure`. Run with no values on an
+interactive shell and it prompts for them.
+
+:::note
+The install script has no option for a private certificate authority. If your control plane uses one,
+start the agent with `docker run` and `MIABI_CA_CERT` instead — see
+[Private certificate authorities](#private-certificate-authorities).
+:::
 
 ### Binary
 
@@ -104,6 +111,21 @@ Or use the equivalent flags — each defaults to its environment variable, and a
   --control-url https://miabi.example.com \
   --token mbn_xxxxxxxx
 ```
+
+### All settings
+
+| Flag | Variable | Default | Description |
+|------|----------|---------|-------------|
+| `--control-url` | `MIABI_CONTROL_URL` (falls back to `MIABI_API_URL`) | — | Control plane base URL. Required. |
+| `--token` | `MIABI_NODE_TOKEN` | — | The node's join token. Required. |
+| `--ca-cert` | `MIABI_CA_CERT` | — | CA that signed the control plane's certificate: a path, base64, or PEM. See [Private certificate authorities](#private-certificate-authorities). |
+| `--insecure` | `MIABI_AGENT_INSECURE_SKIP_VERIFY` | `false` | Skip TLS verification. Last resort. |
+| — | `DOCKER_HOST` | `unix:///var/run/docker.sock` | The local Docker endpoint (`unix://` or `tcp://`). |
+| — | `MIABI_DEV_MODE` | `false` | Debug-level, human-readable logs instead of JSON. |
+
+The analytics forwarder takes its settings from the control plane. `MIABI_NODE_SLUG`,
+`MIABI_GATEWAY_REDIS_ADDR`, `GATEWAY_REDIS_PASSWORD` and `MIABI_ANALYTICS_STREAM` override them if you
+need to pin one by hand.
 
 :::tip
 Run the agent under a process supervisor (systemd `Restart=always` or `--restart unless-stopped`) so it reconnects automatically after reboots or transient network drops.
@@ -172,7 +194,7 @@ authority is trusted. Issue a certificate whose SANs include your control plane'
 
 ### In a cluster
 
-When you deploy agents from **Clusters → default cluster → Manage cluster nodes**, the dialog offers
+When you deploy agents from **Clusters → *a swarm cluster* → Manage cluster nodes**, the dialog offers
 the same three choices — trust a CA file already on the nodes, paste a certificate, or skip
 verification — and Miabi can fetch the certificate your control plane currently serves so you do not
 have to find it. Whichever is in force stays visible on the cluster's page, so a workaround taken once to get a
@@ -181,7 +203,7 @@ self-signed certificate working cannot quietly become permanent. See
 
 ## Verifying the connection
 
-Back in the console, the node flips to **connected** once the tunnel is up and the Docker socket responds. From there it becomes an eligible scheduling target. If it stays disconnected, check the host's outbound network access and that the token hasn't expired — generate a fresh one from the node page and retry.
+Back in the console, the node flips to **online** once the tunnel is up and the Docker socket responds. From there it becomes an eligible scheduling target. If it stays offline, check the agent's logs, the host's outbound network access, and that the token is the node's current one — after **Regenerate token**, the old token is rejected.
 
 ## Related
 

@@ -12,9 +12,9 @@ Miabi authenticates users with a straightforward account model and stateless **J
 
 ## Registration
 
-**Self-service sign-up is off by default.** On a fresh install accounts are created by a platform admin from **Platform Admin → Users**, and there is no `/register` page. A self-hosted platform should not begin accepting accounts from anyone who can reach it just because it was upgraded.
+**Self-service sign-up is off by default.** On a fresh install accounts are created by a platform admin from **Admin → Identity → Users**; the login page tells visitors to contact their platform administrator, and `/register` sends them back to sign-in. A self-hosted platform should not begin accepting accounts from anyone who can reach it just because it was upgraded.
 
-To open it, start the platform with `MIABI_REGISTRATION_ENABLED=true` and restart. Like password reset below, it is fixed at boot rather than flippable at runtime: it decides whether a stranger can become a principal, so opening it takes control of the deployment rather than of an admin session. Once open, two further controls live in **Platform Admin → Platform Settings**:
+To open it, start the platform with `MIABI_REGISTRATION_ENABLED=true` and restart. Like password reset below, it is fixed at boot rather than flippable at runtime: it decides whether a stranger can become a principal, so opening it takes control of the deployment rather than of an admin session. **Admin → Platform → Platform Settings** shows its current state read-only. Once open, two further controls live on the same page:
 
 - **Require email verification** — a new account must confirm its address before it can sign in. Sign-up refuses to open at all if this is on and no [SMTP server](/docs/getting-started/configuration) is configured, since the account would be created, unable to sign in, and unable to verify itself.
 - **Allowed signup domains** — a comma-separated allow-list (`acme.com`); a subdomain matches its parent. Blank admits any domain.
@@ -29,9 +29,19 @@ Sign-up never tells an anonymous caller whether an address is already registered
 
 ## Login
 
-Sign in with **your email address *or* your username**, plus your password. If [two-factor authentication](/docs/security/two-factor-auth) is enabled on your account, you'll be prompted for a TOTP code after your password is verified. Organizations can also offer [single sign-on](/docs/security/sso) for OAuth2/OIDC providers.
+Sign in with **your email address *or* your username**, plus your password. If [two-factor authentication](/docs/security/two-factor-auth) is enabled on your account, you'll be prompted for a TOTP code after your password is verified. Organizations can also offer [single sign-on](/docs/security/sso) through OAuth2/OIDC providers, and on Enterprise the same form can check the password against an [LDAP / Active Directory](/docs/security/sso#ldap--active-directory) directory when it doesn't match a local account.
 
 Your username is also the directory-friendly handle Miabi keys off for the built-in [container registry](/docs/registry/overview) — `docker login` accepts either your workspace name or your username.
+
+## Signing in from the CLI
+
+`miabi login` signs the [CLI](/docs/cicd/cli) in through the browser, so it works with passwords, 2FA and SSO alike:
+
+1. The CLI opens the console's **Authorize CLI login** page (`/cli/authorize`) with a one-time callback on `127.0.0.1`.
+2. You authenticate again — even if you are already signed in — and click **Authorize CLI**.
+3. The console hands a single-use code back to the CLI's local callback, and the CLI stores a short-lived personal [API key](/docs/security/api-tokens) in `~/.miabi/config.yaml`. The page then says you can return to your terminal.
+
+The key lives for `MIABI_LOGIN_TOKEN_TTL_HOURS` (default `24`), and a caller may ask for up to `MIABI_LOGIN_TOKEN_MAX_TTL_HOURS` (default `168`). On a machine that can't receive a local callback, run `miabi login --no-browser`: it prints the token page URL and reads the pasted token instead. In CI, skip the browser entirely with `--token` or `MIABI_TOKEN`.
 
 ## Password reset
 

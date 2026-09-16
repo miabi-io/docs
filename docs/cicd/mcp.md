@@ -122,9 +122,9 @@ cannot see them, let alone call them.
 | `stop_app` | Stop a running app |
 | `rollback_app` | Roll back to a prior release |
 
-Mutating tools are annotated as **destructive** in the protocol, so a well-behaved client asks you to
-confirm before calling one. Treat that as a convenience, not a control — the real boundary is
-`--allow-write` and your RBAC role.
+`restart_app`, `stop_app`, and `rollback_app` are annotated as **destructive** in the protocol, so a
+well-behaved client asks you to confirm before calling one; `deploy_app` and `start_app` are not.
+Treat that as a convenience, not a control — the real boundary is `--allow-write` and your RBAC role.
 
 ### Resources
 

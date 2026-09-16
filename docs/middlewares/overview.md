@@ -77,14 +77,21 @@ one change rather than one reload per move.
 Most middlewares take a `paths` list deciding which requests they apply to. Leave it empty and the
 middleware applies to the whole route.
 
-Patterns are **regular expressions**, matched **case-insensitively** and **unanchored** — `/admin`
-matches `/admin`, `/ADMIN/users` and `/x/admin`. Anchor with `^` and `$` when you mean the whole
-path:
+Patterns are **regular expressions**, matched **case-insensitively**. Where a pattern may match
+depends on the gateway version:
+
+| Gateway | A pattern without `^` | `/admin` matches |
+|---|---|---|
+| **Goma Gateway 0.15.0 or newer** | Anchored to the **start** of the path | `/admin`, `/ADMIN/users` — not `/x/admin` |
+| Older gateways | Matched **anywhere** in the path | `/admin`, `/ADMIN/users` and `/x/admin` |
+
+Write patterns that mean the same thing on both — start them with `^`, and end with `$` when you
+mean the whole path:
 
 ```
-/admin/.*      everything under /admin
-^/admin/.*$    the same, anchored
-/health        matches /health — and /x/health/y
+^/admin/.*     everything under /admin
+^/admin/.*$    the same, anchored at both ends
+^/health$      only /health
 ```
 
 The older `/admin/*` wildcard form still works, but the regex form is what the gateway prefers and
@@ -102,8 +109,10 @@ type the new value; to leave it alone, leave the box empty and save.
 ## Types Miabi does not curate
 
 Goma has more middleware types than Miabi puts a form in front of, and new ones arrive with each
-gateway release. An uncatalogued type still works: switch the form to **advanced** and write the rule
-directly, and Miabi passes it to the gateway as written.
+gateway release. An uncatalogued type still works: create it through the API or a
+[declarative manifest](/docs/cicd/manifest-reference#middleware), and Miabi passes the rule to the
+gateway as written. The console's type picker offers only curated types; opening an uncatalogued
+middleware there shows its rule as raw YAML, which you can edit.
 
 What it does not get is a form, validation on save, or encryption — a credential in an uncatalogued
 rule is **stored in the clear**. Prefer a curated type where one exists, and
