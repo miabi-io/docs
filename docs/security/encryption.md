@@ -48,7 +48,13 @@ Treat `MIABI_ENCRYPTION_KEY` as the master secret for the entire instance. Gener
 
 ## `GOMA_CONFIG_ENCRYPTION_KEY`
 
-Separate and optional. When set, Miabi **encrypts** the sensitive parts of the config it hands to **Goma Gateway** — middleware rules and TLS material — and each gateway **decrypts** it with the same key before applying. Empty (the default) leaves that gateway config unencrypted.
+Separate from the master key. When set, Miabi **encrypts** the sensitive parts of the config it hands to **Goma Gateway** — middleware rules and TLS material — and each gateway **decrypts** it with the same key before applying. Empty leaves that gateway config unencrypted.
+
+**A fresh install generates one and turns this on.** It is written to `spec.secrets.gomaConfigEncryptionKey` in the install manifest and handed to both the control plane and the gateway from that one value, so the two sides cannot disagree. An **existing** install is never switched on by an upgrade: a host may run a gateway you imported, which Miabi does not redeploy and so cannot hand the key to — its routes would fail to decrypt with no visible cause. If config encryption is on while such a gateway is registered, Miabi names those nodes in its logs at boot.
+
+:::note Losing this key costs nothing permanent
+Unlike `MIABI_ENCRYPTION_KEY`, the config it protects is rendered from the database on every sync. Rotating or losing it costs a converge and a re-sync, not data. The two sit side by side in the manifest with very different consequences.
+:::
 
 Because encryption and decryption happen on opposite sides, the **same value must be set on both** Miabi and the Goma gateway. In the Docker Compose stack that means setting `GOMA_CONFIG_ENCRYPTION_KEY` in your `.env` — it is passed to both the `miabi` and `gateway` services. For the remote edge gateways Miabi provisions on managed nodes, Miabi injects the key automatically, so a mismatch can't happen there.
 

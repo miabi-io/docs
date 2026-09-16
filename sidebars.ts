@@ -200,6 +200,7 @@ const sidebars: SidebarsConfig = {
         'administration/nodes-and-capacity',
         'administration/scheduled-jobs',
         'administration/upgrades',
+        'administration/install-manifest',
       ],
     },
     {

@@ -72,6 +72,7 @@ around that, and this table is the map.
 | Section | Responsibility |
 |---|---|
 | **Settings** | The typed, cached key-value configuration governing instance-wide behaviour. See [Platform Settings](/docs/operations/platform-settings). |
+| *(fields pinned by the install manifest)* | A setting stated in `/etc/miabi/miabi.yaml` — a backup destination, the external base domain, the registry host — is **read-only in the console**, shown with the variable that decides it. That is deliberate: it keeps an install described by infrastructure-as-code authoritative. Remove the field from the manifest and converge to hand the setting back. |
 | **Deployment config** | Registry mirror and platform image pins. See [Scheduled Jobs & Image Defaults](/docs/administration/scheduled-jobs#image-defaults). |
 | **Jobs** | The background sweeps that keep the platform consistent. See [Scheduled Jobs](/docs/administration/scheduled-jobs). |
 | **Metrics** | Instance-wide resource and activity overview. |

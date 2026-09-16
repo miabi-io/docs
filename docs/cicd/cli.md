@@ -240,6 +240,14 @@ installs and operates a Miabi host — see
 | `miabi stack restart [component] [--yes]` | Restart in place so containers re-read their on-disk config. |
 | `miabi stack uninstall [--volumes] [--yes]` | Remove the stack's containers; `--volumes` also destroys the database. |
 | `miabi stack migrate-config` | Rename the legacy `/etc/miabi/stack.yaml` to `/etc/miabi/miabi.yaml`. |
+| `miabi stack env ls` / `get KEY` | Show the environment the manifest carries. `--gateway` reads the gateway's instead of the control plane's. |
+| `miabi stack env set KEY=VALUE […]` | Write variables, show what changes, and recreate the component they belong to. `--no-apply` saves without converging. |
+| `miabi stack env unset KEY […]` | Remove variables. A variable Miabi seeds (`TZ`, `MIABI_LOG_LEVEL`) comes back at its default rather than disappearing, and the output says so. |
+
+`stack env` is also reachable as `miabi setup env …` — the same command under the verb an operator
+reaches for when configuring an install. Settings the manifest models with their own field (the
+registry, the networks, the backup destination) are **refused** there, and the error names where the
+value actually lives.
 
 They all need **root** (they write `/etc/miabi` and use the Docker socket) and a Linux or macOS
 Docker host. `-f, --file` points at a manifest other than `/etc/miabi/miabi.yaml`.
