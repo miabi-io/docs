@@ -209,14 +209,8 @@ const sidebars: SidebarsConfig = {
         'administration/workspace-oversight',
         'administration/nodes-and-capacity',
         'administration/scheduled-jobs',
-      ],
-    },
-    {
-      type: 'category',
-      label: 'Upgrades',
-      items: [
-        'upgrades/overview',
-        'upgrades/upgrading',
+        'administration/upgrades',
+        'administration/install-manifest',
       ],
     },
     {

@@ -41,6 +41,13 @@ docker inspect miabi --format '{{index .Config.Labels "io.miabi.managed-by"}}'
 sudo miabi upgrade
 ```
 
+:::note The first upgrade converts your manifest
+An install created before `install.miabi.io/v1` has a flat `/etc/miabi/miabi.yaml` starting
+`version: 1`. The first `miabi upgrade` rewrites it as the current document and keeps the original as
+`miabi.yaml.bak`. Nothing else changes — every value is carried across and none is regenerated — but
+an older CLI cannot read the new file, so keep the copy if you may roll the CLI back.
+:::
+
 `miabi upgrade` rolls the stack to the **latest published Miabi release**, looked up when the command
 runs. The version is not baked into the CLI: the CLI releases on its own cadence, so a build-time pin
 would freeze every install at whatever was current when that CLI was built — and an older CLI could
@@ -115,6 +122,16 @@ Everything else — the gateway version, the registry, `TZ`, the log level — l
 ```bash
 sudo miabi setup
 ```
+
+Environment variables need no hand-editing at all:
+
+```bash
+sudo miabi stack env set MIABI_LOG_LEVEL=debug        # control plane
+sudo miabi stack env set GOMA_LOG_LEVEL=debug --gateway
+sudo miabi stack env unset MIABI_SMTP_HOST
+```
+
+Each shows the change, asks, then converges — recreating only the component whose environment moved.
 
 The converge is idempotent: components whose configuration did not change are left alone, and only
 what actually changed is recreated. Bumping PostgreSQL is therefore something you ask for by name,

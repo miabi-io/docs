@@ -115,13 +115,15 @@ They are also flags on `miabi setup` (`--subnet`, `--internal-subnet`) and are r
 `/etc/miabi/miabi.yaml`:
 
 ```yaml
-network:
-  name: miabi
-  subnet: 10.63.0.0/16
-internal_network:
-  name: miabi-internal
-  subnet: 10.62.0.0/16
+spec:
+  networking:
+    proxy:    { name: miabi,          subnet: 10.63.0.0/16 }
+    internal: { name: miabi-internal, subnet: 10.62.0.0/16 }
 ```
+
+The same block also carries the [managed subnet pool](#managed-subnet-allocation) (`pool`), the host
+port range (`hostPorts`), the wildcard domain for one-click app URLs (`external`) and the managed-DNS
+interval (`dns`) — see the [Install Manifest](/docs/administration/install-manifest).
 
 :::note Upgrading an existing install
 The split happens on your next `miabi upgrade`. The private network is created, every component is

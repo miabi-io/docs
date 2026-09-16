@@ -150,40 +150,71 @@ the host and not a database table, because PostgreSQL is *itself* part of the st
 cannot read the database to learn how to start the database.
 
 ```yaml
-version: 1
-domain: miabi.example.com
-web_url: https://miabi.example.com
-control_url: https://miabi.example.com   # where nodes and agents dial back
-acme_email: you@example.com              # Let's Encrypt contact
-images:
-  miabi: miabi/miabi:1.6.0
-  postgres: postgres:17-alpine
-  redis: redis:7-alpine
-  gateway: jkaninda/goma-gateway:0.12.0
-registry:
-  enabled: true
-  host: registry.miabi.example.com
-gateway:
-  config: goma.yml          # bind-mounted into Goma, read-only
-  env:
-    GOMA_LOG_LEVEL: info          # debug | trace | info | warn | error | off
-    GOMA_ANALYTICS_ENABLED: "true" # emit the Workspace Analytics event stream
-    MY_UPSTREAM: https://internal.example.com
-host_proc: true
-env:
-  TZ: UTC
-  MIABI_LOG_LEVEL: info
-secrets:
-  admin_email: you@example.com   # your panel login
-  admin_password: …              # generated, printed once — this is the only copy
-  db_password: …
-  redis_password: …
-  jwt_secret: …
-  encryption_key: …
+apiVersion: install.miabi.io/v1
+kind: ControlPlane
+metadata:
+  name: miabi
+spec:
+  domain: miabi.example.com
+  endpoints:
+    web: https://miabi.example.com
+    control: https://miabi.example.com   # where nodes and agents dial back
+  acme:
+    email: you@example.com               # Let's Encrypt contact
+
+  server:
+    image: miabi/miabi:1.10.0
+    hostProc: true
+    env:
+      TZ: UTC
+      MIABI_LOG_LEVEL: info
+  database:
+    image: postgres:17-alpine
+  cache:
+    image: redis:7-alpine
+  gateway:
+    image: jkaninda/goma-gateway:0.15.1
+    config: goma.yml                     # bind-mounted into Goma, read-only
+    env:
+      GOMA_LOG_LEVEL: info               # debug | trace | info | warn | error | off
+      GOMA_ANALYTICS_ENABLED: "true"     # emit the Workspace Analytics event stream
+
+  registry:
+    enabled: true
+    host: registry.miabi.example.com
+
+  admin:
+    email: you@example.com               # your panel login
+
+  secrets:                               # generated on first install; this is the only copy
+    adminPassword: …                     # printed once, at the end of the install
+    dbPassword: …
+    redisPassword: …
+    jwtSecret: …
+    encryptionKey: …
+    gomaConfigEncryptionKey: …           # encrypts gateway config; safe to rotate
+
+  networking:
+    proxy:    { name: miabi,          subnet: 10.63.0.0/16 }
+    internal: { name: miabi-internal, subnet: 10.62.0.0/16 }
 ```
 
+Fields marked **written by Miabi** — `spec.gateway.configSha` and `spec.server.dockerGid` — are
+derived state. `configSha` records the digest of the default gateway config Miabi last wrote, which
+is what keeps a `goma.yml` you have customised from being overwritten; editing it by hand is how that
+protection is lost.
+
 Edit it and re-run `sudo miabi setup` — the converge is idempotent, so only what actually changed
-is recreated.
+is recreated. For environment variables there is no need to edit by hand:
+`sudo miabi stack env set MIABI_SMTP_HOST=smtp.example.com` writes the value, shows what changes, and
+converges.
+
+:::note Installs from before this release
+The manifest used to be a flat file starting `version: 1`. Both shapes load, and `miabi setup` writes
+back whichever it read — it never converts a file underneath you. **`miabi upgrade` does the
+conversion**, keeping the original as `/etc/miabi/miabi.yaml.bak`. Keep that copy: a converted file
+cannot be read by an older CLI, so rolling the CLI back means restoring it.
+:::
 
 :::note It used to be `stack.yaml`
 The manifest was `/etc/miabi/stack.yaml` before this release, which collided with the `stack.yaml`

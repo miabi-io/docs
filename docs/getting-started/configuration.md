@@ -120,7 +120,15 @@ Off by default. See [GPUs](/docs/applications/gpus) for the full workflow.
 | `MIABI_METRICS_SCRAPE_SECONDS` | `60` | Metrics sampling interval |
 | `MIABI_METRICS_RETENTION_HOURS` | `24` | Metrics history window |
 | `MIABI_PROXY_NETWORK` | `miabi` | Docker network shared by the gateway and app containers so the proxy can reach backends (legacy alias: `MIABI_GOMA_NETWORK`) |
-| `MIABI_INTERNAL_NETWORK` | *(unset)* | The platform's [private network](/docs/networking/networks-and-subnets#the-platforms-private-network), where the control-plane database and cache live. Set by `miabi setup`; leave unset on a Compose stack, which has no such network |
+| `MIABI_INTERNAL_NETWORK` | *(unset)* | The platform's [private network](/docs/networking/networks-and-subnets#the-platforms-private-network), where the control-plane database and cache live. Set by `miabi setup` (`spec.networking.internal`); leave unset on a Compose stack, which has no such network |
+
+:::note On a managed install, the manifest sets these for you
+Many of the variables below have a field in the [install manifest](/docs/administration/install-manifest)
+— `spec.networking.pool`, `spec.networking.hostPorts`, `spec.backup`, `spec.license` and others.
+`miabi setup` compiles those into the control plane's environment, so you configure them in one place
+rather than exporting variables by hand. A field stated there also **pins** the matching console
+setting read-only, which is what keeps an infrastructure-as-code install authoritative.
+:::
 | `MIABI_GOMA_PROVIDER_DIR` | `/etc/goma/providers` | Directory where Miabi writes per-route Goma config files that the gateway hot-reloads |
 | `MIABI_WEB_DIR` | — | Directory of the built web UI; when set, Miabi serves it as an SPA at `/`. The official image serves the UI from the embedded binary |
 | `DOCKER_HOST` | `unix:///var/run/docker.sock` | Docker Engine endpoint |
@@ -309,7 +317,6 @@ Self-service sign-up is off until you turn it on. See [Authentication](/docs/sec
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `MIABI_LICENSE_FILE` | — | Path to a signed license token auto-installed on boot (air-gapped / IaC friendly). A newer DB-installed license still wins |
-| `MIABI_LICENSE_PUBLIC_KEY` | — | Base64 Ed25519 key used to verify a license offline. Normally baked into the binary; this override is for dev/test |
 
 ## Advanced
 
