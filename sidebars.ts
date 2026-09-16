@@ -41,6 +41,7 @@ const sidebars: SidebarsConfig = {
         'applications/exposing-your-app',
         'applications/environment-variables',
         'applications/releases-and-rollbacks',
+        'applications/canary-deployments',
         'applications/scaling-and-resources',
         'applications/gpus',
         'applications/capabilities-and-devices',
@@ -209,8 +210,15 @@ const sidebars: SidebarsConfig = {
         'administration/workspace-oversight',
         'administration/nodes-and-capacity',
         'administration/scheduled-jobs',
-        'administration/upgrades',
         'administration/install-manifest',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Upgrades',
+      items: [
+        'upgrades/overview',
+        'upgrades/upgrading',
       ],
     },
     {
