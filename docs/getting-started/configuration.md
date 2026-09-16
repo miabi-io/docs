@@ -302,7 +302,6 @@ tab. See [Registry](/docs/registry/administration).
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `MIABI_LICENSE_FILE` | — | Path to a signed license token auto-installed on boot (air-gapped / IaC friendly). A newer DB-installed license still wins |
-| `MIABI_LICENSE_PUBLIC_KEY` | — | Base64 Ed25519 key used to verify a license offline. Normally baked into the binary; this override is for dev/test |
 
 ## Advanced
 
