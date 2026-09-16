@@ -96,6 +96,6 @@ does not block a save when a component is renamed or removed.
 
 ## Where to go next
 
-- [Upgrades](/docs/administration/upgrades) — moving the instance to a newer release.
+- [Upgrades](/docs/upgrades/upgrading) — moving the instance to a newer release.
 - [Platform Settings](/docs/operations/platform-settings) — the wider instance configuration.
 - [Application jobs](/docs/applications/jobs) — the cron workloads a workspace defines.

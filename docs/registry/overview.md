@@ -10,6 +10,8 @@ Miabi ships a **first-party, multi-tenant Docker registry** so your team can pus
 
 The registry is **off by default**. A platform admin enables it from **Admin → Container Registry** (see [Administration](/docs/registry/administration)).
 
+![The built-in container registry listing a workspace's images](/img/screenshots/registry.png)
+
 ## How it works
 
 The registry runs as a managed container behind [Goma Gateway](/docs/networking/routing-and-middlewares), which terminates TLS and authenticates every request against Miabi — so the registry reuses your existing **API tokens** and workspace permissions. There is no separate registry account to manage.

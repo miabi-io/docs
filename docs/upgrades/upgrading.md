@@ -1,116 +1,13 @@
 ---
-sidebar_position: 3
-title: Upgrades
-description: How to upgrade a Miabi instance — automatic migrations, the stack and Compose procedures, rollback, and why downgrades aren't supported.
+sidebar_position: 2
+title: Upgrading
+description: The upgrade procedure for a stack or Compose install, what to do when the new version does not come up, and per-version notes.
 ---
 
-# Upgrades
+# Upgrading
 
-Upgrading Miabi is intentionally simple: **pull a newer image and recreate the containers.** Miabi handles the rest on startup.
-
-## Automatic migrations
-
-On every startup, Miabi brings the database in line with the running binary:
-
-- **Schema migrations** are applied automatically (GORM `AutoMigrate`).
-- **Ordered data `upgrade` steps** run in sequence, with each applied step recorded in the `upgrade_steps` table so it never runs twice.
-
-Because both happen automatically, upgrading is just a matter of starting the new version. You watch the logs to confirm migrations completed before the instance serves traffic.
-
-## Update notifications
-
-Once a day, Miabi asks GitHub whether a newer release exists and shows platform admins a dismissible
-notice with a link to the release notes. **The check only notifies — nothing upgrades on its own.**
-An upgrade is always something you ask for, whether by re-running the installer (Compose) or by
-running `miabi upgrade` (stack).
-
-The check is channel-aware: a pre-release build is offered newer pre-releases and stable releases; a
-stable build is never nudged onto a pre-release. Dismissing a notice hides it until the *next*
-version appears.
-
-| Variable | Default | Purpose |
-|----------|---------|---------|
-| `MIABI_UPDATE_CHECK` | `true` | Set `false` to disable the check entirely (air-gapped hosts, or to avoid the outbound call) |
-
-Nothing about your install is sent: it is an unauthenticated `GET` to `api.github.com` identified
-only by `User-Agent: miabi/<version>`. No install id, no telemetry. A `dev` build never checks.
-Admins can read the cached result at `GET /api/v1/admin/update`.
-
-### Runners and agents
-
-[Build runners](/docs/cicd/runners) and [node agents](/docs/administration/nodes-and-capacity) ship
-and version **independently of the panel** — upgrading Miabi does not upgrade them, and a fleet
-quietly drifts years behind if nobody looks. The same daily check therefore also reads the newest
-release of each, and compares it against the version every instance reports when it connects.
-
-Where it shows up:
-
-- A **banner** for platform admins: *"3 of 5 runners are behind v0.0.9."*
-- An **outdated** badge on the runner's page and on the node's agent version, linking to that
-  project's release notes.
-- `GET /api/v1/admin/update/components` — the newest release of each, and how many instances are
-  behind it.
-
-Only the **stable** line is used as the yardstick. A component has no single running version to
-infer a channel from — a workspace may run ten runners on ten versions — so a release candidate
-never marks a fleet outdated, and an instance running one is not flagged for being ahead.
-
-**Only instances that are up are considered.** An offline runner or an unreachable node is not
-something you can upgrade right now — it may be decommissioned, or a laptop that is simply shut —
-so it is neither badged nor counted. A runner that is *draining* still counts: its tunnel is live,
-it is just finishing its jobs.
-
-An instance that has never reported a version is not counted either way. Silence means *unknown*,
-not *current*; a badge that guesses is a badge people learn to ignore.
-
-Upgrading is manual and per component, as it is for Miabi itself: pull the newer runner image and
-restart it, or re-run the agent install script on the node. `MIABI_UPDATE_CHECK=false` disables all
-of it together.
-
-## Version notes
-
-### Goma Gateway 0.14 — forwarded headers are only believed from a trusted proxy
-
-Miabi now provisions **Goma Gateway 0.14**, which brings the `oidc` middleware and one change that
-can break a working install.
-
-The gateway used to trust `X-Forwarded-Proto` and `X-Forwarded-For` from anyone. It now believes them
-only when the request arrives from an address listed in its `proxy.trustedProxies`. That is the
-correct behaviour — without it any client can forge those headers and spoof its own IP — but it
-changes what happens when something terminates TLS *in front of* the gateway.
-
-**Who is affected:** installs where Cloudflare, nginx, HAProxy or a cloud load balancer terminates
-TLS and forwards plaintext to the gateway, and whose `goma.yml` has no `proxy:` block.
-
-**What breaks:** the gateway sees a plaintext hop, decides the request is not HTTPS, and the
-`redirectScheme` middleware redirects it — back to the terminator, which forwards plaintext again.
-The request loops until the client gives up. Miabi puts that middleware on the **built-in container
-registry** route, so `docker push` and `docker pull` are usually the first thing to fail.
-
-**The fix** is to tell the gateway what is in front of it, in `goma.yml`:
-
-```yaml
-proxy:
-  enabled: true
-  trustedProxies:
-    - "10.0.0.0/8"        # your terminator's address or range
-    # For Cloudflare, use its published ranges: https://www.cloudflare.com/ips/
-  ipHeaders:
-    - "CF-Connecting-IP"  # keep first when behind Cloudflare
-    - "X-Forwarded-For"
-```
-
-`trustedProxies` must not be empty — an empty list with `enabled: true` is rejected at load, since
-nothing would separate a proxy from a client that simply sends the header itself.
-
-If you cannot configure that, `MIABI_REGISTRY_HTTPS_REDIRECT=false` drops the redirect from the
-registry route as an escape hatch. It is the lesser fix: it stops the loop without giving the gateway
-the real client IP, which request logging, rate limiting and IP allowlists all depend on.
-
-:::note Not affected
-An install where the gateway itself terminates TLS — the default Compose and `miabi setup`
-topologies — needs no change. The connection really is HTTPS, so no forwarded header is consulted.
-:::
+Upgrading is pulling a newer image and recreating the containers. Miabi applies its own migrations
+on startup — see [Overview](/docs/upgrades/overview) for what happens while it does.
 
 ## Back up first
 
@@ -137,6 +34,8 @@ docker inspect miabi --format '{{index .Config.Labels "io.miabi.managed-by"}}'
 ```
 
 ## Upgrading
+
+![`sudo miabi upgrade` rolling the control plane forward in a terminal](/img/screenshots/upgrade-terminal.png)
 
 ```bash
 sudo miabi upgrade
@@ -199,7 +98,7 @@ rolled-back   … rolled back to miabi/miabi:1.3.0, which is running
 Restoring the previous **image** does not undo a schema **migration** the new version already
 applied. Miabi's migrations are additive, so an older binary against a newer schema generally works —
 but the supported recovery path for a genuinely bad upgrade is still to restore the pre-upgrade
-backup. See [Downgrades](#downgrades-are-not-supported) below.
+backup. See [Downgrades](/docs/upgrades/overview#downgrades-are-not-supported).
 :::
 
 ### Restarting without upgrading
@@ -274,16 +173,53 @@ reads is `MIABI_IMAGE` (an image reference, e.g. `miabi/miabi:1.4.0`, with no le
 
 Wait for a line similar to **`database migrations applied`** in the logs. Once it appears, the schema and data steps are complete and the instance is running the new version.
 
-## Downgrades are not supported
+## Version notes
 
-Miabi rolls **forward** only. The `upgrade_steps` table tracks which steps have been applied, and there are no reverse steps — once a migration has run, the previous binary may no longer understand the schema.
+### Goma Gateway 0.14 — forwarded headers are only believed from a trusted proxy
 
-:::caution
-`MIABI_ALLOW_DOWNGRADE=true` exists as an escape hatch, but it does **not** undo migrations. Only set it if you fully understand the schema implications of running an older binary against an already-migrated database. The supported recovery path for a bad upgrade is to **restore the pre-upgrade backup**.
+Miabi now provisions **Goma Gateway 0.14**, which brings the `oidc` middleware and one change that
+can break a working install.
+
+The gateway used to trust `X-Forwarded-Proto` and `X-Forwarded-For` from anyone. It now believes them
+only when the request arrives from an address listed in its `proxy.trustedProxies`. That is the
+correct behaviour — without it any client can forge those headers and spoof its own IP — but it
+changes what happens when something terminates TLS *in front of* the gateway.
+
+**Who is affected:** installs where Cloudflare, nginx, HAProxy or a cloud load balancer terminates
+TLS and forwards plaintext to the gateway, and whose `goma.yml` has no `proxy:` block.
+
+**What breaks:** the gateway sees a plaintext hop, decides the request is not HTTPS, and the
+`redirectScheme` middleware redirects it — back to the terminator, which forwards plaintext again.
+The request loops until the client gives up. Miabi puts that middleware on the **built-in container
+registry** route, so `docker push` and `docker pull` are usually the first thing to fail.
+
+**The fix** is to tell the gateway what is in front of it, in `goma.yml`:
+
+```yaml
+proxy:
+  enabled: true
+  trustedProxies:
+    - "10.0.0.0/8"        # your terminator's address or range
+    # For Cloudflare, use its published ranges: https://www.cloudflare.com/ips/
+  ipHeaders:
+    - "CF-Connecting-IP"  # keep first when behind Cloudflare
+    - "X-Forwarded-For"
+```
+
+`trustedProxies` must not be empty — an empty list with `enabled: true` is rejected at load, since
+nothing would separate a proxy from a client that simply sends the header itself.
+
+If you cannot configure that, `MIABI_REGISTRY_HTTPS_REDIRECT=false` drops the redirect from the
+registry route as an escape hatch. It is the lesser fix: it stops the loop without giving the gateway
+the real client IP, which request logging, rate limiting and IP allowlists all depend on.
+
+:::note Not affected
+An install where the gateway itself terminates TLS — the default Compose and `miabi setup`
+topologies — needs no change. The connection really is HTTPS, so no forwarded header is consulted.
 :::
 
 ## Where to go next
 
-- [Backups](/docs/storage/backups) — take a backup before every upgrade.
-- [Configuration](/docs/getting-started/configuration) — pinning the image version and other `.env` settings.
+- [Overview](/docs/upgrades/overview) — update notifications and the migration model.
+- [Backups](/docs/storage/backups) — restoring the pre-upgrade backup is the supported recovery path.
 - [Platform Settings](/docs/operations/platform-settings) — instance-wide configuration.

@@ -10,6 +10,8 @@ Preferences belong to your **account**, not to a browser. They follow you to a n
 machine, survive clearing site data, and apply to the CLI where relevant. Find them
 under your avatar → **Preferences**.
 
+![Account preferences: default workspace, theme and display settings](/img/screenshots/account-preferences.png)
+
 ## Default workspace
 
 Your default workspace is where a sign-in lands when nothing else names a workspace —

@@ -40,6 +40,7 @@ A quota is an upper bound on a countable resource. Typical quotas include:
 |-------|------------------------|
 | Applications | Apps deployed in the workspace. |
 | Databases | Provisioned database instances. |
+| Database CPU & memory | The CPU and memory limits of all database instances added up, a budget separate from apps and jobs. See [plan limits](/docs/databases/provisioning#plan-limits). |
 | Domains | Custom domains attached. |
 | Members | Users invited to the workspace. |
 | Volumes & storage | Persistent volumes and total disk used. |
@@ -56,6 +57,57 @@ Because the check happens at creation, you never end up with a half-provisioned 
 Beyond raw counts, a plan can gate **features**. Examples include custom TLS certificates, privileged host mounts, shell access into containers, shared (NFS/CIFS) storage, connecting DNS providers, [custom container labels](/docs/applications/container-labels), and [GPU access](/docs/applications/gpus) (with a separate **GPUs** quota counting the units a workspace's running apps may hold). Advanced security capabilities such as multiple SSO providers, SAML 2.0, and SCIM provisioning are gated to higher editions. See [Community vs Enterprise](/docs/editions/community-vs-enterprise) for the full breakdown.
 
 When a feature is gated off, the corresponding controls are disabled in the console and the API returns a structured error explaining which capability is required. A platform admin can also override a capability for a single workspace.
+
+## Placement
+
+A plan can also decide **where** its workspaces run. On the plan's page, under **Placement**:
+
+- **Locations**: the [locations](/docs/nodes/cluster-mode#locations) its workspaces may use. The
+  location picker shows only these, and creating, applying a manifest or installing from the
+  marketplace anywhere else is refused. The first location is the plan's default, used when a
+  workspace has not picked one of its own. With none checked, every location is allowed.
+- **Node pool**: its workspaces' apps, databases and volumes land only on nodes in this
+  [pool](/docs/nodes/cluster-mode#node-pools), and service apps get a Swarm constraint that keeps their
+  replicas there. A plan without a pool runs only on nodes that are in no pool, so pooled hardware
+  stays reserved for the plans that name it.
+
+A location with no usable node in the plan's pool refuses the create with a message naming the pool.
+Placement is decided when a resource is created or a service deploys: changing a plan's placement, or
+a node's pool, moves nothing that is already running.
+
+A platform admin can override placement for a single workspace from **Admin → Workspaces**, like any
+other quota.
+
+:::note Enterprise
+Placement needs an Enterprise licence with plan placement (Business and up), and plan enforcement on.
+Without them, every workspace may use any location and any node. In Community, an admin can still hide
+a cluster from workspaces by restricting it to platform admins.
+:::
+
+## Database sizes
+
+A plan can offer **database sizes**: named CPU and memory limits a platform admin defines under
+**Admin → Database sizes**, such as `small` (0.5 CPU, 1 GB) or `large` (2 CPU, 4 GB). On the plan's
+page, under **Database sizes**, check the sizes its workspaces pick from; the first is the default.
+
+- Creating a database offers only those sizes, and a database created without one gets the default.
+  If the default is too small for the engine (MySQL needs 1 GB, for example), the smallest checked
+  size that is big enough is used instead.
+- A database created with memory and CPU instead, through the API, a
+  [manifest](/docs/cicd/manifest-reference#database) or a marketplace template, gets the smallest
+  checked size covering them. It is refused only when no checked size is big enough.
+- With none checked, sizes are optional: a workspace may pick any size, or set memory and CPU itself.
+
+A size's CPU and memory count against the plan's [database budget](/docs/databases/provisioning#plan-limits)
+like any other limits. Editing a size changes it for databases given it from then on; databases
+already on it keep their limits. A size that a plan or a workspace override offers cannot be deleted.
+
+A platform admin can override the sizes offered to a single workspace from **Admin → Workspaces**.
+
+:::note Enterprise
+Database sizes need an Enterprise licence with database sizes (Business and up). A plan's list is
+enforced only while plan enforcement is on; without it, sizes are optional everywhere.
+:::
 
 ## Viewing usage
 

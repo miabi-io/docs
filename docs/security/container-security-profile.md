@@ -10,6 +10,8 @@ By default a container runs as whatever user its image declares — often `root`
 security profile** hardens how a workspace's application and job containers run, so a compromised
 or misbehaving container has far less power on the host.
 
+![The workspace container security profile settings](/img/screenshots/security-profile.png)
+
 ## Profiles
 
 Every workspace has an effective security profile, resolved from its plan (or a per-workspace
@@ -19,6 +21,10 @@ override):
 |---------|-----------|
 | **Default** | Containers run as the image's own user (may be `root`). No extra hardening — the historical behaviour. |
 | **Restricted** | Containers are forced to run as a **non-root platform UID** with `no-new-privileges` set and the `NET_RAW` capability dropped — similar to OpenShift's *restricted* SCC. |
+
+A profile only ever takes capabilities away. Granting one to an individual application is a separate, opt-in mechanism — see [Capabilities & devices](/docs/applications/capabilities-and-devices) — and the restricted profile admits none of them, so the two cannot be combined.
+
+An individual app can also harden itself further on either profile — a read-only root filesystem, no-new-privileges, dropped capabilities — see [Hardening an app](/docs/applications/capabilities-and-devices#hardening-an-app). It can never loosen the profile: a manifest setting `security.noNewPrivileges: false` in a restricted workspace is refused. The profile's hardening applies to replicated service apps as well as containers.
 
 Under the restricted profile, application **and** one-off/cron **job** containers are started as
 `MIABI_RESTRICTED_UID:0` (GID `0`, the arbitrary-UID convention). Images that hard-depend on being
@@ -43,7 +49,7 @@ Relevant settings (see [Configuration](/docs/getting-started/configuration)):
 
 An app can pin the account its container runs as, instead of taking the image's default or the
 platform UID — the equivalent of `docker run --user`. Set **Run as user** in the app's **Settings**
-tab, `runAsUser` in a [manifest](/docs/cicd/manifest-reference), or `run_as_user` on the API. A
+tab, `security.runAsUser` in a [manifest](/docs/cicd/manifest-reference), or `run_as_user` on the API. A
 one-off or scheduled **job** can pin its own too, at creation; blank inherits the app's.
 
 Accepted forms are `uid`, `uid:gid`, `name` and `name:group`. Blank keeps the image's own user.
@@ -61,7 +67,7 @@ platform cannot verify it. Only a numeric uid is checkable. A gid of `0` is fine
 arbitrary-UID convention the profile itself uses.
 
 The rule is enforced when you save the app, job or manifest **and** again at deploy time. So if an
-admin moves a workspace to *Restricted* later, an app still carrying `runAsUser: root` fails its
+admin moves a workspace to *Restricted* later, an app still running as `root` fails its
 next deploy with a clear error rather than quietly continuing to run as root.
 
 This is the way to keep hardening for a workspace while accommodating an image that insists on its

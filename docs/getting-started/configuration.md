@@ -82,7 +82,7 @@ removes a protection:
 |----------|---------|-------------|
 | `MIABI_PLAN_ENFORCEMENT` | `true` | Enforce per-workspace [plan quotas and capability gates](/docs/workspaces/plans-and-quotas). Set `false` to make every quota check pass and every gate open |
 | `MIABI_SECURITY_ENFORCEMENT` | `true` | Stop a platform admin from raw-stopping or removing a Miabi-managed container from the admin node view. Set `false` only as a break-glass escape hatch |
-| `MIABI_UPDATE_CHECK` | `true` | Daily check for a newer Miabi release, surfaced as an admin notice. Notify-only — Miabi never upgrades itself. See [Upgrades](/docs/administration/upgrades) |
+| `MIABI_UPDATE_CHECK` | `true` | Daily check for a newer Miabi release, surfaced as an admin notice. Notify-only — Miabi never upgrades itself. See [Upgrades](/docs/upgrades/upgrading) |
 | `MIABI_PASSWORD_RESET_ENABLED` | `true` | Allow self-service password reset (the "forgot password" flow). A critical auth control, so it is fixed at boot — set `false` to disable it, and **restart** to apply. Not editable at runtime |
 
 ### GPUs
@@ -135,13 +135,17 @@ setting read-only, which is what keeps an infrastructure-as-code install authori
 
 ## Public app URLs
 
-Miabi can hand every app a ready-to-use public URL under a wildcard base domain (the "one-click URL"
-feature). Point `*.<base>` DNS at the gateway and set:
+Miabi can hand every app a ready-to-use public URL under a wildcard domain (the "one-click URL"
+feature). Each cluster has its own **external domain**, set under **Clusters → Edit**, and `*.<domain>`
+DNS points at that cluster's gateway. The default cluster's can also come from the environment:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `MIABI_EXTERNAL_BASE_DOMAIN` | — | Base domain for one-click app URLs, e.g. `apps.example.com` (point `*.apps.example.com` at the gateway) |
-| `MIABI_EXTERNAL_BASE_PROVIDER` | — | Goma certManager provider used for those app certs (empty = gateway default) |
+| `MIABI_EXTERNAL_BASE_DOMAIN` | — | The default cluster's external domain, e.g. `apps.example.com` (point `*.apps.example.com` at the gateway). Pins the field when set; unset leaves it to the cluster page |
+| `MIABI_EXTERNAL_BASE_PROVIDER` | — | Goma certManager provider for the default cluster's generated URLs (empty = gateway default). Pins the field when set |
+
+An install upgraded from a version that kept the domain in **Platform Settings** moves it onto the
+default cluster, and generated URLs keep their hostnames.
 
 ## Log store
 
@@ -259,7 +263,7 @@ tab. See [Registry](/docs/registry/administration).
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `MIABI_REGISTRY_ENABLED` | `false` | Run the built-in OCI registry. Pins the switch when set — `false` pins it *off*; unset leaves it to the console |
-| `MIABI_REGISTRY_HOST` | — | Registry hostname; pins the field when set. Unset ⇒ the console's value, else `registry.<MIABI_EXTERNAL_BASE_DOMAIN>`; with neither, image distribution fails. Must be a bare DNS hostname with an optional port (no scheme, no path, not a single label) |
+| `MIABI_REGISTRY_HOST` | — | Registry hostname; pins the field when set. Unset ⇒ the console's value, else `registry.<domain>` under the default cluster's external domain; with neither, image distribution fails. Must be a bare DNS hostname with an optional port (no scheme, no path, not a single label) |
 | `MIABI_REGISTRY_HTTPS_REDIRECT` | `true` | Redirect plaintext registry requests to HTTPS. Set `false` **only** when a TLS terminator (Cloudflare, nginx, a load balancer) sits in front of the gateway and the gateway's `proxy.trustedProxies` is not configured — otherwise the redirect loops and every push and pull fails. Configuring trusted proxies on the gateway is the better fix; see [Running behind a proxy](https://goma.jkaninda.dev/usermanual/running-behind-a-proxy.html) |
 | `MIABI_REGISTRY_STORAGE` | `filesystem` | `filesystem` or `s3`; pins the driver when set. `s3` is an Enterprise feature, verified when selected and at startup |
 | `MIABI_REGISTRY_IMAGE` | — | Override the registry image (default `registry:3`) |
@@ -296,6 +300,17 @@ tab. See [Registry](/docs/registry/administration).
 | `MIABI_FORCE_NON_ROOT_USER` | `false` | Force every app & job container to a non-root UID regardless of plan |
 | `MIABI_RESTRICTED_UID` | `100000` | The UID used by the restricted profile |
 | `MIABI_SECURITY_INIT_IMAGE` | `busybox:latest` | Init image used to prepare restricted containers |
+| `MIABI_CONTAINER_GRANTS_ENABLED` | `false` | Allow applications to be granted Linux capabilities and host devices. Off, nothing may be granted in **any** workspace — the system workspace included — and the console offers neither. See [Capabilities & devices](/docs/applications/capabilities-and-devices) |
+
+## Registration
+
+Self-service sign-up is off until you turn it on. See [Authentication](/docs/security/authentication).
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MIABI_REGISTRATION_ENABLED` | `false` | Open the `/register` page. Fixed at boot — **restart** to apply, and it is shown read-only in Platform Settings |
+| `MIABI_REQUIRE_EMAIL_VERIFICATION` | — | Require a new account to confirm its address before it can sign in. Unset leaves it editable in Platform Settings; set here it is pinned read-only. Sign-up refuses to open if this is on with no SMTP configured |
+| `MIABI_ALLOWED_SIGNUP_DOMAINS` | — | Comma-separated domain allow-list (`acme.com,acme.co.uk`); a subdomain matches its parent. Blank admits any domain. Same pinning rule as above |
 
 ## Licensing
 

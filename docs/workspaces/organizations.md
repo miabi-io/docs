@@ -24,6 +24,8 @@ later without a destructive migration. Until it does, use **workspaces** to mode
 teams, and clients — each keeps its strict
 [multi-tenant isolation](/docs/workspaces/overview#multi-tenant-isolation).
 
+![The organizations view listing member workspaces](/img/screenshots/organizations.png)
+
 ## Structure
 
 ```

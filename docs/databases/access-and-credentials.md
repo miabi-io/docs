@@ -10,6 +10,8 @@ Every managed database comes with **managed credentials** that Miabi generates,
 stores encrypted, and makes available to your apps. You rarely need to copy a password
 by hand — apps consume the credentials automatically.
 
+![A database's connection details and credentials](/img/screenshots/database-credentials.png)
+
 ## Managed credentials
 
 When a database is [provisioned](/docs/databases/provisioning), Miabi generates the

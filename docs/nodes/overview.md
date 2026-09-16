@@ -23,7 +23,7 @@ The local node is always present and is the default scheduling target. Remote no
 
 ## How scheduling works
 
-When you deploy an application, Miabi places its containers on an eligible node. Placement considers node availability, resource headroom, and any pinning or labels you've configured. Persistent volumes and databases are bound to the node where they live, so stateful workloads stay put unless you explicitly migrate them.
+When you create an app, database or volume, Miabi first picks its **location** (cluster) — the one you chose, else the workspace default — then a node inside it: the online, uncordoned node with the least container memory already placed on it, within the plan's node pool when [plan placement](/docs/workspaces/plans-and-quotas#placement) applies. Platform admins can pin a node instead. Persistent volumes and databases stay on the node where they live, so stateful workloads stay put unless you explicitly migrate them.
 
 :::note
 Because remote nodes connect over an outbound tunnel, a node behind NAT or a firewall works without port-forwarding. The control plane never needs to reach *into* the node.
@@ -36,6 +36,16 @@ By design, the **plain single-node** experience stays trivial. With one or more 
 Standalone nodes are **islands**: an app can reach a database on the same node, and Miabi refuses to attach it to one on a different node, because the workspace network is node-local and the name would not resolve.
 
 When you want apps and databases to reach each other **across hosts** — over an encrypted overlay, with service-based deployments and rescheduling — opt into **[cluster mode](/docs/nodes/cluster-mode)**, which Miabi builds on auto-detected Docker Swarm. It is entirely optional; standalone nodes remain fully supported.
+
+## Clusters
+
+Every node belongs to exactly one **cluster**, listed under **Clusters** in the admin console.
+
+- The **default cluster** holds the control-plane host and, once you enable Swarm, every node that joins it.
+- Any other node is a **standalone cluster** of its own. Adding a node creates one, and **Enable Swarm** on its page turns it into a swarm of its own — see [Swarm in other clusters](/docs/nodes/cluster-mode#swarm-in-other-clusters).
+- Joining a swarm moves a node, and everything placed on it, into that swarm's cluster; leaving gives the node a standalone cluster back.
+
+Give a cluster a location name and code (for example `Frankfurt` · `eu-central`) with **Edit** on its page. Upgrading an existing install creates these clusters automatically and changes no gateway, DNS record or Swarm object.
 
 ## Managed and unmanaged nodes
 
@@ -50,7 +60,7 @@ Miabi labels such nodes **unmanaged** and can install the agent on all of them f
 
 ## Managing nodes
 
-Node management is a **platform-admin** responsibility (Owner or Admin at the platform level). See [Platform Administration](/docs/administration/platform-admin) for who can add, remove, and configure nodes, and the [Architecture](/docs/concepts/architecture) page for how nodes fit into Miabi's overall design.
+Node management is a **platform-admin** responsibility (Owner or Admin at the platform level). See [Platform Administration](/docs/administration/platform-admin) for who can add, remove, and configure nodes, and the [Architecture](/docs/architecture/overview) page for how nodes fit into Miabi's overall design.
 
 ## Next steps
 

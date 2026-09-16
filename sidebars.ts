@@ -15,9 +15,18 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
+      label: 'Architecture',
+      items: [
+        'architecture/overview',
+        'architecture/request-lifecycle',
+        'architecture/deployment-pipeline',
+        'architecture/multi-node',
+      ],
+    },
+    {
+      type: 'category',
       label: 'Core Concepts',
       items: [
-        'concepts/architecture',
         'concepts/web-console',
         'concepts/resource-model',
       ],
@@ -34,6 +43,7 @@ const sidebars: SidebarsConfig = {
         'applications/releases-and-rollbacks',
         'applications/scaling-and-resources',
         'applications/gpus',
+        'applications/capabilities-and-devices',
         'applications/jobs',
         'applications/stacks',
         'applications/environments',

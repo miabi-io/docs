@@ -12,7 +12,20 @@ Miabi authenticates users with a straightforward account model and stateless **J
 
 ## Registration
 
-New users sign up with an email address and password, and are assigned a unique **username** (a lowercase handle derived from the email, editable on the profile page). After registering, each user automatically receives a **personal workspace** to start working in immediately. Users can later be invited into shared workspaces — see [Members & Invitations](/docs/workspaces/members-and-invitations).
+**Self-service sign-up is off by default.** On a fresh install accounts are created by a platform admin from **Platform Admin → Users**, and there is no `/register` page. A self-hosted platform should not begin accepting accounts from anyone who can reach it just because it was upgraded.
+
+To open it, start the platform with `MIABI_REGISTRATION_ENABLED=true` and restart. Like password reset below, it is fixed at boot rather than flippable at runtime: it decides whether a stranger can become a principal, so opening it takes control of the deployment rather than of an admin session. Once open, two further controls live in **Platform Admin → Platform Settings**:
+
+- **Require email verification** — a new account must confirm its address before it can sign in. Sign-up refuses to open at all if this is on and no [SMTP server](/docs/getting-started/configuration) is configured, since the account would be created, unable to sign in, and unable to verify itself.
+- **Allowed signup domains** — a comma-separated allow-list (`acme.com`); a subdomain matches its parent. Blank admits any domain.
+
+Either can also be set from the environment (`MIABI_REQUIRE_EMAIL_VERIFICATION`, `MIABI_ALLOWED_SIGNUP_DOMAINS`), which pins it read-only in the console so an IaC install stays authoritative.
+
+Whoever creates it, a new user gets a unique **username** (a lowercase handle derived from the email, editable on the profile page) and a **personal workspace** to start working in. Users can later be invited into shared workspaces — see [Members & Invitations](/docs/workspaces/members-and-invitations).
+
+:::note
+Sign-up never tells an anonymous caller whether an address is already registered or whether a domain is on the allow-list — both answer exactly as a successful sign-up does. Otherwise the form could be used to enumerate who has an account.
+:::
 
 ## Login
 

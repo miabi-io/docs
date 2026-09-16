@@ -554,8 +554,3 @@ curl https://your-domain/readyz
 
 The interactive API reference is served at `https://your-domain/docs`.
 
-## Upgrading
-
-Miabi applies schema migrations and ordered data-upgrade steps automatically on startup, so
-upgrading is just pulling a newer image and recreating the containers. See
-[Upgrades](/docs/administration/upgrades) for the full procedure — and always back up first.

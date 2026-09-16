@@ -39,7 +39,7 @@ number here. The two must agree.
 
 | Method | Public URL | Needs | Best for |
 |---|---|---|---|
-| **External access** | `<label>.<base-domain>` (generated) | An admin has set the platform base domain | Getting a working HTTPS URL in one click — previews, internal tools, demos |
+| **External access** | `<label>.<base-domain>` (generated) | An admin has set an external domain on the app's cluster | Getting a working HTTPS URL in one click — previews, internal tools, demos |
 | **Custom domain** | Whatever you own | A [verified domain](/docs/networking/domains) | Anything you want people to type or bookmark |
 | **Host port** | `node-ip:port` | Platform-admin approval | Non-HTTP protocols, or a service that cannot sit behind the gateway |
 
@@ -51,8 +51,8 @@ publishes a port on the node itself and bypasses all of that.
 
 ## Method 1 — One-click external access
 
-The fastest path to a working HTTPS URL. Miabi generates a hostname under the platform's
-wildcard domain and creates the route and certificate for you.
+The fastest path to a working HTTPS URL. Miabi generates a hostname under the wildcard
+domain of the cluster the app runs in, and creates the route and certificate for you.
 
 **Application → Network → External access.** Tick the HTTP ports you want reachable and
 press **Save external access**.
@@ -71,14 +71,22 @@ rename the app.
 
 ### If the card says it is unavailable
 
-External access needs a platform admin to set the **external base domain** first, in
-**Platform settings**. Until then the card explains that and offers nothing to tick. See
-[Platform Settings](/docs/operations/platform-settings).
+External access needs an **external domain** on the app's cluster. Each cluster has its
+own, set by a platform admin under **Clusters → Edit**. In a location without one the card
+explains that and offers nothing to tick. See
+[Cluster mode](/docs/nodes/cluster-mode#external-access).
 
 ### Turning it off
 
 **Disable external access** removes the generated routes and the app stops answering on
 those hostnames. The label is kept, so re-enabling later gives you the same URL back.
+
+### When the domain changes
+
+If an admin changes the cluster's external domain, every generated URL in that cluster moves
+to the new domain with the same label: `<label>.<old-domain>` becomes `<label>.<new-domain>`,
+and the old hostname stops answering. Clearing the domain removes the generated routes.
+Custom domains are not affected.
 
 ---
 
