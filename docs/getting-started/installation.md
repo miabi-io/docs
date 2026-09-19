@@ -195,7 +195,7 @@ spec:
     gomaConfigEncryptionKey: …           # encrypts gateway config; safe to rotate
 
   networking:
-    proxy:    { name: miabi,          subnet: 10.63.0.0/16 }
+    proxy:    { name: miabi,          subnet: 10.63.0.0/16 }   # add ipv6: true for dual-stack
     internal: { name: miabi-internal, subnet: 10.62.0.0/16 }
 ```
 

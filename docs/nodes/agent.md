@@ -27,6 +27,31 @@ The agent has one job — let the control plane drive Docker on the remote host.
 
 It runs no scheduling logic of its own — all decisions live in the control plane. That keeps the agent tiny and easy to audit.
 
+### The agent needs no host paths mounted
+
+The install command mounts **only** the Docker socket, and that is deliberate. In particular you do
+**not** need to bind `/proc` or `/mnt` to give Miabi visibility into the host:
+
+- **Host CPU and memory.** `/proc/stat` and `/proc/meminfo` are not namespaced — a container reads
+  the *host's* values. Miabi samples a node by running a short-lived `busybox` on it through the
+  Docker API, so a node's real CPU and memory appear on its node page and on the admin dashboard
+  with no extra mounts and no agent upgrade. The figure is cached for up to a minute, because each
+  sample costs a container start.
+
+  :::note A node that is itself a container
+  `/proc` is not **cgroup**-aware: a node running as a container or a memory-limited VM reports the
+  machine underneath it, not its own limit. Miabi checks each sample against Docker's `MemTotal`
+  (which *is* cgroup-aware) and, when they disagree, labels the node page **"Physical host this node
+  runs on"** and leaves that node out of the fleet totals — otherwise several nodes on one box would
+  each add that box's whole usage.
+  :::
+- **[Storage class](/docs/storage/storage-classes) directories.** A bind's source path is resolved
+  by the node's own Docker daemon, so `/mnt/ssd1` means the node's `/mnt/ssd1` — the agent never
+  touches it.
+
+Both work identically on nodes reached without an agent at all (a swarm member, or a node exposed
+over TCP), because both go through the Docker API rather than through the agent's own filesystem.
+
 ## Security model
 
 The agent is designed to be safe to run on hosts behind NAT or a firewall:

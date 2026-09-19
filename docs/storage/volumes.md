@@ -69,6 +69,15 @@ For a replicated service, back it with a **shared (RWX)** volume or a cluster-wi
 plain local volume can't follow a task that Swarm reschedules onto another node.
 :::
 
+### Where a local volume's data lives
+
+By default, on the disk the Docker engine keeps its own data on. If your operator has registered
+[storage classes](/docs/storage/storage-classes) — one per disk on the server, say — the create form
+gains a **Storage** field listing the ones your plan allows, by name. You never supply a path: the
+class you pick decides the directory, and the platform derives the rest.
+
+A volume's storage class is fixed once it is created; its data lives there.
+
 ## Mounting a volume in an app
 
 Volumes are attached to applications through a **mount path** — the directory inside the

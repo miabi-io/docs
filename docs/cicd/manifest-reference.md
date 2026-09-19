@@ -315,18 +315,36 @@ kind: Volume
 metadata:
   name: web-data
 spec:
-  size: 5Gi              # accepted, but see below
+  size: 5Gi              # declared capacity, recorded for quota
+  storageClass: ssd-fast # optional; see below
   placement:
     location: eu-central # optional; the workspace default when omitted
 ```
 
-Volumes are compared by **presence and location only** — an existing volume never shows as drift, since
-its attributes are fixed at creation.
+| Field | Converges? | Notes |
+|---|---|---|
+| `size` | **Yes** | A declared number for quota accounting, so changing it moves no data. Shrinking it below the volume's measured usage is refused. |
+| `storageClass` | **No — refused** | The data physically lives there. |
+| `placement.location` | **No — refused** | Same reason. |
 
-:::caution
-`spec.size` is accepted by the parser but **not currently applied**: a volume created from a manifest
-is always unbounded. Set a size through the console or the API if you need one recorded for quota.
-:::
+### `storageClass`
+
+Names the [storage class](/docs/storage/storage-classes) the volume is created on — which of the
+operator's disks holds its data.
+
+**Omit it and the manifest stays portable**: an unstated class means "whatever this install
+decides", not `default`, so the same repository applies cleanly to installs whose disks differ, and
+a volume that landed on a class never shows as drift against a manifest silent about it.
+
+State it and it is enforced — and then it is immutable. Changing it fails the apply:
+
+```
+volume "web-data" is on storage class "ssd-fast"; moving it to "bulk" would relocate its data.
+Delete it and apply again, or migrate it
+```
+
+Converging that would mean deleting and recreating the volume, destroying its data from a
+`git push`. Delete the volume deliberately and re-apply if that is what you want.
 
 Shared (NFS/CIFS) and host-path volumes, and placement on a specific node, are not
 manifest-expressible — create those through the API or console.

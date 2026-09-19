@@ -42,7 +42,7 @@ does nothing.
 | `registry` | The built-in OCI registry: whether it runs, its hostname, and its storage driver. |
 | `admin` | The first admin account's email. |
 | `secrets` | Every credential the install holds, in plaintext — see below. |
-| `networking` | The two Docker networks, the managed subnet pool, the host-port range, one-click app URLs, and the managed-DNS interval. |
+| `networking` | The two Docker networks (including their address family — see [IPv6](/docs/networking/networks-and-subnets#ipv6)), the managed subnet pool, the host-port range, one-click app URLs, and the managed-DNS interval. |
 | `backup` | The platform's own backup destination, schedule, encryption and retention (Enterprise). |
 | `license` | Path to a signed Enterprise license on disk, installed only while the database holds none. |
 | `runnerImage` | The build-runner image shown in runner enrollment commands (`MIABI_RUNNER_IMAGE`). The stack does not run it. |

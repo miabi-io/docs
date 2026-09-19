@@ -304,6 +304,8 @@ tab. See [Registry](/docs/registry/administration).
 | `MIABI_CONTROL_URL` | falls back to `MIABI_API_URL` | Public URL remote nodes reach the control plane at |
 | `MIABI_NETWORK_POOL_CIDR` | `10.64.0.0/12` | Address pool workspace networks are carved from. Must not overlap the shared `miabi` network (`10.63.0.0/16` by default — set with `miabi setup --subnet` or `spec.networking.proxy.subnet`), your LAN or a VPN |
 | `MIABI_NETWORK_SUBNET_PREFIX` | `24` | Prefix length per workspace network (a `/12` pool ⇒ 4096 networks) |
+| `MIABI_NETWORK_IPV6` | `false` | Give every Miabi-created network a dual-stack address space. Needs Docker Engine 26+ unless `MIABI_NETWORK_IPV6_ULA_PREFIX` is set; on an older engine Miabi logs why and leaves it off rather than failing every network |
+| `MIABI_NETWORK_IPV6_ULA_PREFIX` | *(unset)* | Pin each network's `/64` under this ULA prefix (`/48` or shorter, e.g. `fd42:6d69:6162::/48`), derived from its IPv4 subnet. Unset lets Docker assign one |
 | `MIABI_HOST_PORT_MIN` | `1024` | Lowest host port Miabi may allocate |
 | `MIABI_HOST_PORT_MAX` | `65535` | Highest host port Miabi may allocate |
 | `MIABI_FORWARD_TTL_MINUTES` | `30` | How long a temporary database port-forward lives |
