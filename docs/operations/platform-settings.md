@@ -68,7 +68,10 @@ Some keys are handled specially:
 - **Boot-time access controls.** **Allow self-service sign-up** (`MIABI_REGISTRATION_ENABLED`) and **Allow
   self-service password reset** (`MIABI_PASSWORD_RESET_ENABLED`) aren't stored settings. The Registration
   & access card shows them read-only — see [Authentication](/docs/security/authentication).
-- **Read-only.** The **Install ID** is system-managed and shown under **Deployment**.
+- **Read-only.** The **Install ID** is system-managed and shown under **Deployment**. The
+  **Encryption** and **Networking** cards are read-only too: they report what boot configuration
+  produced — encryption posture, and the address family, subnet pool and shared proxy network of
+  [Networks & subnets](/docs/networking/networks-and-subnets#seeing-what-a-network-actually-got).
 - **Reserved.** Keys named `cluster_name` or starting with `app.`, `image.` or `brand.` belong to other
   admin pages. They are hidden from this list and refused by the settings API.
 

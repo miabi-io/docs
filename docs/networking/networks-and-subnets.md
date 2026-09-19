@@ -187,6 +187,84 @@ environment,
 set `MIABI_NETWORK_POOL_CIDR` to a free range — for example a spare `/16` like `10.99.0.0/16`.
 :::
 
+## IPv6
+
+Every Miabi-created network is IPv4-only by default, and **says so explicitly** — a network that
+inherits the daemon's own default follows a setting nobody chose here, which is how a host with IPv6
+defaults enabled can end up giving containers routable addresses nobody reasoned about.
+
+Turn it on with `MIABI_NETWORK_IPV6=true`, or in the install manifest:
+
+```yaml
+spec:
+  networking:
+    proxy:    { name: miabi,          subnet: 10.63.0.0/16, ipv6: true }
+    internal: { name: miabi-internal, subnet: 10.62.0.0/16 }
+    pool:
+      cidr: 10.64.0.0/12
+      # ipv6UlaPrefix: fd42:6d69:6162::/48
+```
+
+The manifest's `ipv6` drives both halves: the platform's `miabi` network **and** the workspace
+networks the server creates, so you cannot end up with a dual-stack proxy network in front of
+single-stack app networks.
+
+### Seeing what a network actually got
+
+The stored record says what Miabi *asked* for; the engine decides what exists. Two places show the
+engine's answer:
+
+- **A workspace's Networks page** — the info action on a row opens the network's details: driver and
+  scope, the IPv4 subnet and gateway, whether IPv6 is on, and the IPv6 subnet and gateway. The same
+  action sits on an application's **Networks** table.
+- **Admin → Platform Settings → Networking** — whether IPv6 is on for the install, how each `/64` is
+  chosen, the workspace subnet pool and the shared proxy network. It distinguishes **requested** from
+  **active**: with `MIABI_NETWORK_IPV6=true` on an engine that cannot honour it, the page says so
+  rather than showing a switch that looks stuck.
+
+A cluster overlay only exists on a node once one of its containers attaches there, so a network whose
+details read "not present on the control-plane node" is ordinary rather than broken.
+
+Once a container is running, its **Network** tab lists the address it was actually given. The IPv6
+column appears only when a container has one — which is also how you spot a container started before
+IPv6 was switched on: its network is dual-stack, and it is not.
+
+:::note Addresses are ephemeral
+A container's address changes on every redeploy, in both families. Address an app by its hostname or
+alias, never by IP.
+:::
+
+### Who picks the `/64`
+
+| | Address chosen by | Needs | Addresses are |
+|---|---|---|---|
+| Default (no ULA prefix) | Docker | **Engine 26+** | assigned by the daemon |
+| `ipv6UlaPrefix` set | Miabi, derived from the IPv4 subnet | Engine 25+ | stable and predictable |
+
+Deriving maps the IPv4 subnet onto a `/64` under your prefix, so the two stacks line up:
+`10.64.5.0/24` under `fd42:6d69:6162::/48` becomes `fd42:6d69:6162:4005::/64`. The same network gets
+the same range on every node and after every recreate, which is what makes a firewall rule possible
+to write. The mapping is unique across the whole default pool, so no two networks collide.
+
+:::caution Engine 25
+Docker only assigns an IPv6 range itself from Engine 26. On Engine 25, enabling IPv6 **without** a ULA
+prefix would make every network create fail — so Miabi refuses to enable it, logs the engine version
+and the two ways forward, and carries on in IPv4. Set `ipv6UlaPrefix` to use IPv6 on Engine 25.
+:::
+
+:::caution Cluster overlays stay IPv4
+This covers **bridge** networks — a single-node install, and each node's local networks. Swarm
+overlay networks are not dual-stack yet, so a cluster's cross-node traffic stays IPv4 whatever this
+setting says.
+:::
+
+:::note Containers get routable addresses
+A ULA (`fd00::/8`) range is private, like `10.0.0.0/8`. But enabling IPv6 changes what a container can
+reach and be reached on, and Miabi has no IPv6 firewall policy of its own yet
+(the node network policy is still on the roadmap). Treat it as you would opening a new
+address family on any host.
+:::
+
 ## Monitoring the pool
 
 Pool utilization is visible on the **admin dashboard** (a *Subnet pool* panel showing used vs.

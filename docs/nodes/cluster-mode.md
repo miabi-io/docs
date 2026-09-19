@@ -291,6 +291,12 @@ Cluster mode improves placement and networking; it does **not** automatically mo
 Start single-node. Adopt cluster mode when you actually have multiple nodes that need to cooperate — you can enable it later without rebuilding your apps.
 :::
 
+:::note Overlays are IPv4
+[IPv6](/docs/networking/networks-and-subnets#ipv6) covers bridge networks — a single-node install and
+each node's local networks. A cluster's overlays are not dual-stack yet, so cross-node traffic stays
+IPv4 even with IPv6 switched on.
+:::
+
 ## Related
 
 - [Nodes overview](/docs/nodes/overview)

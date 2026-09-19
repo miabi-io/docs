@@ -108,6 +108,7 @@ const sidebars: SidebarsConfig = {
       label: 'Storage & Backups',
       items: [
         'storage/volumes',
+        'storage/storage-classes',
         'storage/backups',
         'storage/backup-targets',
       ],
