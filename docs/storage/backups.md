@@ -34,8 +34,8 @@ workspace.
 ## Database backups
 
 Database backups live on the database's own page. Open **Databases**, select the instance, and go to
-its **Backups** tab. The tab has three parts: **Recovery points** for the whole instance, then
-**Backups** and **Backup schedules** for one logical database at a time.
+its **Backups** tab, which holds **Backups** and **Backup schedules** for one logical database at a
+time. Whole-instance **Recovery points** have a tab of their own next to it.
 
 A backup goes to the workspace's S3 target when one is configured, and otherwise to the local backup
 volume. There is no destination to choose. Encryption follows the workspace
@@ -89,7 +89,15 @@ contend for CPU and I/O at the same moment.
 A **recovery point** backs up **every database on an instance together**, so they can be restored as
 a set: an app whose data spans several databases comes back consistent. Recovery points are stored in
 object storage so they survive losing the host. They need the workspace S3 target, and the
-**Recovery points** card tells you so until one is configured.
+**Recovery points** tab tells you so until one is configured.
+
+:::info Enterprise
+Taking, adopting and scheduling recovery points is an
+[Enterprise](/docs/editions/community-vs-enterprise) feature. Listing, verifying, restoring,
+downloading a recovery kit and deleting existing recovery points work in every edition, so a license
+you never bought — or one that has lapsed — never puts a recovery point out of reach. Per-database
+backups above are free.
+:::
 
 ### Taking a recovery point
 
