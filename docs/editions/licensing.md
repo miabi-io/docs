@@ -59,15 +59,15 @@ Besides feature flags, a license can carry two caps. Where it sets neither, Ente
 
 | Limit | Effect | Community |
 |---|---|---|
-| **Nodes** | Registering a node beyond the cap is refused. Nodes already registered keep working, and the License screen warns when usage is over the cap. | Unlimited |
+| **Nodes** | Registering a node beyond the cap is refused. Nodes already registered keep working, and the License screen warns when usage is over the cap. | 3 |
 | **Plans** | Creating a plan beyond the cap is refused. | 3 |
 
 The commercial tiers set them as follows:
 
 | Tier | Nodes | Plans |
 |---|---|---|
-| Professional | 3 | 5 |
-| Business | 10 | 15 |
+| Professional | 10 | 5 |
+| Business | 25 | 15 |
 | Enterprise | Unlimited | Unlimited |
 
 The License screen shows current usage against both.
