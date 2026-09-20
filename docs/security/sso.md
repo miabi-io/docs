@@ -28,7 +28,9 @@ built-in option nor through the generic OIDC path.
 4. For generic OIDC, supply the **Issuer** (the OIDC discovery base URL, e.g. `https://id.example.com`) so Miabi can read the provider's endpoints. You can override the auth, token and userinfo URLs, the email/name/username claims, and the scopes.
 5. Register Miabi's callback URL with your provider. It isn't shown in the form: it is `https://<your-miabi-host>/api/v1/auth/oauth/<name>/callback`, where `<name>` is the provider's **Name**.
 6. Optionally restrict **Allowed domains**, and set **Auto-join workspace** so new SSO users join a workspace with a chosen role.
-7. Make sure **Enabled** is checked, then save. There is no connection test, so try signing in.
+7. Optionally pick an **Organization**. Accounts registered through this provider then belong to that
+   [tenant realm](/docs/workspaces/organizations) — see [Which organization SSO users land in](#which-organization-sso-users-land-in).
+8. Make sure **Enabled** is checked, then save. There is no connection test, so try signing in.
 
 The client secret is treated as a secret and is [encrypted at rest](/docs/security/encryption).
 
@@ -39,6 +41,20 @@ Once a provider is configured, users see a **Sign in with…** button on the log
 :::note
 SSO governs how users sign in. Their permissions inside a workspace are still determined by their [role](/docs/workspaces/roles-and-permissions).
 :::
+
+## Which organization SSO users land in
+
+An account created through a provider belongs to the provider's
+[organization](/docs/workspaces/organizations), so a customer's people sign in with the customer's
+identity provider and land in the customer's realm. A provider with no organization registers into
+the default one.
+
+- **Only registration decides a realm.** Signing in never moves an account that already exists — a
+  person who already belongs to one organization stays there, whichever provider they authenticate
+  with.
+- **A provider's organization is set once**, when it is created, and is read-only afterwards.
+  Changing it would only split that provider's users across two realms, since the ones already
+  registered do not move.
 
 ## Community vs Enterprise
 

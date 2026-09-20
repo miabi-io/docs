@@ -8,7 +8,7 @@ description: Who the platform admin is, the first-user rule, and what they manag
 
 The **platform admin** (super-admin) is the account responsible for the Miabi instance as a whole — the parts of the system that sit *above* any single workspace.
 
-![Platform admin console](/img/screenshots/platform-admin.png)
+![The platform admin dashboard](/img/screenshots/admin-dashboard.png)
 
 ## How the platform admin is created
 
@@ -67,6 +67,7 @@ dashboard. The sidebar is grouped as below, and this table is the map.
 
 | Section | Responsibility |
 |---|---|
+| **Organizations** | Tenant realms owning workspaces, users, their own SSO and their own locations (Enterprise beyond the built-in one). See [Organizations](/docs/workspaces/organizations). |
 | **Workspaces** | Cross-workspace visibility, privileged workspaces, and key rotation. See [Workspace Oversight](/docs/administration/workspace-oversight). |
 | **Plans** | Define what a workspace may consume and which capabilities it unlocks. See [Plans & Quotas](/docs/workspaces/plans-and-quotas). |
 | **Database sizes** | Named CPU and memory sizes plans offer (Enterprise). See [Database sizes](/docs/workspaces/plans-and-quotas#database-sizes). |
@@ -79,9 +80,15 @@ dashboard. The sidebar is grouped as below, and this table is the map.
 | **Clusters** | Standalone and swarm clusters, the locations workspaces deploy to. See [Cluster Mode](/docs/nodes/cluster-mode). |
 | **Nodes** | The fleet: status, health, pools, container inventory, housekeeping and Docker import. See [Nodes & Capacity](/docs/administration/nodes-and-capacity). |
 | **Ports** | Every host port on every node, and the host-port approval queue. See [Workspace Oversight](/docs/administration/workspace-oversight#moderating-host-ports). |
+| **Storage classes** | The disks volumes may be created on, beyond Docker's own data root (Enterprise). See [Storage classes](/docs/storage/storage-classes). |
 | **Kernel grants** | Every application holding an extra Linux capability or host device. See [Capabilities & devices](/docs/applications/capabilities-and-devices). |
 | **Shared Runners** | The platform-shared build machines pipelines execute on. See [Runners](/docs/cicd/runners). |
 | **Container Registry** | The built-in multi-tenant OCI registry. See [Registry administration](/docs/registry/administration). |
+
+### Networking
+
+| Section | Responsibility |
+|---|---|
 | **Domains** | Verify, force-verify or ban a domain in any workspace. See [Workspace Oversight](/docs/administration/workspace-oversight#moderating-domains). |
 | **Routes** | Every route on the instance. See [Workspace Oversight](/docs/administration/workspace-oversight#moderating-routes). |
 

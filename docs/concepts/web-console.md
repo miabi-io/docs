@@ -33,10 +33,18 @@ nothing extra to deploy.
 
 Platform administration is a **separate console** with its own sidebar, not a section appended to
 the workspace menu. A platform admin enters it from the workspace switcher → **Platform admin**, and
-leaves it the same way. Its sections are **Overview** (dashboard, events, jobs, reconciliation),
-**Identity**, **Tenants**, **Infrastructure** (clusters, nodes, ports, kernel grants, shared runners,
-registry, domains, routes), **Platform** (settings, branding, deployment config, platform backup) and
-**Enterprise**. See [Platform Admin](/docs/administration/platform-admin).
+leaves it the same way.
+
+![The platform admin dashboard](/img/screenshots/admin-dashboard.png)
+
+It opens on a dashboard of instance health: an overall status with the reasons behind it, nodes and
+clusters, workers, the control plane's own memory and goroutines, an inventory of everything on the
+instance, and recent activity. Its sections are **Overview** (dashboard, events, jobs,
+reconciliation), **Identity**, **Tenants** (organizations, workspaces, plans, database sizes,
+announcements), **Infrastructure** (clusters, nodes, ports, storage classes, kernel grants, shared
+runners, registry), **Networking** (domains, routes), **Platform** (settings, branding, deployment
+config, platform backup) and **Enterprise**. See
+[Platform Admin](/docs/administration/platform-admin).
 
 ## Search and jump
 
