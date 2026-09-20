@@ -40,6 +40,9 @@ changes, and the storage-class field never appears in the volume form.
 1. Mount the disk on the node — via `/etc/fstab` or a systemd mount — and create the directory
    Miabi will own, for example `mkdir -p /mnt/ssd1/miabi`.
 2. Go to **Admin → Infrastructure → Storage classes** and select **New storage class**.
+
+   ![Storage classes registered on a node](/img/screenshots/admin-storage-classes.png)
+
 3. Fill in:
 
 | Field | Meaning |
@@ -108,6 +111,23 @@ Delete it and apply again, or migrate it
 
 That is deliberate. Converging it would mean deleting and recreating the volume — destroying data
 from a `git push`.
+
+## Choosing a class for a database
+
+A managed database keeps its data in a volume too, and it lands on a class the same way. When more
+than one is available, the **Create database** form shows the same **Storage** field; leave it alone
+and the data goes to the plan's default class, then the node's. An instance's class is shown on its
+detail page beside the data volume.
+
+It is fixed at creation, for the same reason a volume's is: the data is already on that disk, and
+changing the field would have to move it. To put an existing database on another disk, take a
+[backup](/docs/storage/backups), create a new instance on the class you want, and restore into it.
+
+:::note
+A database declared in a [manifest](/docs/cicd/manifest-reference) always uses the workspace's
+default class — `storageClass` is a volume field, not a database one. Choose the class in the
+console or the API when a database needs a specific disk.
+:::
 
 ## Per-plan storage classes
 
