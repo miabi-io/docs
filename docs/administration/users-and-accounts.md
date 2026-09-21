@@ -82,11 +82,15 @@ Two limits can be overridden per account, on top of the platform-wide defaults:
 | **Workspaces owned** | How many workspaces this user may create and own |
 | **Workspace memberships** | How many workspaces they may belong to as a non-owner |
 
-Leave both unset to inherit the platform defaults, the
-[platform settings](/docs/operations/platform-settings) `max_workspaces_per_user` and
-`max_workspace_memberships_per_user` (both `3`; `0` for memberships means unlimited). Per-user
-overrides are an [Enterprise](/docs/editions/community-vs-enterprise) capability; the
-platform-wide limits are always available.
+Leave both unset to inherit the limits of the user's
+[organization](/docs/workspaces/organizations#workspace-limits), which falls back to the
+[platform settings](/docs/operations/platform-settings) defaults (`10` owned, unlimited joined).
+`-1` is unlimited and `0` allows none, the same convention as everywhere else.
+
+So a limit resolves in this order: **this user's override → their organization → the platform
+setting**. The first two are [Enterprise](/docs/editions/community-vs-enterprise) capabilities and are
+skipped without a licence, which leaves the platform setting in charge — it is the one that always
+applies.
 
 ## Deleting an account
 

@@ -55,7 +55,7 @@ workspaces and apply to the whole instance.
 | | **Allow custom container labels** (`custom_labels_enabled`) | Fleet-wide kill-switch for [custom container labels](/docs/applications/container-labels). When off, the feature is disabled everywhere regardless of any plan capability; when on, the per-plan capability decides |
 | | **Allow pipelines from .miabi/pipeline.yaml** (`repo_pipelines_enabled`) | Fleet-wide kill-switch for adopting a pipeline from a repository; when off, git apps always build directly |
 | | **Control manager** (`control_manager_mode`) | `off`, `observe` (default) or `enforce` — see [Reconciliation](/docs/operations/reconciliation) |
-| Limits & retention | **Max workspaces per user — owned** / **— joined as member** | Per-user caps (default `3` each; `0` = unlimited) |
+| Limits & retention | **Default max workspaces per user — owned** / **— joined as member** | The per-user caps for the whole install. With an Enterprise licence an [organization](/docs/workspaces/organizations#workspace-limits) may carry its own instead. Defaults: `10` owned, unlimited joined. `-1` = unlimited, `0` = none |
 | | **Audit log retention (days)** (`audit_log_retention_days`) | See [Audit Log](/docs/operations/audit-log#retention) (default `90`; `0` keeps entries forever) |
 | Resource limits | **Max CPU cores per app** / **Max memory per app, MB** | Per-application caps (`0` = unlimited) |
 
