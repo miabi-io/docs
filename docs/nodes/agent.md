@@ -230,7 +230,46 @@ self-signed certificate working cannot quietly become permanent. See
 
 Back in the console, the node flips to **online** once the tunnel is up and the Docker socket responds. From there it becomes an eligible scheduling target. If it stays offline, check the agent's logs, the host's outbound network access, and that the token is the node's current one — after **Regenerate token**, the old token is rejected.
 
+## Keeping the agent current
+
+Miabi checks once a day whether a newer agent has been released, and shows the answer on
+**Admin → Nodes**. It only ever notifies — it never upgrades an agent for you. The agent is the
+control plane's only route to its host, so an agent that replaced itself and came back broken would
+take the node's remote management with it. That is a decision for a human with a shell.
+
+The **Agent** column carries one of two badges:
+
+| Badge | Meaning | Urgency |
+|---|---|---|
+| **Update** | A newer release exists. | None. This agent is supported. |
+| **Unsupported** | The agent is older than the minimum this control plane supports (**0.4.0**). | Upgrade it. |
+
+An agent below the minimum still connects, deploys and reports healthy — but it does not forward its
+node gateway's request events, so the node contributes nothing to
+[Workspace Analytics](/docs/operations/analytics) and its traffic is simply missing from the graphs.
+
+A node with no badge is either current or has never reported a version. Miabi deliberately shows
+nothing rather than guessing: an install that cannot reach GitHub must not have its whole fleet
+painted as out of date. The **Unsupported** verdict is decided locally against the minimum, so it
+stays accurate on an air-gapped install where the release check has never succeeded.
+
+Only stable releases are offered. Release candidates and betas are filtered out by tag as well as by
+GitHub's own prerelease flag, so a candidate cannot reach your nodes because someone forgot to tick a
+box.
+
+### Upgrading an agent
+
+On the node's page, **Upgrade** beside the agent version produces a command to run on that host. It
+reads the running agent's token back out of its own container, so you do not need to regenerate one,
+and it pulls the new image **before** removing the old container — a pull that failed after the agent
+was gone would leave you without a way back into the node.
+
+If you installed the agent with Docker Compose, prefer your own `docker compose pull && docker
+compose up -d`: it preserves the environment you configured, which a hand-written `docker run` does
+not.
+
 ## Related
 
 - [Adding a node](/docs/nodes/adding-a-node)
 - [Nodes overview](/docs/nodes/overview)
+- [Upgrading Miabi](/docs/upgrades/upgrading)
