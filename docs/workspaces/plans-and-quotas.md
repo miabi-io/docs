@@ -116,6 +116,26 @@ Database sizes need an Enterprise licence with database sizes (Business and up).
 enforced only while plan enforcement is on; without it, sizes are optional everywhere.
 :::
 
+## Platform runners
+
+A plan's **platform runners** capability decides whether its workspaces may build on the
+[platform-shared runner pool](/docs/cicd/runners#managing-shared-runners) at all. With Enterprise,
+the plan's page also has a **Shared Runners** section naming *which* of those runners it offers —
+useful when one shared machine is bigger, GPU-equipped, or reserved for a particular tier.
+
+- With none checked the plan offers the whole pool, which is how every plan behaves until you
+  narrow one.
+- A workspace's **own** runners are never bound by its plan. They are the tenant's machines, and a
+  build prefers them over the shared pool anyway.
+- A shared runner a plan still names cannot be deleted; remove it from the plan first.
+
+A platform admin can override the runners offered to a single workspace from **Admin → Workspaces**.
+
+:::note Enterprise
+Naming specific runners needs an Enterprise licence with platform runners (Business and up), and is
+enforced only while plan enforcement is on. The capability itself works in every edition.
+:::
+
 ## Viewing usage
 
 Open the workspace's **Usage** tab (**Workspace → Settings → Usage**) to see live consumption and current usage against each quota. Usage bars highlight resources approaching their limit so you can act before a creation request is rejected.

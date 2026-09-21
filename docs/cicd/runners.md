@@ -120,6 +120,14 @@ Administrators can register **platform-shared** runners under **Admin → Runner
 
 The Community edition allows up to **2** platform-shared runners; the Enterprise *platform runners* entitlement lifts that limit. Workspace-owned runners count against the workspace plan's **runner** limit instead, when plan enforcement is on. A workspace's access to the shared pool is governed by its plan's *platform runners* capability.
 
+### Offering only some runners to a plan
+
+With Enterprise, a plan can name **which** shared runners it offers, under **Admin → Plans → (plan) → Shared Runners** — the same shape as binding a plan to locations or database sizes. A plan that names none offers the whole pool, which is how every plan behaves until you narrow one, and the capability still decides whether the pool is in scope at all.
+
+This binds only the platform's own runners. A workspace's own runners are its machines, so a plan never restricts them — and its builds prefer them anyway. An admin can override the list for a single workspace under **Admin → Workspaces → (workspace)**.
+
+A shared runner a plan still names cannot be deleted; remove it from the plan first, so narrowing a plan to nothing is never a side effect of tidying the pool.
+
 ## Related
 
 - [Pipelines](/docs/cicd/pipelines)
