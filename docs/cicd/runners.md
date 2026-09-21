@@ -78,7 +78,9 @@ has been doing; the job's step output itself goes to the control plane.
 
 ## Labels and targeting
 
-Runners carry free-form **labels** — for example `arch=amd64`, `buildkit`, or `gpu` — and report their OS and architecture on connect. The scheduler can match a job against required labels, only considering runners whose label set contains all of them, and among the eligible runners picks the **least-loaded** one (fewest active leases, up to each runner's declared concurrency).
+Runners carry free-form **labels** — for example `arch=amd64`, `buildkit`, or `gpu` — and report their OS and architecture on connect. The scheduler can match a job against required labels, only considering runners whose label set contains all of them.
+
+Among the eligible runners it prefers **your workspace's own runners over the platform-shared pool**, ahead of load: a runner you registered has your warm build cache and sits on your network, so a job is queued on it rather than relocated. The shared pool takes the job when your own runners are saturated, offline, or you have none. Within either group the **least-loaded** runner wins (fewest active leases, up to each runner's declared concurrency).
 
 Pipelines and deploys do not request labels yet, so today every job matches any in-scope runner; labels are for organizing your runners.
 
