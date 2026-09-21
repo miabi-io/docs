@@ -24,12 +24,17 @@ Webhooks and notification channels subscribe to the same set of events:
 | `reconcile.redeploy` · `reconcile.breaker_open` | Miabi redeployed a missing app automatically, or gave up after repeated failures |
 | `database.provisioned` · `database.provision_failed` | A database finishes provisioning, or fails to |
 | `database.upgraded` · `database.upgrade_failed` | A database version upgrade succeeds or fails |
-| `backup.succeeded` · `backup.failed` · `restore.succeeded` · `restore.failed` | A database backup or restore finishes |
+| `backup.succeeded` · `backup.failed` · `restore.succeeded` · `restore.failed` | A database backup or restore finishes, whether a single database or a whole recovery point |
 
-You choose which events a given webhook or channel cares about, so each integration only hears what's relevant to it.
+You choose which events a given webhook or channel cares about, so each integration only hears what's
+relevant to it. The console's picker groups them under **Applications** and **Databases & backups**;
+every event in the table above is selectable there.
 
-:::note
-The console's event picker lists the deploy, container, drift and reconcile events. The database, backup and restore events can currently be subscribed to through the API only.
+:::tip Backups fire these whether you started them or a schedule did
+A recovery point reports as one `backup.succeeded` or `backup.failed` for the whole instance, not one
+per database — so a nightly schedule over eight databases sends one message, naming the set.
+Scheduled runs additionally post to the in-app inbox; see
+[Alerts & Notifications](/docs/operations/alerts#scheduled-backups-report-both-outcomes).
 :::
 
 ## Webhooks

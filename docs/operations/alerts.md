@@ -49,6 +49,7 @@ one line. Each links to the resource and, where possible, an action.
 | Database provisioning failed | critical | an instance does not finish provisioning | it is provisioned |
 | Database upgrade failed | critical | a version upgrade does not complete | an upgrade succeeds |
 | Database backup failed | critical | a backup run fails | the next backup succeeds |
+| Recovery point failed | critical | a whole-instance recovery point does not complete, or fails verification | the next recovery point succeeds |
 | TLS certificate expiring | warning → critical | &lt; 14 days / &lt; 3 days to expiry | it is renewed |
 | Certificate issuance failed | critical | ACME issuance/renewal fails | it is issued |
 | Approaching quota | warning | a resource passes 90% of the plan limit | usage drops back |
@@ -84,6 +85,31 @@ workspace you belong to:
   aren't tied to any tenant workspace. They are attributed to the built-in
   **Miabi System** workspace and delivered to **platform super-admins**. A
   *workspace-owned* runner, by contrast, notifies that workspace's members.
+
+## Scheduled backups report both outcomes
+
+A backup you start yourself reports itself: you are looking at the row. A backup at 03:00 has nobody
+watching, which is the only reason its outcome has to go anywhere — so **scheduled** runs post to the
+workspace inbox either way, and manual ones stay silent.
+
+| Outcome | What appears | Severity |
+|---|---|---|
+| Completed | "Recovery point completed — *instance*", with the databases covered and the size stored | info |
+| Failed | "Recovery point failed — *instance*", with the reason | warning, **plus** a critical alert |
+
+A failure produces both because the two do different jobs. The alert is the open condition — it
+dedups, and it auto-resolves when the next run succeeds. The inbox item is the record of that
+particular run, which stays put after the condition clears.
+
+A recovery point posts **one** item covering every database it took, not one per database. The
+per-database backups inside it stay silent for that reason.
+
+:::caution A nightly schedule per database is a nightly notice per database
+Completion notices are not rate-limited. Thirty databases on their own nightly schedules produce
+thirty inbox items every morning, and an inbox nobody reads is worse than no inbox — the failure
+gets skimmed past with the rest. Prefer one **recovery point** schedule per instance, which collapses
+the whole instance into a single notice.
+:::
 
 ## Delivery
 

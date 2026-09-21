@@ -40,12 +40,45 @@ is true:
 | **Display name** | The label shown throughout the console. Free text, editable at any time. |
 | **Handle** | The URL-safe identifier, e.g. `acme`. Derived from the display name if you leave it blank, lowercase letters, digits and hyphens. |
 | **Owner** | The user accountable for the organization. Optional here — see [Ownership](#ownership). |
-| **Workspace cap** | How many workspaces the organization may hold. Unlimited by default; `0` allows none. |
+| **Workspace limit** | How many workspaces the organization may hold in total. Unlimited by default; `0` allows none. |
+| **Workspaces per user — owned** | How many workspaces one of its users may own. Inherits the platform default unless you set it. |
+| **Workspaces per user — joined as member** | How many other workspaces one of its users may join. Inherits the platform default unless you set it. |
 
 The handle is **immutable** after creation: it is what admins and the API address the organization
 by. Rename the display name instead.
 
 ![An organization's detail page](/img/screenshots/admin-organization-detail.png)
+
+## Workspace limits
+
+With an Enterprise licence the organization is where workspace limits are configured. It carries
+three, set from **Admin → Organizations → (organization)**:
+
+| Limit | Caps |
+|---|---|
+| **Workspace limit** | workspaces in the whole organization |
+| **Workspaces per user — owned** | workspaces one of its users may own |
+| **Workspaces per user — joined as member** | other workspaces one of its users may join |
+
+The two per-user limits offer three choices: **inherit the platform default**, **unlimited**, or a
+number. Inherit is what every organization starts on, so
+[Platform Settings](/docs/operations/platform-settings) decides them until an organization sets its
+own. A [per-user override](/docs/administration/users-and-accounts#limits) on an individual account
+beats both.
+
+:::note Enterprise
+Organization limits need a licence. **Without one the platform settings govern outright** — a stored
+organization limit is ignored rather than enforced, so a licence that lapses never leaves a tenant
+bound by a cap its operator can no longer edit. Community keeps the single default organization it
+has always had, with its limits in Platform Settings.
+:::
+
+Every limit follows the same convention as plans: `-1` is unlimited and `0` allows none. Limits apply
+to the *next* create — workspaces that already exist are never removed, and a user already over a
+newly lowered limit keeps what they have.
+
+Reaching a limit refuses the create with a message naming which limit stopped it, so a tenant is
+never left guessing whether the platform is broken.
 
 ## Ownership
 
@@ -137,7 +170,7 @@ groups workspaces and accounts; it does not change the per-workspace
 
 :::note
 Plans and quotas are applied **per workspace**, not per organization. The organization's own limit is
-the workspace cap. See [Plans & Quotas](/docs/workspaces/plans-and-quotas).
+the workspace limits below. See [Plans & Quotas](/docs/workspaces/plans-and-quotas).
 :::
 
 ## Deleting one

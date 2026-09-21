@@ -78,7 +78,9 @@ has been doing; the job's step output itself goes to the control plane.
 
 ## Labels and targeting
 
-Runners carry free-form **labels** — for example `arch=amd64`, `buildkit`, or `gpu` — and report their OS and architecture on connect. The scheduler can match a job against required labels, only considering runners whose label set contains all of them, and among the eligible runners picks the **least-loaded** one (fewest active leases, up to each runner's declared concurrency).
+Runners carry free-form **labels** — for example `arch=amd64`, `buildkit`, or `gpu` — and report their OS and architecture on connect. The scheduler can match a job against required labels, only considering runners whose label set contains all of them.
+
+Among the eligible runners it prefers **your workspace's own runners over the platform-shared pool**, ahead of load: a runner you registered has your warm build cache and sits on your network, so a job is queued on it rather than relocated. The shared pool takes the job when your own runners are saturated, offline, or you have none. Within either group the **least-loaded** runner wins (fewest active leases, up to each runner's declared concurrency).
 
 Pipelines and deploys do not request labels yet, so today every job matches any in-scope runner; labels are for organizing your runners.
 
@@ -117,6 +119,14 @@ The upshot: a pipeline step can build and push with **zero configured credential
 Administrators can register **platform-shared** runners under **Admin → Runners** — runners with no owning workspace that any eligible workspace's jobs can use. Admins manage the shared pool (create, edit, cordon, remove); workspace members can *use* a shared runner but not edit it.
 
 The Community edition allows up to **2** platform-shared runners; the Enterprise *platform runners* entitlement lifts that limit. Workspace-owned runners count against the workspace plan's **runner** limit instead, when plan enforcement is on. A workspace's access to the shared pool is governed by its plan's *platform runners* capability.
+
+### Offering only some runners to a plan
+
+With Enterprise, a plan can name **which** shared runners it offers, under **Admin → Plans → (plan) → Shared Runners** — the same shape as binding a plan to locations or database sizes. A plan that names none offers the whole pool, which is how every plan behaves until you narrow one, and the capability still decides whether the pool is in scope at all.
+
+This binds only the platform's own runners. A workspace's own runners are its machines, so a plan never restricts them — and its builds prefer them anyway. An admin can override the list for a single workspace under **Admin → Workspaces → (workspace)**.
+
+A shared runner a plan still names cannot be deleted; remove it from the plan first, so narrowing a plan to nothing is never a side effect of tidying the pool.
 
 ## Related
 
