@@ -13,10 +13,12 @@ you want tenant data: the fast NVMe and the bulk SATA disks you bought are mount
 
 A **storage class** is a directory you register as a place the platform may create volumes in.
 
-:::info Enterprise
-Registering storage classes is an [Enterprise](/docs/editions/community-vs-enterprise) feature — it is
-what puts tenant data on the disks you bought. The built-in `default` class below works in every
-edition, and classes registered under a license keep serving their volumes if it lapses.
+:::info Editions
+Community holds **two classes in total**, the built-in `default` below included — so one disk of
+your own, shared across the fleet if you mount it on every node.
+[Enterprise](/docs/editions/community-vs-enterprise) lifts the cap. Reaching it refuses the next
+class and nothing else: existing classes keep serving their volumes, including after a license
+lapses.
 :::
 
 > You register the directory. A workspace picks a **class by name** — it never sees, types, or

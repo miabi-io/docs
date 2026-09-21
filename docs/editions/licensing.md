@@ -62,6 +62,10 @@ Besides feature flags, a license can carry two caps. Where it sets neither, Ente
 | **Nodes** | Registering a node beyond the cap is refused. Nodes already registered keep working, and the License screen warns when usage is over the cap. | 3 |
 | **Plans** | Creating a plan beyond the cap is refused. | 3 |
 
+[Storage classes](/docs/storage/storage-classes) are capped the same way, but by edition rather than
+by a license value: Community holds two in total, the built-in `default` included, and any license
+granting the feature lifts the cap outright.
+
 The commercial tiers set them as follows:
 
 | Tier | Nodes | Plans |
