@@ -90,13 +90,13 @@ hands back a credential:
 A key created with **no scope** is read-only.
 
 :::note Enforcement is staged
-Scopes were stored but never checked before 1.11. Because a key created with the default **Read**
-scope may have been writing for months, enforcement ships behind
+Scopes were stored but not checked on earlier releases. Because a key created with the default
+**Read** scope may have been writing for months, enforcement ships behind
 `MIABI_API_KEY_SCOPE_ENFORCEMENT`:
 
 | Value | Behaviour |
 |---|---|
-| `off` | no check — the pre-1.11 behaviour |
+| `off` | no check — the earlier behaviour |
 | `warn` *(default)* | the request succeeds, and the violation is recorded as an `api_key.scope_violation` [audit event](/docs/operations/audit-log) with an `X-Miabi-Scope-Required` response header |
 | `enforce` | the request is refused with `403` |
 
