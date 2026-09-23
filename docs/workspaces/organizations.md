@@ -151,22 +151,80 @@ See [Cluster mode](/docs/nodes/cluster-mode#locations) for what a location is, a
 
 ## Structure
 
+An organization holds **users**, and each user holds **workspaces** — the ones they own, plus the
+ones they were invited into. Workspaces are not created inside an organization directly: a user
+creates one, and it joins whichever organization that user belongs to.
+
 ```
-Organization: acme            (tenant realm — owner, cap, SSO, locations)
-├── Users                     (registered through Acme's SSO provider)
+Organization: default                  (every install has one — the home realm)
+├── User: alice
+│   ├── Workspace: alice-blog          (owner)
+│   │   ├── Applications
+│   │   ├── Databases
+│   │   └── Members: alice · bob
+│   └── Workspace: alice-lab           (owner)
+├── User: bob
+│   ├── Workspace: bob-api             (owner)
+│   └── Workspace: alice-blog          (member — developer)
+└── User: carol
+    └── Workspace: internal-tools      (owner)
+
+Organization: acme                     (Enterprise — a second tenant realm)
+├── Users                              (registered through Acme's SSO provider)
 ├── Workspace: acme-prod
 │   ├── Applications
 │   ├── Databases
 │   └── Members
 └── Workspace: acme-staging
-
-Organization: default         (every install has one)
-└── Workspace: internal-tools
 ```
+
+Read that as three levels:
+
+| Level | What it is | Who it belongs to |
+|---|---|---|
+| **Organization** | The tenant realm — owner, workspace cap, SSO provider, locations. | The install. |
+| **User** | An account. Belongs to exactly one organization, decided at registration. | The organization. |
+| **Workspace** | The isolation boundary for one project's apps and data. | The user who created it — and, through them, their organization. |
+
+`alice-blog` appears twice on purpose: Alice **owns** it, Bob **joined** it. That is one workspace
+with two members, not two workspaces, and it is why the per-user limits are counted separately
+(*owned* versus *joined as member*).
+
+### The default organization
+
+`default` is not a scratch realm for internal tooling — it is the **home realm for ordinary
+accounts**. On Community it is the only one, so every user and every workspace lives there. On
+Enterprise it stays the fallback: any account that registers without a provider tied to another
+organization lands in it, and its workspaces come with it.
+
+So a single install running only `default` is still the full model — many users, each with their own
+workspaces, sharing them with each other by invitation. You add a second organization when you need
+a boundary *above* those users (their own SSO, their own cap, their own hardware), not to give
+people separate workspaces.
+
+### Membership needs an account
 
 Members are assigned at the **workspace** level, each with one of the four roles. An organization
 groups workspaces and accounts; it does not change the per-workspace
 [role enforcement](/docs/workspaces/roles-and-permissions), and it is not a permission scope.
+
+**A workspace member must have a Miabi account.** Membership is granted only by accepting an
+invitation while signed in, so there is no way to add a person who has never registered:
+
+- You invite by **email address**, and the invitation sits pending until someone signs in with that
+  address and accepts it. Inviting an address that has no account yet is allowed — nothing happens
+  until an account exists to accept it.
+- Accepting binds the invitation to the **signed-in user**, and an in-app invitation is only offered
+  to the account whose email it names. Invitations expire after 7 days.
+- [Self-service sign-up is off by default](/docs/security/authentication#registration), so on a
+  closed install a platform admin — or the invitee's SSO provider — has to create the account before
+  the invitation can be taken up.
+
+Accepting also counts against the invitee's own limits: an owner-role invitation against
+*workspaces owned*, any other role against *workspaces joined as member*. A user at their limit
+cannot accept until one is freed.
+
+See [Members & Invitations](/docs/workspaces/members-and-invitations) for the full flow.
 
 :::note
 Plans and quotas are applied **per workspace**, not per organization. The organization's own limit is

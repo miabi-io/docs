@@ -19,8 +19,10 @@ Workspaces are how teams collaborate in Miabi. Each member of a workspace holds 
 
 Miabi emails the invitee a link when an [SMTP server](/docs/getting-started/configuration) is configured, and shows an **Invitation token** once so you can share it yourself. The invitation is listed under **Pending invitations** until it is accepted. An email can only have one pending invitation per workspace, and inviting is refused once the workspace reaches its plan's member limit.
 
-:::tip
-The invitee needs a Miabi account with the invited email address. Self-service sign-up is [off by default](/docs/security/authentication#registration), so a platform admin may need to create the account first.
+:::info A member must have an account
+Membership is only ever granted by **accepting** an invitation while signed in, so the invitee needs a Miabi account with the invited email address — there is no way to add someone who has never registered.
+
+Inviting an address that has no account yet is allowed; the invitation simply stays pending until one exists. Self-service sign-up is [off by default](/docs/security/authentication#registration), so a platform admin, or the person's [SSO provider](/docs/security/sso), may need to create the account first. See [Structure](/docs/workspaces/organizations#structure) for how users, workspaces and organizations fit together.
 :::
 
 ## Accepting an invitation
