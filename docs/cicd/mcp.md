@@ -149,11 +149,25 @@ Three ready-made investigations ship with the server:
 ## Start read-only
 
 The server is **read-only by default**, and that is the right way to begin. Let the agent answer
-questions and diagnose failures for a while before you let it act; when you do enable
-`--allow-write`, scope it with the token:
+questions and diagnose failures for a while before you let it act.
 
-- Register the server with a token whose **role is Viewer** to keep it permanently read-only, no
-  matter what flags the server was started with.
+Be clear about what that default is, though: without `--allow-write` the server does not *advertise*
+the mutating tools, but the restriction lives in this process. The token it holds is what the server
+authorizes, so anything else using that token can still deploy. Make the credential read-only too:
+
+```bash
+miabi login --context prod-ro --scopes read
+miabi --context prod-ro mcp
+```
+
+`miabi mcp` compares the two on start-up and prints a note to stderr when they disagree — a
+read-only server holding a token that can write, or `--allow-write` with a token that cannot.
+
+When you do enable `--allow-write`, scope it with the token:
+
+- Pair the read-only server with a **`--scopes read` token**, so the limit holds even if the server
+  is started with different flags. A token whose **role is Viewer** does the same for a whole
+  workspace.
 - Give a deploying agent a token in a **staging workspace** rather than one that reaches production.
 - Register **two servers** — a read-only `miabi` and a `miabi-staging` with `--allow-write` — so the
   destructive tools only exist where you meant them to.

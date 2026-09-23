@@ -81,6 +81,25 @@ one-time code sent to a local callback — nothing to copy and paste. When a tok
 `--token` or `MIABI_TOKEN`, it validates and saves that instead; `--web` forces the browser flow
 anyway. Without `--server`, `login` re-authenticates the current context's server.
 
+### Narrowing what the token may do
+
+`--scopes` limits the token to `read`, `write`, `deploy`, or any combination — the default grants
+all three. The scope rides through the sign-in, including an SSO one, so the browser hands back a
+token that is already narrowed:
+
+```bash
+miabi login --context prod-ro --scopes read       # a context you can only read from
+miabi login --scopes deploy                       # ship, but not edit
+```
+
+A login token can never carry `admin` or `*`; the server refuses to mint one, and the CLI rejects
+those names before opening the browser. If the server is older than `--scopes` it ignores the
+request — the CLI checks what it was actually given and refuses to save a token broader than you
+asked for, rather than leaving you with a false assurance.
+
+A read-only context is what makes [`miabi mcp`](/docs/cicd/mcp) read-only in fact and not only in
+the tools it advertises.
+
 Configuration resolves in the order **flags → environment (`MIABI_SERVER`, `MIABI_TOKEN`) → config
 file**. Point at a different file with `MIABI_CONFIG`. `--url` and `MIABI_URL` are the deprecated
 spellings of `--server` / `MIABI_SERVER`; both still work.
@@ -134,7 +153,7 @@ argument**, or use the app bound with `miabi use`.
 
 | Command | What it does |
 |---|---|
-| `miabi login [--no-browser \| --web]` · `miabi whoami` | Sign in and save a context; show identity, scopes, and active context. |
+| `miabi login [--no-browser \| --web] [--scopes read,write,deploy]` · `miabi whoami` | Sign in and save a context; show identity, scopes, and active context. |
 | `miabi context ls \| current \| use \| delete` | List, show, switch, or remove saved contexts (alias: `ctx`). |
 | `miabi workspace ls \| show \| switch <name-or-id>` | List, show, or set the active workspace (alias: `ws`). |
 | `miabi use [app] \| --clear` | Bind (or show/clear) the default app. |
