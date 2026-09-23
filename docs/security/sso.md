@@ -42,6 +42,25 @@ Once a provider is configured, users see a **Sign in with…** button on the log
 SSO governs how users sign in. Their permissions inside a workspace are still determined by their [role](/docs/workspaces/roles-and-permissions).
 :::
 
+## Profiles of provisioned accounts
+
+An account **created by a provider** — OAuth/OIDC, SAML, LDAP or SCIM — is recorded with that
+provider as its auth source, and its **name and username become read-only**. The Profile page shows
+them but offers no Save, and the API refuses the edit, because the provider is the source of truth
+for the identity: a local rename would only drift from the directory everyone else reads.
+
+Change the name at the provider instead. Email is already admin-managed for every account, and
+workspace roles are unaffected.
+
+Linking is not provisioning: when SSO matches an **account that already exists** by email or handle,
+that account keeps the auth source it had. A local account whose owner also signs in through SSO
+stays theirs to edit.
+
+:::note
+Accounts provisioned before this was recorded are still marked local, since nothing distinguishes
+them after the fact. They become read-only only if the provider creates them again.
+:::
+
 ## Which organization SSO users land in
 
 An account created through a provider belongs to the provider's
