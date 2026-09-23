@@ -35,6 +35,18 @@ For private images, add **container-registry credentials** to the workspace. The
 
 Rather than pasting the token into the credential, you can point it at a [secret](/docs/secrets/overview) with `${{ secrets.NAME }}`. Miabi then reads the value from the vault on every pull, so rotating that secret rotates every credential using it — no edit, no redeploy of the credential.
 
+:::note The credential is required even when the image is already on the node
+Nodes are shared, so an image can already be on disk because *another* workspace pulled it. Miabi
+skips the pull only when the workspace could have fetched the image itself — it holds a credential
+for that same registry host — or when the image comes from the built-in registry, where repositories
+are namespaced per workspace.
+
+Otherwise the image is pulled even if a copy is present, and the registry decides: a public image
+succeeds, a private one fails the deploy. So a private image needs its credential attached whatever
+the pull policy says, and a pull policy of **Never** is refused outright rather than running a copy
+the workspace cannot claim.
+:::
+
 Credentials are declarative too. A [manifest](/docs/cicd/manifest-reference#registry) can declare the credential and select it per application:
 
 ```yaml

@@ -20,7 +20,7 @@ Turn it on under **Admin → Container Registry → Configuration**: set a **Hos
 Changes apply immediately — the container is recreated and the gateway route rewritten on save. No restart.
 
 :::caution The registry needs the private network
-The registry container serves **without authentication**; every token and namespace check happens in the gateway in front of it. That is why it joins only the private network, which app containers never join — on the shared proxy network, any app container could pull any workspace's images straight from `mb-registry:5000` with no credential.
+Every user and namespace check happens in the gateway in front of the registry, so the registry joins only the platform's private network — the fabric its own components share, which app containers never join. It also requires HTTP Basic auth there, held by the gateway alone, so reaching it over the network is not the same as being allowed to use it.
 
 Miabi finds that network by its role label (`io.miabi.role=platform-internal`), so a stack from `miabi setup` or `examples/compose` needs no configuration. `MIABI_INTERNAL_NETWORK` names it explicitly, for a network that carries no label or when there are several.
 
