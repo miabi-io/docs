@@ -4,7 +4,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 
 const config: Config = {
   title: 'Miabi',
-  tagline: 'The open-source, self-hosted Platform-as-a-Service for Docker',
+  tagline: 'The open-source, self-hosted PaaS for shipping apps, not infrastructure',
   favicon: 'img/favicon.ico',
 
   future: {

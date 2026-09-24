@@ -60,6 +60,50 @@ A key acts as the user who created it, so it can never do more than that user:
 Workspace-bound keys count toward the workspace's **API keys** [quota](/docs/workspaces/plans-and-quotas);
 account-wide keys don't.
 
+## What each scope allows
+
+A key's scopes decide which operations it may perform, on a ladder — each scope grants everything
+below it:
+
+| Scope | Grants | Covers |
+|---|---|---|
+| **Read** | read | every `GET`, and nothing else |
+| **Write** | write, read | creating, updating and deleting resources |
+| **Deploy** | deploy, read | `deploy`, `start`, `stop`, `restart`, `rollback`, `scale`, canary, `trigger`, `rerun`, `sync`, `promote`, `approve` |
+| **Admin** | admin, write, deploy, read | everything below, plus the administrative routes named under it |
+| **`*`** | everything | no restriction |
+
+**Write and Deploy are siblings**, not a sequence: a Deploy key cannot edit an application, and a
+Write key cannot ship one. Give a CI key both if it does both.
+
+**Admin** is required for anything that changes who may act, what the platform recorded, or that
+hands back a credential:
+
+- `/admin/*`, `/api-keys`, two-factor endpoints and session management
+- workspace **members**, **invitations**, **roles** and per-resource **policies**
+- the **audit log** and its export
+- **deleting a workspace**, and taking or restoring a **portable backup**
+- creating or changing **runners** and **webhooks** (reading them is `read`)
+- reads that return a secret: `/exec`, `…/reveal`, `…/credentials`, `…/connection`,
+  `…/recovery-kit`, `…/webhook-info`, and downloading a backup artifact
+
+A key created with **no scope** is read-only.
+
+:::note Enforcement is staged
+Scopes were stored but not checked on earlier releases. Because a key created with the default
+**Read** scope may have been writing for months, enforcement ships behind
+`MIABI_API_KEY_SCOPE_ENFORCEMENT`:
+
+| Value | Behaviour |
+|---|---|
+| `off` | no check — the earlier behaviour |
+| `warn` *(default)* | the request succeeds, and the violation is recorded as an `api_key.scope_violation` [audit event](/docs/operations/audit-log) with an `X-Miabi-Scope-Required` response header |
+| `enforce` | the request is refused with `403` |
+
+Run on `warn` until the audit log is quiet, then switch to `enforce`. The log names the key, the
+user, the route and the scope it needed, so you can re-issue each key with the right scopes first.
+:::
+
 ## Using a key with the API
 
 Send the key as a **bearer token** in the `Authorization` header:

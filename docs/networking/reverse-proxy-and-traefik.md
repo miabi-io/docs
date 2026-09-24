@@ -75,9 +75,9 @@ run the default Goma stack.
 ### The built-in container registry requires Goma
 
 The [built-in container registry](/docs/registry/overview)'s **user/workspace authentication** is
-enforced by Goma's `forwardAuth` middleware: the registry runs auth-less behind the gateway, and Goma
-forwards each request to Miabi to validate the Docker credentials (username = workspace name,
-password = API key) and scope the repository path to that workspace. Traefik is not wired for that
+enforced by Goma's `forwardAuth` middleware: Goma forwards each request to Miabi to validate the
+Docker credentials (username = workspace name, password = API key) and scope the repository path to
+that workspace. Goma also holds the credential the registry itself requires. Traefik is not wired for that
 callback, so on a Traefik stack keep the built-in registry **off** (`MIABI_REGISTRY_ENABLED=false`,
 the default) and use an external registry (Docker Hub, GHCR, …) instead.
 

@@ -1,7 +1,7 @@
 # Miabi Documentation
 
 The official documentation site for [Miabi](https://github.com/miabi-io/miabi) — the
-open-source, self-hosted Platform-as-a-Service for Docker. Built with
+open-source, self-hosted PaaS for shipping apps, not infrastructure. Built with
 [Docusaurus](https://docusaurus.io/).
 
 This is a **standalone documentation repository**. It does not contain the Miabi

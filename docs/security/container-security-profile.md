@@ -19,8 +19,26 @@ override):
 
 | Profile | Behaviour |
 |---------|-----------|
-| **Default** | Containers run as the image's own user (may be `root`). No extra hardening — the historical behaviour. |
-| **Restricted** | Containers are forced to run as a **non-root platform UID** with `no-new-privileges` set and the `NET_RAW` capability dropped — similar to OpenShift's *restricted* SCC. |
+| **Default** | Containers run as the image's own user (may be `root`), with the platform baseline below and nothing else. |
+| **Restricted** | Containers are forced to run as a **non-root platform UID** with `no-new-privileges` set — similar to OpenShift's *restricted* SCC. |
+
+### The baseline
+
+One rule applies on **both** profiles, on every install: the **`NET_RAW` capability is dropped**.
+
+`NET_RAW` is what lets a container open raw and packet sockets — which on a bridge it shares with
+other tenants means forging ARP replies and reading traffic that was not addressed to it. Almost
+nothing needs it, so it is not part of the restricted opt-in.
+
+An app that genuinely does need raw sockets — `ping`, `traceroute`, packet capture — asks for the
+`NET_RAW` [capability grant](/docs/applications/capabilities-and-devices), which adds it back. Under
+the restricted profile no grant is admitted, so there it is dropped for good.
+
+:::note What changes for you
+`ping` and `traceroute` stop working inside containers that have not been granted `NET_RAW`. Most
+images never use them; an image whose healthcheck shells out to `ping` is the case to watch. Grant
+the capability to that app, or use a TCP healthcheck instead.
+:::
 
 A profile only ever takes capabilities away. Granting one to an individual application is a separate, opt-in mechanism — see [Capabilities & devices](/docs/applications/capabilities-and-devices) — and the restricted profile admits none of them, so the two cannot be combined.
 
@@ -59,7 +77,7 @@ How it interacts with the profile:
 | Effective profile | What you may set |
 |-------------------|------------------|
 | **Default** | Any account the image understands, `root` included. |
-| **Restricted** | A **non-root numeric uid** only — `1000`, `1000:1000`, `65534:0`. It *replaces* the platform UID; `no-new-privileges` and the dropped `NET_RAW` still apply. |
+| **Restricted** | A **non-root numeric uid** only — `1000`, `1000:1000`, `65534:0`. It *replaces* the platform UID; `no-new-privileges` and the baseline `NET_RAW` drop still apply. |
 
 Under the restricted profile a **name** is refused, not just `root`. A name is resolved from the
 image's own `/etc/passwd`, which the workload controls, so `appuser` is free to be uid `0` — the
