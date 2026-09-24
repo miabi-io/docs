@@ -6,11 +6,11 @@ description: What Miabi is, who it's for, and how it works
 
 # Introduction
 
-**Miabi** is an open-source, self-hosted **Platform-as-a-Service (PaaS) for Docker** — your own
-Heroku or Render, running on your own server. Push an app from a Git repository, a Docker image,
-or a marketplace template, and Miabi handles the rest: build, deploy, domains, automatic SSL,
-databases, scaling, backups, and monitoring. Everything happens from one web interface, in
-minutes, **without touching a single Docker command or CLI**.
+**Miabi** is an open-source, self-hosted **PaaS** for deploying and operating containerized
+applications on servers you control. Push an app from a Git repository, a Docker image, or a
+marketplace template, and Miabi handles the rest: build, deploy, domains, automatic SSL, databases,
+scaling, backups, and monitoring. Everything happens from one web interface, in minutes,
+**without touching a single Docker command or CLI**.
 
 > **The name.** *Miabi* is Tshiluba (Kasai, DR Congo) for the **muabi trees** — traditionally
 > associated with blessing and growth. Miabi joins the same family as its sibling projects
@@ -56,7 +56,7 @@ the vendor lock-in.
   certificates, volumes, backups, members — with RBAC and `workspace_id` scoping enforced end to
   end.
 - **Self-hosted first.** A single binary serving the API and web UI runs happily on a VPS,
-  dedicated box, homelab, or cloud VM. No external services required.
+  dedicated server, bare metal, homelab, or cloud VM. No external services required.
 - **Docker-first, multi-node ready.** Single-node on plain Docker stays trivial; remote nodes join
   over an outbound agent tunnel, and an optional Docker Swarm cluster mode lights up overlay
   networking when you need it.
