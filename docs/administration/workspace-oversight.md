@@ -82,7 +82,7 @@ Because host ports are a **node-wide shared resource**, a workspace asking to pu
 is asking to occupy that port on a machine other tenants share — so the request is queued
 rather than granted, and every platform admin gets an inbox notification linking to it.
 
-**Platform admin → Security → Host ports** is where those requests are decided, below the
+**Platform admin → Security Center → Host ports** is where those requests are decided, below the
 [host-port policy](/docs/security/security-center#host-ports) that can approve or refuse them
 automatically. The top of the page is the
 **Awaiting review** queue, with the range you may approve in; below it, each node's full

@@ -6,7 +6,7 @@ description: Platform security policies for host ports and the admin console unl
 
 # Security Center
 
-**Platform admin → Platform → Security** is where a platform admin writes security rules once and
+**Platform admin → Platform → Security Center** is where a platform admin writes security rules once and
 Miabi enforces them everywhere a tenant could get around them: the API, stack and compose import,
 the deploy worker, and the admin console itself.
 
