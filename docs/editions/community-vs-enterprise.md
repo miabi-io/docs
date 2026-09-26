@@ -47,6 +47,8 @@ If you want a build with **zero enterprise code** (the deny-all stub), build it 
 | Viewing the audit log (platform and workspace) | — | ✓ |
 | Audit export (JSON/CSV) | — | ✓ |
 | SIEM streaming | — | ✓ |
+| Admin console unlock with TOTP (`MIABI_ADMIN_UNLOCK`) | ✓ | ✓ |
+| Security Center policies: host ports, admin access policy, audit mode, decision log | — | ✓ |
 | Per-workspace quota overrides | — | ✓ |
 | Per-user workspace and membership limit overrides | — | ✓ |
 | Multi-cluster (clusters as locations, a gateway per cluster) | ✓ | ✓ |

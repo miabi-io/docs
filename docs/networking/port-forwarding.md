@@ -17,7 +17,7 @@ an ad-hoc dump), use **port forwarding** instead of permanently exposing the dat
 Port forwarding is a short-lived connection to a managed database. To make an
 **application** reachable — a generated URL, your own domain, or a published host port that
 a platform admin approves — see [Exposing an Application](/docs/applications/exposing-your-app).
-Admins review host port requests on the **Ports** page; see
+Admins review host port requests under **Security → Host ports**; see
 [Workspace oversight](/docs/administration/workspace-oversight#moderating-host-ports).
 :::
 
