@@ -312,6 +312,7 @@ tab. See [Registry](/docs/registry/administration).
 | `MIABI_FORWARD_BIND_ADDR` | `127.0.0.1` | Address the database forward listener binds to on the control plane. On a non-loopback address, only the IP that opened the forward may connect |
 | `MIABI_FORWARD_ADVERTISE_HOST` | — | Host shown to the user in the forward's connection string |
 | `MIABI_FORWARD_RELAY_IMAGE` | `alpine/socat:latest` | Image used for the forward relay container |
+| `MIABI_METADATA_GUARD` | `false` | `true` blocks containers on every node from reaching cloud metadata services (`169.254.0.0/16`, Azure's `168.63.129.16`, Alibaba's `100.100.100.200`, AWS's `fd00:ec2::254`) with an nftables table, via an `mb-metadata-guard` container per node. DNS to those addresses stays open. Turning it back off removes the guard and its table. Needs `nft` on the host |
 | `MIABI_HOST_PROC` | `/host/proc` | procfs path for real host CPU/memory. The compose binds `/proc:/host/proc:ro` |
 
 ## Container security profile

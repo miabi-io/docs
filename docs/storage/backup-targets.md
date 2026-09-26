@@ -38,7 +38,7 @@ workspace**, and fill in:
 | **Database backup path** | Prefix for database backups and recovery points, for example `backups/databases`. |
 | **Volume backup path** | Prefix for volume archives, for example `backups/volumes`. |
 | **Database backup passphrase** | Optional. Encrypts database backups. See [below](#encrypting-database-backups). |
-| **Bundle path** / **Bundle passphrase** | Where portable workspace bundles go, and the passphrase that seals them. |
+| **Bundle path** / **Bundle passphrase** | Where portable workspace bundles go, and the optional passphrase that seals them. See [below](#unencrypted-bundles). |
 | **Use SSL (HTTPS)** | Leave on unless your endpoint is plain HTTP. |
 | **Force path-style URLs** | Required by MinIO and some S3-compatible stores. |
 
@@ -93,12 +93,25 @@ is GPG-encrypted before it leaves the host, and restores decrypt it with the wor
   backups need the passphrase they were taken with, so keep the previous one until they have aged out.
   Recovery points work differently; see [rotating the passphrase](#rotating-the-passphrase).
 
-To go back to unencrypted backups, tick **Turn encryption off — new backups will be stored
-unencrypted** and save. Backups taken while the passphrase was set still need it to restore.
+To go back to unencrypted backups, select **Remove encryption** under the passphrase and save.
+**Undo** cancels it before you save. Backups taken while the passphrase was set still need it to
+restore.
 
 Setting a passphrase is optional on every edition. A workspace without one keeps taking
 unencrypted backups; encryption is a choice about your own data, not something the platform
 requires of you.
+
+### Unencrypted bundles
+
+The **Bundle passphrase** is optional too. Without one, portable bundles are written to the bucket
+unencrypted: the state file is plain JSON holding the workspace's configuration **and its secrets in
+cleartext**, and the dumps and archives are not encrypted. Anyone who can read the bucket can read
+them. The **Portable backup** page warns you while no passphrase is set, and each unencrypted bundle
+is labelled **not encrypted**.
+
+To stop encrypting bundles, select **Remove encryption** under the bundle passphrase and save. Bundles
+already taken stay encrypted; to restore one, set the passphrase it was created with again. A bundle
+taken without encryption restores whether or not a passphrase is set now.
 
 ### Rotating the passphrase
 
