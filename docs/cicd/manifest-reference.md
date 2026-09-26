@@ -323,7 +323,7 @@ spec:
 
 | Field | Converges? | Notes |
 |---|---|---|
-| `size` | **Yes** | A declared number for quota accounting, so changing it moves no data. Shrinking it below the volume's measured usage is refused. |
+| `size` | **Grow only** | A declared number for quota accounting, so changing it moves no data. A larger size is applied; a smaller one is refused, including one below a capacity expanded in the console, until the manifest catches up. Omitted, the volume keeps its capacity. |
 | `storageClass` | **No — refused** | The data physically lives there. |
 | `placement.location` | **No — refused** | Same reason. |
 
