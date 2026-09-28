@@ -50,6 +50,7 @@ const sidebars: SidebarsConfig = {
         'applications/environments',
         'applications/container-labels',
         'applications/logs-and-timeline',
+        'applications/moving-between-locations',
       ],
     },
     {
