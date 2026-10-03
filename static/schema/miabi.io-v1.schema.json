@@ -53,6 +53,10 @@
           "description": "ExternalLabel pins the subdomain used for external access (`\u003clabel\u003e.\u003cbase-domain\u003e`). When unset Miabi generates a stable label. The label is platform-wide unique: if already claimed it is ignored and a generated one is used, so a copy-pasted manifest never fails on a clash.",
           "type": "string"
         },
+        "healthcheck": {
+          "$ref": "#/$defs/HealthcheckSpec",
+          "description": "Healthcheck is how the container's health is probed. A deploy waits for it to report healthy before the new release goes live, so a broken release never replaces a working one. Omitted, the app keeps the check it has, so one configured in the console is not undone."
+        },
         "image": {
           "type": "string"
         },
@@ -301,6 +305,50 @@
           "type": "boolean"
         }
       },
+      "type": "object"
+    },
+    "HealthcheckSpec": {
+      "additionalProperties": false,
+      "description": "HealthcheckSpec is how a container's health is probed. Only the fields stated are applied; the rest keep their current value (interval 30s, timeout 5s, 3 retries and no start period on a new app).",
+      "properties": {
+        "command": {
+          "description": "Command is the shell command a command check runs, e.g. pg_isready. It needs a shell in the image; an http check does not.",
+          "type": "string"
+        },
+        "intervalSeconds": {
+          "type": "integer"
+        },
+        "path": {
+          "description": "Path is the URL path an http check requests, e.g. /healthz.",
+          "type": "string"
+        },
+        "port": {
+          "description": "Port is the container port an http check probes. Omitted, the app's first port.",
+          "type": "integer"
+        },
+        "retries": {
+          "type": "integer"
+        },
+        "startPeriodSeconds": {
+          "type": "integer"
+        },
+        "timeoutSeconds": {
+          "type": "integer"
+        },
+        "type": {
+          "description": "Type is http (GET path on port, healthy on 2xx/3xx), command (run command in the container, healthy on exit 0), image (the image's own HEALTHCHECK, the default) or none (no check, not even the image's).",
+          "enum": [
+            "command",
+            "http",
+            "image",
+            "none"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ],
       "type": "object"
     },
     "Meta": {
