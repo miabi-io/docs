@@ -1,7 +1,7 @@
 ---
 sidebar_position: 6
 title: Manifest reference
-description: Every miabi.io/v1 kind and field accepted by apply and GitOps — Application, Stack, Database, Volume, Secret, Config, Registry, Middleware, Route, Domain and Project.
+description: Every miabi.io/v1 kind and field accepted by apply and GitOps — Application, Stack, Database, Volume, Secret, Config, Registry, Middleware, Route, CronJob, Job, Domain and Project.
 ---
 
 # Manifest reference
@@ -55,6 +55,8 @@ deploys to staging and production unchanged.
 | [`Registry`](#registry) | A container-registry credential for private images | 2nd |
 | [`Middleware`](#middleware) | A gateway policy — rate limit, auth, access rules — routes reference by name | 1st |
 | [`Route`](#route) | An HTTP routing rule (host/path → app:port + TLS) | 4th |
+| [`CronJob`](#cronjob) | A command run in an app on a schedule | 4th |
+| [`Job`](#job) | A command run in an app once, on a spec change, or on every release | 4th |
 | [`Domain`](#domain) | An owned hostname and its default TLS policy | 1st |
 | [`Project`](#project) | Bundles the resources above into one unit | — |
 
@@ -309,7 +311,7 @@ kind: Database
 metadata:
   name: shop-db
 spec:
-  engine: postgres      # postgres | mysql | mariadb | redis
+  engine: postgres      # postgres | mysql | mariadb | redis | mongodb | libsql
   version: "17-alpine"
   instance: auto        # auto | dedicated | shared
   placement:
@@ -658,6 +660,90 @@ rather than a literal password, so the credential lives in the vault and the man
 commit. They are never read back: a plan shows a rule change as `rule (current) → (changed)`, never
 the value. Rotating the secret behind the reference still converges — the engine compares a
 fingerprint of the *rendered* rule, so a change nothing else can see is still a change.
+
+---
+
+## CronJob
+
+A command run in an [application](#application)'s runtime context — its image, env, networks and
+volumes — on a cron schedule. `metadata.name` is unique in the workspace.
+
+```yaml
+apiVersion: miabi.io/v1
+kind: CronJob
+metadata:
+  name: nightly-report
+spec:
+  app: shop-api                # the Application it runs in
+  schedule: "0 2 * * *"        # 5-field cron, UTC
+  command: ["./shop-api", "report", "send"]
+  entrypoint: []               # optional: override the image's entrypoint
+  image: ""                    # optional: another image; omitted runs the app's active release
+  registry: ghcr               # optional: Registry that pulls image (only with image)
+  timeoutSeconds: 900          # 0 = platform default
+  concurrencyPolicy: forbid    # allow (default) | forbid | replace
+  historyLimit: 10             # finished runs kept; default 20
+  suspend: false               # optional, see below
+  security:
+    runAsUser: "1000"          # optional: omitted inherits the app's user
+```
+
+| Field | Notes |
+|---|---|
+| `app` | **Required.** Can't change: moving a schedule to another app is a delete and a create. |
+| `schedule` | **Required.** Checked when the plan is built, so a bad expression fails before anything applies. Missed fires while the control plane is down are not run afterwards. |
+| `command` | **Required.** A list of arguments, not a shell line. |
+| `concurrencyPolicy` | What a fire does while the previous run is active: start another, skip this fire, or cancel the running one. |
+| `suspend` | Only compared when stated. Leave it out and a pause made in the console survives the next sync. |
+
+A CronJob a GitOps source owns is read-only in the console: **Run now**, pause and resume still work
+there, but any other edit is refused with a pointer to the manifest.
+
+---
+
+## Job
+
+A declared one-off run. A Job is a run definition plus a fingerprint, so applying the same manifest
+twice never runs it twice, and a failed run is not retried by the next sync.
+
+```yaml
+apiVersion: miabi.io/v1
+kind: Job
+metadata:
+  name: migrate
+spec:
+  app: shop-api
+  command: ["./shop-api", "migrate", "up"]
+  runPolicy: onRelease       # onChange (default) | once | onRelease
+  waitForDeploy: true        # onChange only; default true
+  timeoutSeconds: 600
+  historyLimit: 5
+  backoffLimit: 2            # retries of a failed run, 0-10; default 0
+  security:
+    runAsUser: "1000"
+```
+
+`entrypoint`, `image` and `registry` work as on a [CronJob](#cronjob).
+
+| `runPolicy` | Runs when | Use it for |
+|---|---|---|
+| `onChange` | It is created, and whenever `command`, `entrypoint`, `image`, `registry`, `runAsUser` or `timeoutSeconds` change | A one-off data fix: edit the command to run it again |
+| `once` | It is created. Editing those fields afterwards is refused | Seeds and bootstrap: rename the Job to run a new one |
+| `onRelease` | A new release of the app becomes active — from a sync, the console, a pipeline or a rollback. A new Job also runs against the current release | Database migrations |
+
+**Waiting for a deploy.** An `onChange` Job applied in the same sync as an image change would
+otherwise run on the old release. With `waitForDeploy` (the default) its run waits for the app's
+deploy and starts on the release that deploy activates. If the deploy fails, the run is marked
+**skipped**.
+
+**`onRelease` runs after the new release is live.** For a moment the new code runs against the old
+schema, which is fine for additive migrations. Make destructive changes in two releases.
+
+**Adopting a job that already ran.** Set the annotation `miabi.io/skip-initial-run: "true"` and the
+Job is created without running.
+
+A failed or skipped last run marks its Git source **Degraded** until the Job succeeds. **Run again**
+on the **Declared** tab of **Jobs** runs it by hand without changing what the next sync does.
 
 ---
 

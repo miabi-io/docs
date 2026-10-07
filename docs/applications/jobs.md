@@ -59,7 +59,23 @@ command, image and user as a run, plus:
 | **Keep last** | How many past runs of this schedule to keep. |
 | **Enabled** | Untick to pause the schedule without deleting it. |
 
+A cronjob's **name** is unique in the workspace: lowercase letters, digits and hyphens, generated
+when you leave it blank. A **display name** is the free-text label the list shows.
+
 How many cronjobs a workspace may have is a [plan](/docs/workspaces/plans-and-quotas) limit.
+
+## Jobs from manifests
+
+Cronjobs and jobs can also be declared as `kind: CronJob` and `kind: Job` in [apply and GitOps
+manifests](/docs/cicd/manifest-reference#cronjob), or with the Terraform provider's `miabi_cronjob`
+and `miabi_job` resources.
+
+- A cronjob a Git source manages shows a **gitops** badge. It is read-only here: **Run now**, pause
+  and resume still work, but other edits are made in its manifest.
+- Declared jobs are listed on the **Declared** tab with their run policy and the state of their last
+  run. **Run again** runs one by hand; the next sync doesn't run it a second time.
+- A run held for the app's deploy shows **waiting for the app's deploy**. If that deploy fails, the
+  run is **skipped** and never starts.
 
 ## Viewing output
 
