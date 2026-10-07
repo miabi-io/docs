@@ -126,7 +126,7 @@ Off by default. See [GPUs](/docs/applications/gpus) for the full workflow.
 | `MIABI_METRICS_ENABLED` | `false` | Prometheus `/metrics` + history scraper. **Off by default** — `/metrics` is not served until you enable it |
 | `MIABI_METRICS_SCRAPE_SECONDS` | `60` | Metrics sampling interval |
 | `MIABI_METRICS_RETENTION_HOURS` | `24` | Metrics history window |
-| `MIABI_PROXY_NETWORK` | `miabi` | Docker network shared by the gateway and app containers so the proxy can reach backends (legacy alias: `MIABI_GOMA_NETWORK`) |
+| `MIABI_PROXY_NETWORK` | *(discovered)* | Docker network shared by the gateway and app containers so the proxy can reach backends (legacy alias: `MIABI_GOMA_NETWORK`). Unset, Miabi uses the network labelled `io.miabi.role=control-plane`, else an existing `miabi` network from before the rename, else creates `miabi-proxy` |
 | `MIABI_INTERNAL_NETWORK` | *(unset)* | The platform's [private network](/docs/networking/networks-and-subnets#the-platforms-private-network), where the control-plane database and cache live. Set by `miabi setup` (`spec.networking.internal`); on a Compose stack `.env.example` sets it to `miabi-internal`, the network `compose.yaml` creates |
 | `MIABI_GOMA_PROVIDER_DIR` | `/etc/goma/providers` | Directory where Miabi writes per-route Goma config files that the gateway hot-reloads |
 | `MIABI_WEB_DIR` | — | Directory of the built web UI; when set, Miabi serves it as an SPA at `/`. The official image serves the UI from the embedded binary |
@@ -302,7 +302,7 @@ tab. See [Registry](/docs/registry/administration).
 |----------|---------|-------------|
 | `MIABI_NODE_GATEWAY_IMAGE` | `jkaninda/goma-gateway:1.0.0` | Goma image deployed on edge-gateway nodes. The default is the gateway version this Miabi build is tested against |
 | `MIABI_CONTROL_URL` | falls back to `MIABI_API_URL` | Public URL remote nodes reach the control plane at |
-| `MIABI_NETWORK_POOL_CIDR` | `10.64.0.0/12` | Address pool workspace networks are carved from. Must not overlap the shared `miabi` network (`10.63.0.0/16` by default — set with `miabi setup --subnet` or `spec.networking.proxy.subnet`), your LAN or a VPN |
+| `MIABI_NETWORK_POOL_CIDR` | `10.64.0.0/12` | Address pool workspace networks are carved from. Must not overlap the shared `miabi-proxy` network (`10.63.0.0/16` by default — set with `miabi setup --subnet` or `spec.networking.proxy.subnet`), your LAN or a VPN |
 | `MIABI_NETWORK_SUBNET_PREFIX` | `24` | Prefix length per workspace network (a `/12` pool ⇒ 4096 networks) |
 | `MIABI_NETWORK_IPV6` | `false` | Give every Miabi-created network a dual-stack address space. Needs Docker Engine 26+ unless `MIABI_NETWORK_IPV6_ULA_PREFIX` is set; on an older engine Miabi logs why and leaves it off rather than failing every network |
 | `MIABI_NETWORK_IPV6_ULA_PREFIX` | *(unset)* | Pin each network's `/64` under this ULA prefix (`/48` or shorter, e.g. `fd42:6d69:6162::/48`), derived from its IPv4 subnet. Unset lets Docker assign one |

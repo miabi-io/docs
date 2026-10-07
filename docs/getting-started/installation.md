@@ -464,12 +464,12 @@ cp .env.example .env
 # Optional but recommended: pre-create the shared app network with a roomy CIDR so
 # it isn't capped by Docker's small default pool. Compose creates it for you
 # otherwise. See Networks & Subnets.
-docker network create --driver bridge --subnet 10.63.0.0/16 miabi || true
+docker network create --driver bridge --subnet 10.63.0.0/16 miabi-proxy || true
 docker compose up -d
 docker compose logs -f miabi
 ```
 
-The stack comes up on **two** networks: `miabi`, shared with every app you expose with a route, and
+The stack comes up on **two** networks: `miabi-proxy`, shared with every app you expose with a route, and
 `miabi-internal`, private to PostgreSQL, Redis and the control plane. Only the gateway is on both.
 Compose creates the private one for you, and `.env.example` already sets the matching
 `MIABI_INTERNAL_NETWORK`. See
