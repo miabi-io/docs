@@ -346,12 +346,21 @@ installs and operates a Miabi host — see
 | `miabi setup [-d, --domain <host>] [--version <x.y.z>] [--image <ref>] [--yes]` | Install the stack on this host, or converge an existing install. Idempotent. A fresh install defaults to the latest published release. |
 | `miabi upgrade [component] [--version <x.y.z>] [--image <ref>] [--yes]` | Roll the stack forward, rolling back automatically if the new image never becomes healthy. `--version` swaps only the tag (keeping a private registry); `--image` replaces the whole reference. Also available as `miabi stack upgrade`. |
 | `miabi stack status` | What is running, its health, and any drift from the manifest. |
-| `miabi stack restart [component] [--yes]` | Restart in place so containers re-read their on-disk config. |
+| `miabi stack apply [--yes]` | Bring the running stack in line with the manifest: lists the components whose spec changed, then recreates only those. Nothing changed means nothing restarts. |
+| `miabi stack restart [component] [--yes]` | Restart in place so containers re-read their on-disk config. A restart does not apply manifest changes — use `stack apply`. |
 | `miabi stack uninstall [--volumes] [--yes]` | Remove the stack's containers; `--volumes` also destroys the database. |
 | `miabi stack migrate-config` | Rename the legacy `/etc/miabi/stack.yaml` to `/etc/miabi/miabi.yaml`. |
 | `miabi stack env ls` / `get KEY` | Show the environment the manifest carries. `--gateway` reads the gateway's instead of the control plane's. |
-| `miabi stack env set KEY=VALUE […]` | Write variables, show what changes, and recreate the component they belong to. `--no-apply` saves without converging. |
-| `miabi stack env unset KEY […]` | Remove variables. A variable Miabi seeds (`TZ`, `MIABI_LOG_LEVEL`) comes back at its default rather than disappearing, and the output says so. |
+| `miabi stack env set KEY=VALUE […] [--apply]` | Write variables to the manifest and show what changes. The running stack keeps the old values until `miabi stack apply`; `--apply` does both in one step. |
+| `miabi stack env unset KEY […] [--apply]` | Remove variables. A variable Miabi seeds (`TZ`, `MIABI_LOG_LEVEL`) comes back at its default rather than disappearing, and the output says so. |
+
+Edits are saved, not applied, so several of them cost one recreate per component:
+
+```bash
+sudo miabi stack env set MIABI_SMTP_HOST=smtp.example.com MIABI_SMTP_PORT=587
+sudo miabi stack env set GOMA_LOG_LEVEL=debug --gateway
+sudo miabi stack apply
+```
 
 `stack env` is also reachable as `miabi setup env …` — the same command under the verb an operator
 reaches for when configuring an install. Settings the manifest models with their own field (the

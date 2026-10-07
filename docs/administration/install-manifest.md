@@ -108,10 +108,11 @@ sudo miabi stack env ls
 sudo miabi stack env set MIABI_SMTP_HOST=smtp.example.com
 sudo miabi stack env set GOMA_LOG_LEVEL=debug --gateway
 sudo miabi stack env unset MIABI_SMTP_HOST
+sudo miabi stack apply
 ```
 
-Each shows what changes, asks, then converges — recreating only the component whose environment
-moved. The error names where the value lives when a variable is refused:
+Each edit shows what changes and saves it; `stack apply` then recreates only the components whose
+environment moved (`--apply` on an edit does both at once). The error names where the value lives when a variable is refused:
 
 - **Always refused:** anything Miabi derives from the manifest (domain, secrets, images, networks),
   every `MIABI_REGISTRY_*` variable, and `GOMA_CONFIG_ENCRYPTION_KEY`, whose only home is

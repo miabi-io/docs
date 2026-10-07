@@ -24,7 +24,8 @@ Set these variables under the manifest's `spec.server.env` instead, then apply t
 one command, or by editing the file and converging:
 
 ```bash
-sudo miabi stack env set MIABI_LOG_LEVEL=debug   # writes the value, shows the change, converges
+sudo miabi stack env set MIABI_LOG_LEVEL=debug   # writes the value and shows the change
+sudo miabi stack apply                           # recreates only the components that changed
 
 sudo vi /etc/miabi/miabi.yaml     # spec: { server: { env: { MIABI_LOG_LEVEL: debug, … } } }
 sudo miabi setup                  # re-converges; recreates only what actually changed
@@ -51,6 +52,7 @@ attempts to override them from `env:` — see [The manifest](/docs/getting-start
 | `MIABI_ENCRYPTION_KEY` | — | **Required in production.** AES key for secrets at rest (env vars, DB passwords, custom certs). Miabi refuses to start outside dev without it; in dev, those values are then only base64-encoded |
 | `MIABI_WEB_URL` | — | Public URL of your instance (used for links, OAuth callbacks, invitations). Also the CORS allowlist, so it must be a concrete origin |
 | `MIABI_CORS_ORIGINS` | `MIABI_WEB_URL`, else `*` | Comma-separated allowed origins; a `*` wildcard is rejected in production |
+| `MIABI_TRUSTED_PROXIES` | *(empty)* | Comma-separated CIDRs or IPs allowed to set `X-Forwarded-For` / `X-Real-IP`. Empty trusts those headers from any client — see [Trusted proxies](#trusted-proxies) |
 | `MIABI_LOGIN_TOKEN_TTL_HOURS` | `24` | Lifetime of the API key minted by `miabi login` and **Copy login command** — see [Signing in from the CLI](/docs/security/authentication) |
 | `MIABI_LOGIN_TOKEN_MAX_TTL_HOURS` | `168` | Longest lifetime a caller may request for that key |
 | `MIABI_ADMIN_EMAIL` | `admin@example.com` | Login of the platform admin seeded on first boot |
@@ -221,6 +223,25 @@ Prefer **Traefik** as the edge proxy? Miabi ships a Traefik variant
 (`compose.traefik.yaml`) — see [Reverse proxy & Traefik](/docs/networking/reverse-proxy-and-traefik)
 for its trade-offs (label-based routing; rolling/canary and the built-in registry require Goma). See
 [TLS Certificates](/docs/networking/tls-certificates) for the certificate model.
+
+### Trusted proxies
+
+Miabi takes the client IP from `X-Forwarded-For` / `X-Real-IP`, and uses it for rate limits, the
+admin IP allowlist, API-key IP restrictions and the audit log. By default it trusts those headers from
+any client, so anyone who reaches the control plane directly can claim any address.
+
+Set `MIABI_TRUSTED_PROXIES` to the networks your proxies connect from, and the headers count only on
+requests coming from them; every other request is attributed to its connection address. On a default
+install the gateway reaches the control plane over the private network:
+
+```bash
+sudo miabi stack env set MIABI_TRUSTED_PROXIES=10.62.0.0/16
+sudo miabi stack apply
+```
+
+On a Compose stack, set it in `.env`. Entries are CIDRs (`10.62.0.0/16`) or single addresses
+(`192.0.2.7`). If any entry is invalid, Miabi logs an error and trusts **no** proxy until it is
+fixed, so a typo cannot widen what is trusted.
 
 ## Outbound email (SMTP)
 
