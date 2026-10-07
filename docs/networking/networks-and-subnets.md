@@ -150,7 +150,15 @@ The shared network used to be called `miabi`. An existing install keeps that nam
 recorded it in the manifest, and a control plane with `MIABI_PROXY_NETWORK` unset finds the network
 on the engine instead of creating a new one. On a Compose stack, keep `MIABI_PROXY_NETWORK=miabi` in
 your `.env` — the compose file names the network from it, and an unset value creates `miabi-proxy`
-and moves the gateway away from your apps.
+and moves the gateway away from your apps. Compose also refuses the old network, because it was
+created under the old key, so adopt it with a `compose.override.yaml` next to `compose.yaml`:
+
+```yaml
+networks:
+  miabi-proxy:
+    name: miabi
+    external: true
+```
 :::
 
 ## Managed subnet allocation

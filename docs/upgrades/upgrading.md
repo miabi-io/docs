@@ -130,9 +130,12 @@ Environment variables need no hand-editing at all:
 sudo miabi stack env set MIABI_LOG_LEVEL=debug        # control plane
 sudo miabi stack env set GOMA_LOG_LEVEL=debug --gateway
 sudo miabi stack env unset MIABI_SMTP_HOST
+sudo miabi stack apply
 ```
 
-Each shows the change, asks, then converges — recreating only the component whose environment moved.
+Each edit shows the change and saves it; `stack apply` then recreates only the components whose
+environment moved, once each however many edits you made. Pass `--apply` to an edit to do both in one
+step.
 
 The converge is idempotent: components whose configuration did not change are left alone, and only
 what actually changed is recreated. Bumping PostgreSQL is therefore something you ask for by name,

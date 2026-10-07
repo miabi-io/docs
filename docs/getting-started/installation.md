@@ -206,8 +206,8 @@ protection is lost.
 
 Edit it and re-run `sudo miabi setup` — the converge is idempotent, so only what actually changed
 is recreated. For environment variables there is no need to edit by hand:
-`sudo miabi stack env set MIABI_SMTP_HOST=smtp.example.com` writes the value, shows what changes, and
-converges.
+`sudo miabi stack env set MIABI_SMTP_HOST=smtp.example.com` writes the value and shows what changes;
+`sudo miabi stack apply` then recreates only the components that changed.
 
 :::note Installs from before this release
 The manifest used to be a flat file starting `version: 1`. Both shapes load, and `miabi setup` writes
