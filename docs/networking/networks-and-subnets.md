@@ -52,7 +52,7 @@ join it, keeping unexposed apps off the public path. See
 ## The shared gateway network
 
 The gateway and every routed app/database container share one bridge network —
-`miabi` by default (`MIABI_PROXY_NETWORK`). Because *all* exposed containers on the host pile onto
+`miabi-proxy` by default (`MIABI_PROXY_NETWORK`). Because *all* exposed containers on the host pile onto
 this single network, it needs plenty of address space, so it is treated differently from the
 per-workspace networks above:
 
@@ -62,7 +62,7 @@ per-workspace networks above:
 - **Distinct from the workspace pool.** Its CIDR must not overlap `MIABI_NETWORK_POOL_CIDR` (the
   `10.64.0.0/12` pool below) or your LAN. The default `10.63.0.0/16` sits just outside the pool.
 
-The [Compose files](https://github.com/miabi-io/miabi/tree/main/examples/compose) declare `miabi` as
+The [Compose files](https://github.com/miabi-io/miabi/tree/main/examples/compose) declare `miabi-proxy` as
 an ordinary Compose network, so Compose creates it (and `docker compose down` removes it) with a subnet
 from Docker's default address pools. Add an `ipam` block to the network in your Compose file if you
 need a specific range.
@@ -73,9 +73,9 @@ Miabi's own components do **not** sit on the shared gateway network. They get a 
 bridge — `miabi-internal` — and only the gateway is on both. This is true of every install path: a
 managed one (`install.sh`, `miabi setup`) creates it with an explicit `10.62.0.0/16`, and the
 [Compose files](https://github.com/miabi-io/miabi/tree/main/examples/compose) declare it alongside
-`miabi`.
+`miabi-proxy`.
 
-| Container | `miabi` (shared) | `miabi-internal` (private) |
+| Container | `miabi-proxy` (shared) | `miabi-internal` (private) |
 |---|---|---|
 | `miabi-gateway` | ✅ reaches your apps, and the internet for ACME | ✅ reaches Miabi and Redis |
 | `miabi` (control plane) | — | ✅ |
@@ -97,7 +97,7 @@ The built-in registry sits on the private network only for the same reason: it r
 to authenticate every request, so app containers must not be able to reach it directly. A Compose
 stack needs `MIABI_INTERNAL_NETWORK` set for this — see the upgrade note below.
 
-Nothing about deploying, routing, or connecting apps changes: your containers still join `miabi`
+Nothing about deploying, routing, or connecting apps changes: your containers still join `miabi-proxy`
 when they have a route, exactly as before.
 
 ### Changing the subnets
@@ -118,7 +118,7 @@ They are also flags on `miabi setup` (`--subnet`, `--internal-subnet`) and are r
 ```yaml
 spec:
   networking:
-    proxy:    { name: miabi,          subnet: 10.63.0.0/16 }
+    proxy:    { name: miabi-proxy,    subnet: 10.63.0.0/16 }
     internal: { name: miabi-internal, subnet: 10.62.0.0/16 }
 ```
 
@@ -139,10 +139,18 @@ restart any upgrade involves.
 Pull the new `compose.yaml`, add `MIABI_INTERNAL_NETWORK=miabi-internal` to your `.env`, and
 `docker compose up -d` — Compose creates the network and moves the containers onto it. The variable
 matters: Miabi reads it to place the helper containers it runs out of process (platform backups, the
-built-in registry), and an empty value leaves them on `miabi` alone, where the database no longer is.
+built-in registry), and an empty value leaves them on the proxy network alone, where the database no longer is.
 
 On the Traefik variant the control plane also carries `traefik.docker.network=miabi-internal`, since
-Traefik's Docker provider otherwise looks for the panel's address on `miabi` and finds none.
+Traefik's Docker provider otherwise looks for the panel's address on the proxy network and finds none.
+:::
+
+:::note Installs created before `miabi-proxy`
+The shared network used to be called `miabi`. An existing install keeps that name: `miabi setup`
+recorded it in the manifest, and a control plane with `MIABI_PROXY_NETWORK` unset finds the network
+on the engine instead of creating a new one. On a Compose stack, keep `MIABI_PROXY_NETWORK=miabi` in
+your `.env` — the compose file names the network from it, and an unset value creates `miabi-proxy`
+and moves the gateway away from your apps.
 :::
 
 ## Managed subnet allocation
@@ -205,7 +213,7 @@ spec:
       # ipv6UlaPrefix: fd42:6d69:6162::/48
 ```
 
-The manifest's `ipv6` drives both halves: the platform's `miabi` network **and** the workspace
+The manifest's `ipv6` drives both halves: the platform's `miabi-proxy` network **and** the workspace
 networks the server creates, so you cannot end up with a dual-stack proxy network in front of
 single-stack app networks.
 
