@@ -152,8 +152,10 @@ the host port you want (**Suggest** picks one that is currently free).
 
 Host ports are a **node-wide shared resource** — two apps cannot both own `:8080` on the
 same machine. So a request enters a review queue and a **platform admin approves it**
-before anything is published. Admins review these under **Platform admin → Infrastructure →
-Ports** — see [Moderating host ports](/docs/administration/workspace-oversight#moderating-host-ports).
+before anything is published, unless the platform's
+[host-port policy](/docs/security/security-center#host-ports) approves ports in a range
+automatically or turns host ports off. Admins review these under **Platform admin → Platform →
+Security → Host ports** — see [Moderating host ports](/docs/administration/workspace-oversight#moderating-host-ports).
 
 Requests are bounded by `MIABI_HOST_PORT_MIN` / `MIABI_HOST_PORT_MAX` (default `1024`
 and above), so an ordinary workspace cannot ask for a privileged port.

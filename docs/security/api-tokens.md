@@ -89,18 +89,19 @@ hands back a credential:
 
 A key created with **no scope** is read-only.
 
-:::note Enforcement is staged
-Scopes were stored but not checked on earlier releases. Because a key created with the default
-**Read** scope may have been writing for months, enforcement ships behind
-`MIABI_API_KEY_SCOPE_ENFORCEMENT`:
+:::note Enforcement
+Scopes are checked according to `MIABI_API_KEY_SCOPE_ENFORCEMENT`:
 
 | Value | Behaviour |
 |---|---|
-| `off` | no check — the earlier behaviour |
-| `warn` *(default)* | the request succeeds, and the violation is recorded as an `api_key.scope_violation` [audit event](/docs/operations/audit-log) with an `X-Miabi-Scope-Required` response header |
-| `enforce` | the request is refused with `403` |
+| `enforce` *(default)* | the request is refused with `403` and an `X-Miabi-Scope-Required` response header naming the scope it needed |
+| `warn` | the request succeeds, and the violation is recorded as an `api_key.scope_violation` [audit event](/docs/operations/audit-log) with the same response header |
+| `off` | no check |
 
-Run on `warn` until the audit log is quiet, then switch to `enforce`. The log names the key, the
+Earlier releases stored scopes but did not check them, so a key created with the default **Read**
+scope may have been writing for months. An install upgraded with API keys already issued therefore
+stays on `warn` until you set the variable, and logs a warning at startup. Run on `warn` until the
+audit log is quiet, then set `MIABI_API_KEY_SCOPE_ENFORCEMENT=enforce`. The log names the key, the
 user, the route and the scope it needed, so you can re-issue each key with the right scopes first.
 :::
 
@@ -114,7 +115,20 @@ curl -H "Authorization: Bearer <YOUR_KEY>" https://your-instance.example.com/api
 
 The complete, interactive API reference — every endpoint, parameter, and response — is auto-generated and served at `/docs` on any running Miabi instance. Explore it at [https://demo.miabi.io/docs](https://demo.miabi.io/docs).
 
-Prefer a command-line tool? The [Miabi CLI](/docs/cicd/cli) authenticates with these keys and wraps the common flows (deploy, rollback, logs, apply). For CI, create a dedicated key bound to the one workspace the pipeline deploys to, with an expiry and, where possible, an IP allowlist.
+Wherever a path takes an application, you can use its **name** instead of its numeric id, for
+example `/api/v1/workspaces/acme/apps/web/deploy`. A name made only of digits is read as an id.
+
+Deploy and rollback accept `?wait=<seconds>` (at most 900). The request then returns once the
+deployment has settled — succeeded, failed, or paused as a canary — instead of right away. If it has
+not settled in time, you get the deployment as it stands, with the response header
+`X-Miabi-Wait: timeout`:
+
+```bash
+curl -X POST -H "Authorization: Bearer <YOUR_KEY>" \
+  "https://your-instance.example.com/api/v1/workspaces/acme/apps/web/deploy?wait=300"
+```
+
+Prefer a command-line tool? The [Miabi CLI](/docs/cicd/cli) authenticates with these keys and wraps the common flows (deploy, rollback, logs, apply). For CI and other automation, use a [service account](/docs/security/service-accounts) rather than a personal key: it keeps working when the person who set it up leaves.
 
 ## Revoking a key
 

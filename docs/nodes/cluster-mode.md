@@ -115,6 +115,10 @@ Private networks never span locations. Attaching a database, mounting a volume, 
 referencing an app or database from a manifest across two locations is refused with a message naming
 both. Across two nodes of one location it is allowed only when the cluster runs a swarm.
 
+A resource stays in the location it was created in. To move an application later, together with its
+volumes and databases, use a [location migration](/docs/applications/moving-between-locations)
+(Enterprise).
+
 ### External access
 
 Each cluster has its own **external domain** for [one-click app URLs](/docs/applications/exposing-your-app),

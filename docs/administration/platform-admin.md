@@ -79,7 +79,6 @@ dashboard. The sidebar is grouped as below, and this table is the map.
 |---|---|
 | **Clusters** | Standalone and swarm clusters, the locations workspaces deploy to. See [Cluster Mode](/docs/nodes/cluster-mode). |
 | **Nodes** | The fleet: status, health, pools, container inventory, housekeeping and Docker import. See [Nodes & Capacity](/docs/administration/nodes-and-capacity). |
-| **Ports** | Every host port on every node, and the host-port approval queue. See [Workspace Oversight](/docs/administration/workspace-oversight#moderating-host-ports). |
 | **Storage classes** | The disks volumes may be created on, beyond Docker's own data root (Enterprise). See [Storage classes](/docs/storage/storage-classes). |
 | **Kernel grants** | Every application holding an extra Linux capability or host device. See [Capabilities & devices](/docs/applications/capabilities-and-devices). |
 | **Shared Runners** | The platform-shared build machines pipelines execute on. See [Runners](/docs/cicd/runners). |
@@ -96,6 +95,7 @@ dashboard. The sidebar is grouped as below, and this table is the map.
 
 | Section | Responsibility |
 |---|---|
+| **Security** | The Security Center: host-port policy and approval queue, the admin console unlock, and the decision log. See [Security Center](/docs/security/security-center). |
 | **Platform Settings** | The typed, cached key-value configuration governing instance-wide behaviour. See [Platform Settings](/docs/operations/platform-settings). |
 | *(fields pinned by the install manifest)* | A setting stated in `/etc/miabi/miabi.yaml` — a backup destination, the external base domain, the registry host — is **read-only in the console**, shown with the variable that decides it. That is deliberate: it keeps an install described by infrastructure-as-code authoritative. Remove the field from the manifest and converge to hand the setting back. |
 | **Branding** | The sign-in page and console identity: name, logos, favicon, accent policy and sign-in notice (Enterprise). See [Branding](/docs/administration/branding). |

@@ -100,6 +100,14 @@ spec:
     capabilities:
       add: [NET_BIND_SERVICE] # allow-listed grants
       drop: [ALL]             # any Linux capability, or ALL
+  healthcheck:                # when a release counts as up; omit to keep the app's check
+    type: http                # http | command | image (default) | none
+    path: /healthz            # http: the URL path probed
+    port: 8080                # http: defaults to the app's first port
+    intervalSeconds: 10       # default 30
+    timeoutSeconds: 5         # default 5
+    retries: 3                # default 3
+    startPeriodSeconds: 20    # default 0 — grace before failures count
   ports:
     - container: 8080
       scheme: http            # http | https (default http) — how the proxy talks to it
@@ -138,7 +146,7 @@ spec:
 | `digest` | A `sha256:…` pin. CI writes it; GitOps converges the runtime to it. |
 | `registry` | Names a [`Registry`](#registry) credential. It need not be declared in the same bundle — an undeclared name resolves against the workspace's existing credentials. An unknown name is an error, not a silent anonymous pull. |
 | `command` | Overrides the image's command (argv form). |
-| `stack` | Must name a [`Stack`](#stack) **in the same bundle**. Members share a network and resolve each other by name. |
+| `stack` | Must name a [`Stack`](#stack) **in the same bundle**. Members share a network and resolve each other by name. Joins the app to the stack on create, and moves it when changed; omit it to keep a membership set in the console. A single-app export leaves it out, since it carries no Stack. |
 | `placement.location` | The [location](/docs/nodes/cluster-mode#locations) the app is created in, by name. Omit it to use its stack's location; else, when every database it references sits in one location, that location; else the workspace default. An app that mounts a volume is created on that volume's node. Fixed once created — see [locations](#locations). |
 | `placement.constraints` | Service only. Swarm placement constraints, such as `node.labels.disk==ssd` or `node.role!=manager`, narrowing the nodes of the app's location it runs on. An empty list clears them; omitting the field keeps them. A plan's [node pool](/docs/nodes/cluster-mode#node-pools) still applies on top. |
 | `deployment.runtime` | `container` (default) runs one Docker container; `service` runs a replicated Swarm service, which needs a location that runs a swarm — see [cluster mode](/docs/nodes/cluster-mode). Omitted, a new app is a container and an existing app keeps its runtime; stated, a change converges. |
@@ -155,6 +163,7 @@ spec:
 | `security.noNewPrivileges` | Stops a process gaining privileges through setuid binaries. The restricted security profile always sets it, so `false` is refused there rather than silently overridden. |
 | `security.capabilities` | `add` grants [capabilities](/docs/applications/capabilities-and-devices) from the allow-list, in a privileged workspace; `drop` removes any Linux capability, or `ALL` to keep only what `add` grants. The `CAP_` prefix is optional; a capability both added and dropped is an error. |
 | `security.devices` | Host devices exposed to the container — see [capabilities & devices](/docs/applications/capabilities-and-devices). Not allowed on a service. |
+| `healthcheck` | How a deploy knows the new release is up — see [health checks](#health-checks). Only the fields stated are applied; omit the block to keep the app's current check. |
 | `resources` | Omitted fields mean unlimited / none. |
 | `source` | Build the image from Git instead of pulling one — see [Building from source](#building-from-source). Mutually exclusive with `image`. |
 | `containerLabels` | Reserved namespaces (`io.miabi.*`, `com.docker.*`) are stripped rather than rejected. See [container labels](/docs/applications/container-labels). |
@@ -169,6 +178,46 @@ and `security.addCapabilities`, are read as `security.runAsUser`, `deployment.st
 `security.capabilities.add`. Setting an old spelling together with its new one is an error, and an
 export always writes the new ones.
 :::
+
+### Health checks
+
+A health check is what makes a deploy safe: with an `http` or `command` check, a rolling deploy starts
+the new container, waits for it to report healthy, and only then moves traffic to it and retires the
+old one. A release that never
+turns healthy fails the deploy, and the running one keeps serving.
+
+```yaml
+kind: Application
+metadata: { name: guestbook }
+spec:
+  image: miabi/guestbook
+  tag: "3.0.0"
+  ports: [{ container: 8080, externalAccess: true }]
+  healthcheck:
+    type: http
+    path: /healthz
+    intervalSeconds: 10
+```
+
+| `type` | Healthy when | Needs |
+|---|---|---|
+| `http` | A `GET` of `path` on `port` (default: the app's first port) answers `2xx` or `3xx`. | Nothing in the image for a `container` app: Miabi copies a small probe in, so distroless and scratch images work. A `service`, or a read-only root filesystem, probes with the image's `curl`, `wget` or `bash` instead. |
+| `command` | `command` exits `0`, e.g. `pg_isready`. | A shell in the image; the command runs through it. |
+| `image` | The image's own `HEALTHCHECK`, if it declares one. The **default**. | Nothing. Deploys don't wait for it: its timing is the image's. |
+| `none` | — | No check at all: the image's own `HEALTHCHECK` is turned off too. Use it for queue workers and schedulers built from a web image, whose baked-in HTTP check would otherwise fail and get a Swarm task replaced in a loop. |
+
+`intervalSeconds` (default 30) is the time between probes, `timeoutSeconds` (default 5) how long one
+may take, `retries` (default 3) how many consecutive failures make the container unhealthy, and
+`startPeriodSeconds` (default 0) a grace period after start in which failures don't count, for apps
+that are slow to warm up.
+
+**Only the fields you state are applied.** A manifest without a `healthcheck` block leaves the check
+set in the console alone, and one stating just `type` and `path` keeps the app's timing. Set
+`type: image` to go back to the image's own check, or `type: none` to have no check at all. A
+`command` check needs `command`, and `path` must start with `/`.
+
+The [`healthcheck.yaml`](https://github.com/miabi-io/miabi/blob/main/examples/apply/healthcheck.yaml)
+example shows an HTTP check, a slow starter with a start period, and a command check.
 
 ### Building from source
 
@@ -325,7 +374,7 @@ spec:
 
 | Field | Converges? | Notes |
 |---|---|---|
-| `size` | **Yes** | A declared number for quota accounting, so changing it moves no data. Shrinking it below the volume's measured usage is refused. |
+| `size` | **Grow only** | A declared number for quota accounting, so changing it moves no data. A larger size is applied; a smaller one is refused, including one below a capacity expanded in the console, until the manifest catches up. Omitted, the volume keeps its capacity. |
 | `storageClass` | **No — refused** | The data physically lives there. |
 | `placement.location` | **No — refused** | Same reason. |
 
@@ -850,13 +899,13 @@ resource never shows phantom drift:
 **Diffed** — image, tag, digest, the build `source`, command, registry, resource caps, non-secret env,
 container labels, the `security` block, and per-port exposure (`externalAccess` / `publish` as present-or-not).
 
-**Diffed only when stated** — `deployment` (runtime, replicas, strategy, update) and `placement`
-(location, constraints). A manifest silent about them leaves what the console set alone.
+**Diffed only when stated** — `deployment` (runtime, replicas, strategy, update), `placement`
+(location, constraints), each `healthcheck` field, and `stack`. A manifest silent about them leaves
+what the console set alone, so removing `stack` from a manifest does not take the app out of its stack.
 
-**Not diffed** — create-time structure that cannot be mapped back unambiguously: ports themselves,
-mounts, and stack membership. Ports are set only when the app is created — recreate it to change them.
-A mount change is written by the next apply that updates the app for another reason, as is stack
-membership; recreate it to be certain.
+**Not diffed** — create-time structure that cannot be mapped back unambiguously: ports themselves and
+mounts. Ports are set only when the app is created — recreate it to change them. A mount change is
+written by the next apply that updates the app for another reason; recreate it to be certain.
 
 Mounts aren't diffed, but a mounted config's *content* still converges: each app carries a
 fingerprint of every config it mounts, so editing a file plans as an update of the app itself. An app
@@ -945,6 +994,19 @@ POST /api/v1/workspaces/{workspace}/apply
 
 `delete` is the inverse of apply: it removes exactly the resources the bundle names, regardless of
 which subsystem owns them, and ignores entries that don't exist. It honours `dry_run`.
+
+A dry run also checks every `{{ … }}` reference — in env, registry passwords, middleware rules and
+config files — and fails on one that names something neither the bundle declares nor the workspace
+has, or a field it lacks:
+
+```text
+unresolvable references:
+  unknown secret "db-pasword" (.secrets.db-pasword in application "web" env DB_PASS)
+```
+
+A reference to something the bundle creates is fine, since it exists by the time it is rendered. A
+real apply skips this check: it converges everything else and reports the app it cannot render. The
+GitOps diff view runs the same check.
 
 ## Related
 

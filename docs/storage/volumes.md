@@ -41,6 +41,18 @@ Name volumes after the data they hold, not the app — it keeps things readable 
 several volumes, or when you later reuse a volume.
 :::
 
+## Expanding a volume
+
+A volume created with a size limit can grow. Open it, go to **Settings → Capacity**, enter the new
+size in MB and confirm. The capacity only goes up: it cannot be reduced afterwards, and the increase
+counts against the plan's storage quota. It is a declared number, so no data moves and the volume
+keeps running. Whether writes are actually capped at it depends on the node's storage backend.
+
+The volume's **Overview** shows its measured usage against that capacity. Usage is measured
+periodically, so a new volume reads *not measured yet* until the first sweep.
+
+A volume created without a size limit has no capacity to expand.
+
 ## Volume types & shared storage
 
 When you create a volume you pick its **type**, which decides where the data lives and whether a

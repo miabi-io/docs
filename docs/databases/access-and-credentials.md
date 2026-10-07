@@ -25,12 +25,13 @@ database, including across [version upgrades](/docs/databases/version-upgrades).
 
 ## How apps consume them
 
-Attach a database to an [application](/docs/applications/overview), and Miabi injects the
-connection details as **environment variables** backed by the secret vault:
+Link a database to an [application](/docs/applications/overview) from the app's **Databases** tab,
+and Miabi injects the connection details as **environment variables** backed by the secret vault:
 
 | Variable | Value |
 |---|---|
-| `DATABASE_URL` | The full connection URL, as a reference to its managed secret |
+| `DB_URL` | The full connection URL, as a reference to its managed secret |
+| `DATABASE_URL` | Same as `DB_URL`. **Deprecated**: kept for existing apps, use `DB_URL` |
 | `DB_HOST` / `DB_PORT` | The in-network host and port |
 | `DB_NAME` | The logical database |
 | `DB_USER` | The database's own scoped user |
@@ -38,15 +39,34 @@ connection details as **environment variables** backed by the secret vault:
 
 The password and URL are injected as `${{ secrets.… }}` references to the database's
 [managed secrets](/docs/secrets/overview#managed-secrets), so the plaintext never sits in the app's
-settings. An optional **env prefix**, set when you link the database from the app, namespaces the
-variables so one app can use several databases: prefix `ANALYTICS` gives `ANALYTICS_DATABASE_URL`,
-`ANALYTICS_DB_HOST`, and so on. Your app reads them like any other
+settings. Your app reads them like any other
 [environment variables](/docs/applications/environment-variables); a newly linked database takes
-effect on the app's next deploy.
+effect on the app's next deploy, and unlinking it removes exactly the variables it injected.
+
+### Redis
+
+Redis has no per-app databases, so you link the **instance** itself, and several apps can link the
+same one. It injects `REDIS_URL`, `REDIS_HOST`, `REDIS_PORT` and `REDIS_PASSWORD`, so it sits next
+to an SQL database without clashing.
+
+### Prefixes and custom names
+
+An optional **env prefix** namespaces the variables so one app can use several databases: prefix
+`ANALYTICS` gives `ANALYTICS_DB_URL`, `ANALYTICS_DB_HOST`, and so on.
+
+To match what a framework expects, open **Environment variables** in the link dialog and rename any
+field's variable (for example `url` → `SPRING_DATASOURCE_URL`), or untick it to skip it. Untick
+`database_url` if your app doesn't read the deprecated name.
+
+Two links on the same app can't inject the same variable: Miabi refuses the link and names the
+clash, so set a prefix or rename the variables.
+
+The same options are available from the [CLI](/docs/cicd/cli) (`miabi db link`) and Terraform
+(`miabi_database_link`).
 
 :::tip
-Reference the injected connection URL (for example `DATABASE_URL`) instead of hardcoding
-credentials, so moving the app to another database needs no code change.
+Reference the injected connection URL (`DB_URL`) instead of hardcoding credentials, so moving the
+app to another database needs no code change.
 :::
 
 ## libSQL token auth {#libsql-token-auth}

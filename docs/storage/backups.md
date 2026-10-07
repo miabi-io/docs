@@ -22,6 +22,7 @@ backup runs an ecosystem tool as a one-shot container against your database.
 | Database backup | libSQL | `libsql-bkup` | S3 target, else the local backup volume |
 | Recovery point | Every database on an instance | the engine's tool | S3 target only |
 | Volume archive | Any workspace volume | `volume-bkup` | S3 target only |
+| Volume recovery point | Any workspace volume | `volume-bkup` | S3 target only |
 
 :::caution Redis backups
 Redis backups are **not yet supported**, and a Redis instance has no **Backups** tab. For Redis, rely
@@ -160,13 +161,52 @@ before you adopt.
 
 Volume archives capture the full contents of a [volume](/docs/storage/volumes) as a compressed archive
 in the workspace S3 target. Open the volume, go to its **Backups** tab, and select **Back up now**.
+The list shows each archive's size and status.
 
 :::caution Volume archives require S3
 There is no local destination for volume archives. Configure the workspace
 [S3 backup target](/docs/storage/backup-targets) first; until then the tab shows that volume backups
-are disabled. Volume archives also run **on demand only**. Scheduling is available for database
-backups and recovery points, not for volumes.
+are disabled.
 :::
+
+### Volume recovery points
+
+:::info Enterprise
+Volume recovery points are part of Miabi Enterprise (the `recovery_points` feature, which also
+covers database recovery points). Without it, **Back up now** takes a plain archive as above.
+:::
+
+With the feature, **Take recovery point** records a named recovery point, such as
+`mbvol_<volume>_20260921T030000Z`, instead of a plain archive. Each one is stored under its own
+prefix, `<volume path>/<volume>/<ref>/`, beside a small cleartext `info.json` that describes the
+volume, storage class, node, size and consistency but holds none of the data.
+
+- **Encryption.** When the workspace has a backup passphrase, each point is encrypted with a random
+  data key of its own, sealed under the passphrase, exactly like database recovery points. It shows
+  an **Encrypted** badge. [Rotating the passphrase](/docs/storage/backup-targets#rotating-the-passphrase)
+  re-seals volume points too.
+- **Verification.** Each point is checked against the bucket as soon as it lands: the archive must
+  be there at the size it was written, and the sealed key must still open with the current
+  passphrase. Select the **Verify** action (shield icon) to check again. A failed check raises a
+  `backup_failed` alert.
+- **Pinning.** Select the pin action to keep a point whatever the retention policy says.
+- **Schedules.** Under **Recovery point policy**, set **Cron (UTC)**, **Keep last (0 = all)** and
+  **Max age, days (0 = none)**, then **Add schedule**. Retention runs after each scheduled point
+  completes. Pinned points are kept and do not count towards **Keep last**, and the newest completed
+  point is never deleted. Plain archives are never pruned.
+
+Deleting a point or archive removes its objects from the bucket as well as its record.
+
+:::caution A hot archive is crash-consistent, not a point in time
+Points are taken **hot**: the application keeps running and writing while the volume is read, so a
+file being written at that moment (a SQLite database, an upload in progress) can be captured
+half-written. Each point says so with a **Hot** badge, and the restore dialog warns about it. For a
+database, use [database backups](#database-backups) or a database recovery point instead of an
+archive of its volume.
+:::
+
+If the licence lapses, existing points stay listed, verifiable, deletable and restorable. Existing
+schedules can be paused or deleted, but new points and schedule changes need a valid licence.
 
 ## Restoring
 
@@ -205,8 +245,10 @@ visible.
 
 ### A volume archive
 
-Select **Restore** on a completed archive in the volume's **Backups** tab. The archive's contents
-overwrite the volume's data.
+Select **Restore** on a completed archive or recovery point in the volume's **Backups** tab. The
+archive's contents overwrite the volume's data. An encrypted recovery point is decrypted with the
+workspace backup passphrase, so the workspace must still hold the passphrase it was sealed under (or
+a later one it was [rotated](/docs/storage/backup-targets#rotating-the-passphrase) to).
 
 :::caution
 Restoring overwrites existing data. Confirm you have the right backup before proceeding, and

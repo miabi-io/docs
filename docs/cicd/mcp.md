@@ -110,6 +110,11 @@ HTTP can use the `--http` transport described [below](#transports).
 | `list_databases` | Database instances in a workspace |
 | `get_database` | One database instance — **credentials are never returned** |
 | `list_secrets` | Secret **names** and metadata — **values are never returned** |
+| `workspace_overview` | A workspace's apps, databases and health counts, plus quota usage |
+| `list_alerts` | Active alerts (`all: true` includes resolved ones) |
+| `list_events` | Recent events for a workspace, or for one app |
+| `get_traffic` | An app's request rate, error rate, latency percentiles and status classes over `15m`, `1h`, `24h` or `7d` |
+| `list_backups` | A database's backups |
 
 **Write tools require `--allow-write`.** Without that flag they are not registered at all: the agent
 cannot see them, let alone call them.
@@ -121,6 +126,9 @@ cannot see them, let alone call them.
 | `start_app` | Start a stopped app |
 | `stop_app` | Stop a running app |
 | `rollback_app` | Roll back to a prior release |
+| `ack_alert` | Acknowledge an alert |
+| `resolve_alert` | Resolve an alert |
+| `run_backup` | Start a backup of a database now |
 
 `restart_app`, `stop_app`, and `rollback_app` are annotated as **destructive** in the protocol, so a
 well-behaved client asks you to confirm before calling one; `deploy_app` and `start_app` are not.

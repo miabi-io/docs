@@ -47,10 +47,13 @@ If you want a build with **zero enterprise code** (the deny-all stub), build it 
 | Viewing the audit log (platform and workspace) | — | ✓ |
 | Audit export (JSON/CSV) | — | ✓ |
 | SIEM streaming | — | ✓ |
+| Admin console unlock with TOTP (`MIABI_ADMIN_UNLOCK`) | ✓ | ✓ |
+| Security Center policies: host ports, admin access policy, audit mode, decision log | — | ✓ |
 | Per-workspace quota overrides | — | ✓ |
 | Per-user workspace and membership limit overrides | — | ✓ |
 | Multi-cluster (clusters as locations, a gateway per cluster) | ✓ | ✓ |
 | Advanced multi-cluster: plan placement across clusters, locations and node pools | — | ✓ |
+| [Live location migration](/docs/applications/moving-between-locations): move an app with its volumes and databases | — | ✓ |
 | Database sizes (named CPU and memory sizes, offered per plan) | — | ✓ |
 | Per-database backups and schedules | ✓ | ✓ |
 | [Recovery points](/docs/storage/backups#recovery-points) — a whole database instance as one set | restore, verify and delete existing ones | ✓ take, adopt and schedule |

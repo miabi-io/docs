@@ -133,12 +133,13 @@ Each step is either a **container step** (`image` + `run`) or a **built-in** (`u
 
 Turns the checked-out workspace into an image — a **Dockerfile** build, or **Cloud Native Buildpacks** (see below) — pushes it to the [built-in registry](/docs/registry/overview), captures the digest, and records an [Image](/docs/registry/overview) with build provenance (which runner produced it).
 
-Two optional keys configure the build:
+Three optional keys configure the build:
 
 | Key | Default | Description |
 |---|---|---|
 | `dockerfile` | `Dockerfile` | Path to the Dockerfile, relative to the repository root. The build context is always the repository root. |
 | `cache` | `true` | `false` rebuilds every layer of this step on every run. See [Build cache](#build-cache). |
+| `platforms` | the runner's own | Platforms to build for, pushed as one image. See [Multi-platform images](#multi-platform-images). |
 
 A monorepo commonly keeps its Dockerfile under `docker/` while still building from the root:
 
@@ -159,6 +160,30 @@ message naming the key, rather than being accepted and silently ignored.
 #### Buildpacks
 
 When `dockerfile` names a file that does not exist, the runner falls back to Cloud Native Buildpacks. Without a `dockerfile` key the build expects a `Dockerfile` at the repository root and fails if there is none. Buildpack builds need a **docker-backed runner** (`MIABI_RUNNER_BUILDER=docker`); the rootless BuildKit backend builds Dockerfiles only.
+
+#### Multi-platform images
+
+By default a build produces an image for the runner's own platform, so an image built on an `amd64` runner
+cannot start on an `arm64` node. List the platforms your nodes run to build for all of them:
+
+```yaml
+  - name: build
+    uses: build
+    platforms: [linux/amd64, linux/arm64]
+```
+
+They are pushed as **one** image: its digest names all of them, deploys stay deploy-by-digest, and each node
+pulls the variant for its own architecture. Accepted values are `linux/amd64`, `linux/arm64`, `linux/arm/v7`,
+`linux/arm/v6`, `linux/386`, `linux/ppc64le`, `linux/s390x` and `linux/riscv64`; anything else is refused when
+the pipeline is saved.
+
+- **Runner** — a multi-platform build runs only on a runner that supports it (runner 0.0.11 or later; its
+  detail page lists `multi-platform` under Features). Until one is connected the run waits and says why.
+- **Emulation** — building for another architecture than the runner's executes that architecture's `RUN`
+  instructions under QEMU, which must be registered on the runner's host once
+  (`docker run --privileged --rm tonistiigi/binfmt --install all`). A Dockerfile that cross-compiles on
+  `$BUILDPLATFORM` needs no emulation, and builds much faster. The build log warns when an emulator is missing.
+- **Buildpacks** build for the runner's own platform only; multi-platform needs a Dockerfile.
 
 ### Build cache
 
