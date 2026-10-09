@@ -51,6 +51,7 @@ attempts to override them from `env:` — see [The manifest](/docs/getting-start
 | `MIABI_ENCRYPTION_KEY` | — | **Required in production.** AES key for secrets at rest (env vars, DB passwords, custom certs). Miabi refuses to start outside dev without it; in dev, those values are then only base64-encoded |
 | `MIABI_WEB_URL` | — | Public URL of your instance (used for links, OAuth callbacks, invitations). Also the CORS allowlist, so it must be a concrete origin |
 | `MIABI_CORS_ORIGINS` | `MIABI_WEB_URL`, else `*` | Comma-separated allowed origins; a `*` wildcard is rejected in production |
+| `MIABI_TRUSTED_PROXIES` | — (stack install: the private network) | Comma-separated IPs or CIDRs allowed to set `X-Forwarded-For` and `X-Real-IP`. Empty believes those headers from any peer. On a stack install, set it as `server.trustedProxies` in the [install manifest](/docs/administration/install-manifest#behind-a-cdn-or-load-balancer); it defaults to the private network, since the gateway is the only thing that reaches the control plane |
 | `MIABI_LOGIN_TOKEN_TTL_HOURS` | `24` | Lifetime of the API key minted by `miabi login` and **Copy login command** — see [Signing in from the CLI](/docs/security/authentication) |
 | `MIABI_LOGIN_TOKEN_MAX_TTL_HOURS` | `168` | Longest lifetime a caller may request for that key |
 | `MIABI_ADMIN_EMAIL` | `admin@example.com` | Login of the platform admin seeded on first boot |

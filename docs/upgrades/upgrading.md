@@ -176,6 +176,21 @@ Wait for a line similar to **`database migrations applied`** in the logs. Once i
 
 ## Version notes
 
+### Trusted proxies in the install manifest
+
+**The control plane now trusts forwarded headers only from the private network.** On its next
+converge, a stack install fills in the new `server.trustedProxies` with the private network's subnet
+(plus `fc00::/7` when that network has IPv6) and writes it into `miabi.yaml`. Until now it was unset,
+which made the control plane believe `X-Forwarded-For` from any peer. Nothing else reaches the control
+plane, so client IPs in audit logs are unchanged. A `MIABI_TRUSTED_PROXIES` you had set in
+`server.env` is moved into the field; an older flat manifest keeps it under `env:`.
+
+**`gateway.trustedProxies` replaces the `proxy:` block in `goma.yml`** for installs behind a CDN or
+load balancer. It is applied through the environment, so a customized `goma.yml` no longer has to be
+edited — and a default one keeps receiving updates. See
+[Behind a CDN or load balancer](/docs/administration/install-manifest#behind-a-cdn-or-load-balancer).
+An existing `proxy:` block keeps working; when both are set, the manifest's list wins.
+
 ### Goma Gateway 0.14 — forwarded headers are only believed from a trusted proxy
 
 Miabi now provisions **Goma Gateway 0.14**, which brings the `oidc` middleware and one change that

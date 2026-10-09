@@ -36,9 +36,9 @@ does nothing.
 |---|---|
 | `domain`, `endpoints` | The panel's hostname, its browser URL, and the URL nodes, agents and runners dial back on. |
 | `acme` | The certificate authority and the contact address for every acme-managed host. |
-| `server` | The control plane container: image, the host `/proc` bind, and extra environment. |
+| `server` | The control plane container: image, the host `/proc` bind, extra environment, and who it believes forwarded headers from (`trustedProxies`). |
 | `database`, `cache` | The PostgreSQL and Redis images. |
-| `gateway` | Goma Gateway: image, the `goma.yml` beside this file, and anything that config interpolates. |
+| `gateway` | Goma Gateway: image, the `goma.yml` beside this file, anything that config interpolates, and the proxies in front of it (`trustedProxies`). |
 | `registry` | The built-in OCI registry: whether it runs, its hostname, and its storage driver. |
 | `admin` | The first admin account's email. |
 | `secrets` | Every credential the install holds, in plaintext — see below. |
@@ -50,6 +50,46 @@ does nothing.
 Every field's type and description is published as a JSON Schema at
 `https://docs.miabi.io/schema/install.miabi.io-v1.schema.json`, generated from the same types the
 installer parses — so an editor pointed at it completes and validates exactly what the CLI accepts.
+
+## Behind a CDN or load balancer
+
+When Cloudflare, a cloud load balancer or another reverse proxy terminates TLS in front of the
+gateway, list its addresses in `gateway.trustedProxies`:
+
+```yaml
+spec:
+  gateway:
+    trustedProxies:
+      - "173.245.48.0/20"   # Cloudflare publishes its ranges at https://www.cloudflare.com/ips/
+      - "2400:cb00::/32"
+      - "10.0.0.5"          # or your load balancer's address
+```
+
+The gateway then believes the client IP and scheme those proxies forward, and from nobody else.
+Without it, every request carries the proxy's address — so IP allowlists, rate limits and request
+logs all see one client — and plaintext hops from a TLS terminator make HTTPS redirects loop.
+Leave it unset when the gateway faces the internet directly.
+
+Entries must be IPs or CIDRs; a catch-all such as `0.0.0.0/0` is refused, since it would let any
+client choose its own IP. The list reaches the gateway as `GOMA_PROXY_ENABLED` and
+`GOMA_PROXY_TRUSTED_PROXIES`, so your `goma.yml` stays untouched. To change which headers carry the
+client IP, set `GOMA_PROXY_IP_HEADERS` in `gateway.env` (for Cloudflare,
+`CF-Connecting-IP,X-Forwarded-For`).
+
+The control plane has its own list, `server.trustedProxies`. It defaults to the private network, the
+only one the gateway reaches it on, and the installer writes that default into the file so you can
+see it:
+
+```yaml
+spec:
+  server:
+    trustedProxies:
+      - "10.62.0.0/16"      # networking.internal.subnet — update both together
+```
+
+You rarely need to change it. If you change `networking.internal.subnet`, change this list with it,
+or the control plane records the gateway's address as every client's IP. It compiles to
+`MIABI_TRUSTED_PROXIES`, so that variable is refused in `server.env`.
 
 ## Settings the manifest pins
 
