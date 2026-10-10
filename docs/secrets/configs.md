@@ -1,5 +1,5 @@
 ---
-sidebar_position: 2
+sidebar_position: 3
 title: Configuration files
 description: Workspace configuration files — store nginx.conf, prometheus.yml or any config file once, interpolate values into it, and mount it read-only into your applications.
 ---
