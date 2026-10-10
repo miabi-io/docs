@@ -119,6 +119,7 @@ const sidebars: SidebarsConfig = {
       label: 'Secrets & Configs',
       items: [
         'secrets/overview',
+        'secrets/sealed-secrets',
         'secrets/configs',
       ],
     },

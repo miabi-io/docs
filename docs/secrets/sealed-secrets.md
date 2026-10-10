@@ -1,5 +1,5 @@
 ---
-sidebar_position: 3
+sidebar_position: 2
 title: Sealed secrets
 description: Commit secret values to Git safely — encrypt them to the workspace's public sealing key with the CLI, and let miabi apply or GitOps open them on the server.
 ---
