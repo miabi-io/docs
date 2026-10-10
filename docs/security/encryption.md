@@ -83,16 +83,18 @@ and re-encrypts the workspace's existing secrets under it. Once every value has 
 deleted. If part of the re-encryption fails, the old versions are kept (inactive) so nothing becomes
 unreadable. `MIABI_ENCRYPTION_KEY` itself is not rotated by this.
 
-- **Manually** — a platform admin clicks **Rotate encryption key** on the workspace's page under
-  **Admin → Tenants → Workspaces**.
+- **Manually** — a workspace **owner or admin** clicks **Rotate keys** under **Workspace settings →
+  Encryption**. This also activates a new [sealing key](/docs/secrets/sealed-secrets#key-rotation). A
+  workspace's keys can be rotated **at most once every 6 months**, and only from a signed-in session.
 - **Automatically** — set `MIABI_KEY_AUTO_ROTATE=true`. A daily job rotates every workspace key older than
-  `MIABI_KEY_ROTATE_MONTHS` (default `6`).
+  `MIABI_KEY_ROTATE_MONTHS` (default `6`). An automatic rotation counts toward the 6-month limit.
 
+Platform admins no longer rotate workspace keys from the admin console: the workspace owns its keys.
 Rotate after a suspected exposure or as routine hygiene.
 
 ## Crypto-shred on delete
 
-When a workspace is deleted, Miabi **crypto-shreds** its keys — the workspace's DEK is destroyed. Because the encrypted data can no longer be decrypted, deletion is effectively irreversible for that workspace's secrets, even if encrypted blobs linger in backups.
+When a workspace is deleted, Miabi **crypto-shreds** its keys — the workspace's DEK and its sealing keys are destroyed. Because the encrypted data can no longer be decrypted, deletion is effectively irreversible for that workspace's secrets, even if encrypted blobs linger in backups.
 
 :::note
 Crypto-shredding makes workspace deletion a strong privacy guarantee. Export anything you need before deleting a workspace.

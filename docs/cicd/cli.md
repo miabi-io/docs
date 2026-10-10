@@ -275,6 +275,17 @@ miabi secrets usage API_KEY                   # apps referencing it
 miabi secrets rm API_KEY [--yes]
 ```
 
+`seal` encrypts a value locally to the workspace's public key and prints a `kind: SealedSecret`
+manifest you can commit. See [Sealed secrets](/docs/secrets/sealed-secrets).
+
+```bash
+echo -n "$API_KEY" | miabi secrets seal API_KEY >> secrets.yaml
+miabi secrets seal API_KEY --from-file api.key --raw          # only the sealed value
+miabi secrets seal-key > .miabi/sealing.pub                   # the public key, safe to commit
+miabi secrets seal API_KEY --from-file api.key --public-key-file .miabi/sealing.pub   # offline
+miabi secrets seal -f secrets.yaml --in-place                 # turn every plaintext Secret into a SealedSecret
+```
+
 ### Configs
 
 The workspace's [configuration files](/docs/secrets/configs) — file sets mounted into applications

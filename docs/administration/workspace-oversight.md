@@ -129,12 +129,10 @@ workspace may hold them. An empty list is the state to expect. See
 
 ## Workspace encryption keys
 
-Each workspace holds its own encryption key for secrets and credentials. **Rotate key** on
-the workspace detail page re-wraps that material under a new key.
-
-Rotation is transparent to the workspace — nothing needs re-entering — and is worth doing
-after an operator with database access leaves, or on whatever schedule your policy sets.
-See [Encryption](/docs/security/encryption).
+Each workspace holds its own encryption key for secrets and credentials. Rotating it is a
+workspace action: its owners and admins rotate it under **Workspace settings → Encryption**, at
+most once every 6 months. The admin console doesn't offer it. For a platform-wide schedule, turn on
+`MIABI_KEY_AUTO_ROTATE`. See [Encryption](/docs/security/encryption).
 
 ## Where to go next
 
