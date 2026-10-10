@@ -51,6 +51,7 @@ deploys to staging and production unchanged.
 | [`Database`](#database) | A managed Postgres / MySQL / MariaDB / Redis database | 2nd |
 | [`Volume`](#volume) | Persistent storage | 1st |
 | [`Secret`](#secret) | A named encrypted value | 1st |
+| [`SealedSecret`](#sealedsecret) | A secret value sealed to the workspace's key, safe to commit | 1st |
 | [`Config`](#config) | A set of configuration files mounted into apps | 1st |
 | [`Registry`](#registry) | A container-registry credential for private images | 2nd |
 | [`Middleware`](#middleware) | A gateway policy — rate limit, auth, access rules — routes reference by name | 1st |
@@ -405,7 +406,7 @@ manifest-expressible — create those through the API or console.
 ## Secret
 
 A named encrypted value, referenced from app env and from credentials. Creating one needs a `value`
-or `generate: true`.
+or `generate: true`. To keep the value in Git, use a [SealedSecret](#sealedsecret) instead.
 
 ```yaml
 apiVersion: miabi.io/v1
@@ -435,6 +436,38 @@ values. Minimums that exceed `length` are trimmed rather than silently ignored, 
 Secret values are **write-only**: never read back, never shown in a plan, and never diffed. An
 existing secret is treated as in sync, so a bundle can safely re-apply without churning values.
 Rotate through the [vault](/docs/secrets/overview) or the API.
+
+---
+
+## SealedSecret
+
+A vault secret whose value is sealed to the workspace's public key, so the manifest is safe to commit.
+Make one with `miabi secrets seal NAME`. See [Sealed secrets](/docs/secrets/sealed-secrets).
+
+```yaml
+apiVersion: miabi.io/v1
+kind: SealedSecret
+metadata:
+  name: stripe-key
+spec:
+  value: sealed:v1:2:YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOS…
+```
+
+| Field | Default | Meaning |
+|---|---|---|
+| `value` | required | The output of `miabi secrets seal`: `sealed:v1:<keyVersion>:<data>`. Never plaintext: anything else is refused. |
+
+A SealedSecret lands in the same vault as a `Secret` and is referenced the same way,
+`${{ secrets.stripe-key }}` or `{{ .secrets.stripe-key }}`. The two kinds share one name space: a bundle
+can't declare `Secret/x` and `SealedSecret/x` together.
+
+Unlike a `Secret`, a SealedSecret is compared by fingerprint. Changing `value` in Git plans an
+update (`value: (current) → (sealed)`), and so does a value later set outside Git. Re-sealing an
+unchanged value doesn't bump the secret's version or redeploy its consumers.
+
+Switching a name from `Secret` to `SealedSecret` in Git takes over the existing vault entry: it is
+updated in place, not deleted and recreated. Switching back to `Secret` leaves the stored value as it
+is.
 
 ---
 
@@ -879,6 +912,8 @@ default `{{ }}` markers it fails the apply.
 Beyond the per-field rules above, a bundle is refused when it is parsed if:
 
 - a `Registry` sets `password` without `username`;
+- a `SealedSecret` has no `value`, or one that is not `sealed:v1:<version>:<data>`;
+- a name is declared both as a `Secret` and as a `SealedSecret`;
 - a mount `path` is not absolute, or a mount sits inside a path a volume is mounted at — the volume
   would shadow it;
 - a file `mode`, on a `Config` or a mount, is not 3 or 4 octal digits, or sets the setuid, setgid or
@@ -887,7 +922,8 @@ Beyond the per-field rules above, a bundle is refused when it is parsed if:
 - a route's `methods` names something that is not an HTTP method, or its `middlewares` lists one name
   twice.
 
-A `Secret` with neither `value` nor `generate: true` fails when it is created, rather than at parse.
+A `Secret` with neither `value` nor `generate: true` fails when it is created, rather than at parse. A
+`SealedSecret` sealed for another workspace or another name fails when it is applied.
 
 ---
 
@@ -915,7 +951,7 @@ with `reloadPolicy: none` carries no fingerprint, which is how that policy is ho
 registry password is compared through a fingerprint, so a rotation converges without the plan
 carrying anything derived from the token. A `Middleware`'s `rule` works the same way: its
 fingerprint covers the rendered rule, secrets included, and the plan reports only
-`rule (current) → (changed)`.
+`rule (current) → (changed)`. A `SealedSecret` is compared by the fingerprint of its sealed value.
 
 **Diffed, but never echoed** — a `Config`'s files. The plan compares the content digest and reports
 each changed key as `(absent)` → `(present)`, so you can see *which* file changed without its content

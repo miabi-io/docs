@@ -82,7 +82,7 @@ A Git source points at a repository, a **ref** (branch, tag or commit; `main` wh
 **path** (the subdirectory holding the manifests, `.` when omitted — every `.yaml`/`.yml` file under
 it is parsed into one bundle). For a private repository, select a stored
 [Git credential](/docs/applications/deploy-from-git#git-credentials); the source clones with it.
-Four switches decide how far reconciliation goes:
+Five switches decide how far reconciliation goes and what the repository may contain:
 
 | Option | Default | Effect |
 |---|---|---|
@@ -90,6 +90,7 @@ Four switches decide how far reconciliation goes:
 | **Prune** | off | Delete managed resources that disappear from Git. Without it, removals are ignored. |
 | **Self-heal** | off | Re-apply when live state drifts from Git, not only when Git changes. |
 | **Allow empty** | off | Permit a manifest set with no resources to prune everything the source owns. |
+| **Sealed secrets only** | off | Refuse a sync while any `Secret` carries a plaintext `value`. Use a [SealedSecret](/docs/secrets/sealed-secrets) or `generate: true` instead. |
 
 Prune only ever deletes resources this engine created, and only those owned by *this* source — so a
 hand-created app, a console-provisioned database, or a sibling project's resources can never be

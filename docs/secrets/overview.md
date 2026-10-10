@@ -133,6 +133,7 @@ Beyond application and job environments, a secret can back:
 ## Related
 
 - [Configuration files](/docs/secrets/configs) — the file-shaped counterpart: whole config files mounted into apps.
+- [Sealed secrets](/docs/secrets/sealed-secrets) — encrypted values you can commit to Git.
 - [Environment Variables & Secrets](/docs/applications/environment-variables) — referencing secrets from app config.
 - [Manifest reference](/docs/cicd/manifest-reference#secret) — declaring and referencing secrets declaratively.
 - [Jobs](/docs/applications/jobs) — one-off tasks that can also reference secrets.
