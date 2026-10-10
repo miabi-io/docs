@@ -41,6 +41,8 @@ steps:
     uses: deploy               # deploys the built image by digest
 ```
 
+For a pipeline that uses every feature on this page, see [A complete example](#a-complete-example).
+
 ## Pipelines from your repository
 
 A pipeline comes from one of two places:
@@ -133,11 +135,13 @@ Each step is either a **container step** (`image` + `run`) or a **built-in** (`u
 
 Turns the checked-out workspace into an image — a **Dockerfile** build, or **Cloud Native Buildpacks** (see below) — pushes it to the [built-in registry](/docs/registry/overview), captures the digest, and records an [Image](/docs/registry/overview) with build provenance (which runner produced it).
 
-Three optional keys configure the build:
+These optional keys configure the build:
 
 | Key | Default | Description |
 |---|---|---|
-| `dockerfile` | `Dockerfile` | Path to the Dockerfile, relative to the repository root. The build context is always the repository root. |
+| `dockerfile` | `Dockerfile` | Path to the Dockerfile, relative to the repository root — not to `context`, matching `docker build -f`. |
+| `context` | the repository root | Build context directory, relative to the repository root. |
+| `build-args` | — | Dockerfile `ARG` values, as a map. Not for secrets: build args are baked into the image history. |
 | `cache` | `true` | `false` rebuilds every layer of this step on every run. See [Build cache](#build-cache). |
 | `platforms` | the runner's own | Platforms to build for, pushed as one image. See [Multi-platform images](#multi-platform-images). |
 
@@ -151,10 +155,27 @@ A monorepo commonly keeps its Dockerfile under `docker/` while still building fr
 
 The path must stay inside the repository — an absolute path or one that climbs out with `..` is rejected when the pipeline is saved, not at build time.
 
-:::info Not yet available: `context` and `build-args`
-The spec reserves `context` (a build context directory) and `build-args` (Dockerfile `ARG` values), but
-runners cannot apply them yet. A pipeline that sets either is **refused when you save it**, with a
-message naming the key, rather than being accepted and silently ignored.
+To build one service of a monorepo from its own directory, with a Dockerfile kept elsewhere:
+
+```yaml
+  - name: build
+    uses: build
+    dockerfile: docker/api.Dockerfile
+    context: services/api
+    build-args:
+      APP_ENV: production
+      GO_VERSION: "1.25"
+```
+
+Build-arg names must be valid Dockerfile `ARG` names — letters, digits and underscores, not starting
+with a digit — or the pipeline is refused when saved. Never pass a credential as a build arg: anyone
+who can pull the image can read it back. See
+[Getting a credential into a Dockerfile build](#environment--step-outputs) instead.
+
+:::info Runner version
+`context` and `build-args` need runner **v0.0.8 or newer**. An older runner would ignore them and
+build the wrong image, so a run that uses either waits for a runner new enough, and its status says
+so. Upgrade the runner to clear it.
 :::
 
 #### Buildpacks
@@ -337,6 +358,123 @@ From a terminal, `miabi pipeline ls`, `miabi pipeline run <pipeline> [--branch �
 ## Relation to deployments
 
 A pipeline's `deploy` step produces a **deployment** — the same release object you see everywhere in Miabi, so deployment history, health checks, and **rollback** all apply. Pipelines orchestrate *how* a release is produced; deployments are *what* gets produced. To deploy on every push, add a push trigger and webhook — see [Deploy on push](/docs/cicd/git-push-deploy).
+
+## A complete example
+
+A Go API in a monorepo, released on every push to `main`: tested, versioned, built for two
+architectures, scanned, announced, and deployed. The repository looks like this:
+
+```
+.miabi/pipeline.yaml
+docker/api.Dockerfile
+services/api/        # go.mod, main.go, VERSION
+services/web/        # another service, built by its own pipeline
+```
+
+`.miabi/pipeline.yaml`:
+
+```yaml
+apiVersion: miabi.io/v1
+kind: Pipeline
+metadata:
+  name: api
+
+on:
+  push:
+    branches: [main]          # every push to main runs, pinned to the pushed commit
+  manual: true                # "Run now", the trigger API, `miabi pipeline run`
+  schedule: "0 3 * * *"       # nightly rebuild of main, to pick up base-image fixes
+
+env:                          # every container step gets these
+  GOFLAGS: -mod=readonly
+
+steps:
+  - name: test
+    image: golang:1.25
+    env:
+      CGO_ENABLED: "0"        # adds to the pipeline env for this step only
+    run: |
+      cd services/api
+      go vet ./...
+      go test ./...
+
+  - name: lint
+    image: golangci/golangci-lint:latest
+    continue-on-error: true   # report findings without blocking the release
+    run: cd services/api && golangci-lint run ./...
+
+  - name: version
+    image: alpine:3.20
+    run: |
+      VERSION="$(cat services/api/VERSION)-$(echo "$MIABI_COMMIT" | cut -c1-7)"
+      echo "VERSION=$VERSION" >> "$MIABI_ENV"    # later steps see $VERSION
+      echo "$VERSION" > services/api/.version    # the Dockerfile copies it in
+
+  - name: build
+    uses: build
+    dockerfile: docker/api.Dockerfile   # relative to the repository root
+    context: services/api               # build from the service's own directory
+    build-args:
+      GO_VERSION: "1.25"
+    platforms: [linux/amd64, linux/arm64]
+
+  - name: scan
+    image: aquasec/trivy:latest
+    continue-on-error: true
+    run: |
+      TRIVY_USERNAME="$MIABI_REGISTRY_USER" TRIVY_PASSWORD="$MIABI_REGISTRY_TOKEN" \
+        trivy image --exit-code 1 --severity HIGH,CRITICAL "$MIABI_IMAGE_DIGEST"
+
+  - name: notify
+    image: curlimages/curl:latest
+    continue-on-error: true
+    env:
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}   # resolved from the workspace vault
+    run: |
+      curl -fsS -X POST -H 'Content-Type: application/json' \
+        -d "{\"text\":\"$MIABI_PIPELINE #$MIABI_RUN_NUMBER built $VERSION ($MIABI_IMAGE_DIGEST)\"}" \
+        "$SLACK_WEBHOOK"
+
+  - name: deploy
+    uses: deploy              # deploys the image above by digest once the run succeeds
+```
+
+And the Dockerfile it builds. Paths in `COPY` are relative to the `context`, `services/api`:
+
+```dockerfile
+ARG GO_VERSION=1.25
+FROM golang:${GO_VERSION} AS build
+WORKDIR /src
+COPY . .
+RUN CGO_ENABLED=0 go build -o /api .
+
+FROM gcr.io/distroless/static
+COPY --from=build /api /api
+COPY .version /VERSION
+ENTRYPOINT ["/api"]
+```
+
+What each step does:
+
+| Step | What it shows |
+|---|---|
+| `test` | A container step. It sees the pipeline `env` plus its own, and runs in the checked-out `/workspace`. |
+| `lint` | `continue-on-error`: findings mark the step failed, but the run can still succeed and deploy. |
+| `version` | Exports `VERSION` to later steps through `$MIABI_ENV`, and writes it into the build context as a file. |
+| `build` | Builds `docker/api.Dockerfile` from `services/api`, with a [build arg](#uses-build), for both [platforms](#multi-platform-images). It sees no `env`, so the version reaches the image as the file `version` wrote. |
+| `scan` | Uses the per-job [registry credentials](#provided-by-the-runner) to pull the image it just built, by digest. |
+| `notify` | Reads a [workspace secret](/docs/secrets/overview), and the `VERSION` exported earlier. |
+| `deploy` | Queued only once the whole run succeeds, and deploys exactly the digest `build` pushed. |
+
+A few things to know before you copy it:
+
+- **The scheduled run deploys too.** Every successful run ends in `deploy`, including the nightly one.
+  Leave out `schedule` if a rebuild should not release.
+- **A missing secret fails the run before it starts.** Create `SLACK_WEBHOOK` in the workspace vault,
+  or drop the `notify` step.
+- **`context`, `build-args` and `platforms` need recent runners**: v0.0.8 for the first two, 0.0.11
+  for `platforms`. A run waits, and says why, until a runner that supports them is connected.
+- **Keep `.version` out of Git.** It is generated on every run. Add it to `.gitignore`.
 
 ## Related
 
