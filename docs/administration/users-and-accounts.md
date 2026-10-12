@@ -75,14 +75,19 @@ sends. Every one of these actions is written to the [audit log](/docs/operations
 
 ## Per-user limits
 
-Two limits can be overridden per account, on top of the platform-wide defaults:
+Three settings can be overridden per account, on top of the platform-wide defaults:
 
-| Limit | Meaning |
+| Setting | Meaning |
 |---|---|
+| **Can create workspaces** | **Allow** or **Deny** creating workspaces, whatever the [workspace creation mode](/docs/workspaces/organizations#who-can-create-workspaces). **Inherit** follows it |
 | **Workspaces owned** | How many workspaces this user may create and own |
 | **Workspace memberships** | How many workspaces they may belong to as a non-owner |
 
-Leave both unset to inherit the limits of the user's
+The account's detail page also shows how it **signed up**: self-service, a workspace invitation,
+created by an administrator, or an identity provider. Accounts created before this was recorded show
+nothing and are treated as not invited.
+
+Leave them unset to inherit the limits of the user's
 [organization](/docs/workspaces/organizations#workspace-limits), which falls back to the
 [platform settings](/docs/operations/platform-settings) defaults (`10` owned, unlimited joined).
 `-1` is unlimited and `0` allows none, the same convention as everywhere else.

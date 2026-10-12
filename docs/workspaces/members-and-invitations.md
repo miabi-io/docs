@@ -17,17 +17,39 @@ Workspaces are how teams collaborate in Miabi. Each member of a workspace holds 
 3. Choose a **role**: owner, admin, developer, or viewer. You can't invite someone above your own role — only an Owner can invite an Owner.
 4. Click **Send invite**.
 
-Miabi emails the invitee a link when an [SMTP server](/docs/getting-started/configuration) is configured, and shows an **Invitation token** once so you can share it yourself. The invitation is listed under **Pending invitations** until it is accepted. An email can only have one pending invitation per workspace, and inviting is refused once the workspace reaches its plan's member limit.
-
-:::info A member must have an account
-Membership is only ever granted by **accepting** an invitation while signed in, so the invitee needs a Miabi account with the invited email address — there is no way to add someone who has never registered.
-
-Inviting an address that has no account yet is allowed; the invitation simply stays pending until one exists. Self-service sign-up is [off by default](/docs/security/authentication#registration), so a platform admin, or the person's [SSO provider](/docs/security/sso), may need to create the account first. See [Structure](/docs/workspaces/organizations#structure) for how users, workspaces and organizations fit together.
-:::
+When an [SMTP server](/docs/getting-started/configuration) is configured, Miabi emails the invitee an **Accept invitation** link and the link is never shown to you. Without one, Miabi can't send anything, so the console shows the **Invitation link** once for you to share yourself. The invitation is listed under **Pending invitations** until it is accepted. An email can only have one pending invitation per workspace, and inviting is refused once the workspace reaches its plan's member limit.
 
 ## Accepting an invitation
 
-The invitee signs in with the invited email address. Their dashboard shows a **Workspace invitations** card; clicking **Accept** makes them a member with the invited role. An invitation is single-use and expires after **7 days**. There is no re-send: once it lapses, invite the person again.
+The invitation link opens a page that adapts to whoever opens it:
+
+| Situation | What happens |
+|---|---|
+| Signed in with the invited email | **Join** adds them to the workspace with the invited role. |
+| Signed in as someone else | The page names both addresses and offers to sign out. |
+| The invited email already has an account | They sign in, and come back to the invitation. |
+| No account yet | They [create their account from the invitation](#signing-up-from-an-invitation) and land in the workspace. |
+| The organization enforces SSO | They continue with single sign-on; the invitation is accepted once they are in. |
+
+A signed-in user can also accept from the **Workspace invitations** card on their dashboard, which lists every pending invitation addressed to their email. An invitation is single-use and expires after **7 days**. There is no re-send: once it lapses, invite the person again.
+
+### Signing up from an invitation
+
+Someone invited by email can create their account straight from the invitation, **even while [self-service sign-up](/docs/security/authentication#registration) is closed**: the invitation is the authorization. They choose a name and a password; the email is the invited one and can't be changed.
+
+The new account:
+
+- is created already verified, since the link only reached the invited mailbox;
+- belongs to the inviting workspace's [organization](/docs/workspaces/organizations);
+- is marked as signed up **via invitation**, which by default means it can't create workspaces of its own — see [Who can create workspaces](/docs/workspaces/organizations#who-can-create-workspaces).
+
+The account and the membership are created together: if joining fails (the workspace hit its member limit, or the invitation was used meanwhile), no account is left behind. The allowed signup domains list doesn't apply here, because the inviter chose the address.
+
+Platform admins can turn this off with **Let invitees create their account from the invitation** in [Platform Settings](/docs/operations/platform-settings) (or `MIABI_INVITATION_SIGNUP_ENABLED=false`). An invitee without an account then needs a platform admin, or their [SSO provider](/docs/security/sso), to create it first.
+
+:::caution No email server
+On a platform without SMTP the inviter holds the link, so they could open it themselves and pick the invitee's password. Share it only with the invitee, or create the account as a platform admin instead.
+:::
 
 ## Changing a member's role
 

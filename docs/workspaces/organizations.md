@@ -43,6 +43,7 @@ is true:
 | **Workspace limit** | How many workspaces the organization may hold in total. Unlimited by default; `0` allows none. |
 | **Workspaces per user — owned** | How many workspaces one of its users may own. Inherits the platform default unless you set it. |
 | **Workspaces per user — joined as member** | How many other workspaces one of its users may join. Inherits the platform default unless you set it. |
+| **Who can create workspaces** | Anyone, anyone except invited users, or admins only. Inherits the platform setting unless you set it. See [below](#who-can-create-workspaces). |
 
 The handle is **immutable** after creation: it is what admins and the API address the organization
 by. Rename the display name instead.
@@ -63,7 +64,7 @@ three, set from **Admin → Organizations → (organization)**:
 The two per-user limits offer three choices: **inherit the platform default**, **unlimited**, or a
 number. Inherit is what every organization starts on, so
 [Platform Settings](/docs/operations/platform-settings) decides them until an organization sets its
-own. A [per-user override](/docs/administration/users-and-accounts#limits) on an individual account
+own. A [per-user override](/docs/administration/users-and-accounts#per-user-limits) on an individual account
 beats both.
 
 :::note Enterprise
@@ -79,6 +80,31 @@ newly lowered limit keeps what they have.
 
 Reaching a limit refuses the create with a message naming which limit stopped it, so a tenant is
 never left guessing whether the platform is broken.
+
+## Who can create workspaces
+
+Limits count workspaces; this setting decides who may start one at all. It has three modes:
+
+| Mode | Who may create a workspace |
+|---|---|
+| **Anyone** | Every user. |
+| **Anyone except invited users** *(default)* | Every user except those who [created their account from an invitation](/docs/workspaces/members-and-invitations#signing-up-from-an-invitation). |
+| **Admins only** | Platform admins and the organization's [owner](#ownership). |
+
+Platform admins can always create workspaces, whatever the mode. The platform-wide mode is in
+[Platform Settings](/docs/operations/platform-settings); with an Enterprise licence each organization
+can set its own, and an admin can **allow** or **deny** one user from their
+[account page](/docs/administration/users-and-accounts#per-user-limits), which beats both.
+
+The default changes nothing for existing accounts: only accounts created from an invitation are
+affected. Use it so the teammates a customer invites can't start workspaces nobody is accountable
+for, or pick **Admins only** to run a closed platform where every workspace is opened by an admin
+and everyone else gets in by invitation.
+
+The mode governs **creating** a workspace only. Accepting an owner-role invitation still works,
+subject to the owned-workspaces limit, and tightening the mode never removes or hides a workspace a
+user already has. Users who may not create one don't see **New workspace** in the console; the API,
+CLI and workspace restore refuse with `403` and the code `WORKSPACE_CREATION_NOT_ALLOWED`.
 
 ## Ownership
 
@@ -216,9 +242,10 @@ invitation while signed in, so there is no way to add a person who has never reg
   until an account exists to accept it.
 - Accepting binds the invitation to the **signed-in user**, and an in-app invitation is only offered
   to the account whose email it names. Invitations expire after 7 days.
-- [Self-service sign-up is off by default](/docs/security/authentication#registration), so on a
-  closed install a platform admin — or the invitee's SSO provider — has to create the account before
-  the invitation can be taken up.
+- An invitee with no account can
+  [create one from the invitation](/docs/workspaces/members-and-invitations#signing-up-from-an-invitation),
+  even while self-service sign-up is closed, unless an admin turned that off. Otherwise a platform
+  admin, or the invitee's SSO provider, creates the account first.
 
 Accepting also counts against the invitee's own limits: an owner-role invitation against
 *workspaces owned*, any other role against *workspaces joined as member*. A user at their limit

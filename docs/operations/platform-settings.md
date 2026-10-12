@@ -51,6 +51,8 @@ workspaces and apply to the whole instance.
 |------|---------|--------|
 | Registration & access | **Require email verification** (`require_email_verification`) | New self-service accounts must confirm their address before signing in |
 | | **Allowed signup domains** (`allowed_signup_domains`) | Comma-separated allow-list for self-service sign-up; blank admits any domain |
+| | **Let invitees create their account from the invitation** (`invitation_signup_enabled`) | An invitee without an account can [sign up from the invitation](/docs/workspaces/members-and-invitations#signing-up-from-an-invitation), even while self-service sign-up is closed (default on) |
+| | **Who can create workspaces** (`workspace_creation`) | `anyone`, `except_invited` (default) or `admins_only` — see [Who can create workspaces](/docs/workspaces/organizations#who-can-create-workspaces) |
 | Platform | **Maintenance mode** (`maintenance_mode`) | API requests are refused with **HTTP 503**, except sign-in, health checks and the platform admin endpoints, so admins can still operate the platform |
 | | **Allow custom container labels** (`custom_labels_enabled`) | Fleet-wide kill-switch for [custom container labels](/docs/applications/container-labels). When off, the feature is disabled everywhere regardless of any plan capability; when on, the per-plan capability decides |
 | | **Allow pipelines from .miabi/pipeline.yaml** (`repo_pipelines_enabled`) | Fleet-wide kill-switch for adopting a pipeline from a repository; when off, git apps always build directly |
@@ -61,9 +63,10 @@ workspaces and apply to the whole instance.
 
 Some keys are handled specially:
 
-- **Set by environment.** `require_email_verification`, `allowed_signup_domains` and
-  `control_manager_mode` can be pinned from `MIABI_REQUIRE_EMAIL_VERIFICATION`,
-  `MIABI_ALLOWED_SIGNUP_DOMAINS` and `MIABI_CONTROL_MANAGER_MODE`. A pinned key is re-applied on every
+- **Set by environment.** `require_email_verification`, `allowed_signup_domains`,
+  `invitation_signup_enabled`, `workspace_creation` and `control_manager_mode` can be pinned from
+  `MIABI_REQUIRE_EMAIL_VERIFICATION`, `MIABI_ALLOWED_SIGNUP_DOMAINS`, `MIABI_INVITATION_SIGNUP_ENABLED`,
+  `MIABI_WORKSPACE_CREATION` and `MIABI_CONTROL_MANAGER_MODE`. A pinned key is re-applied on every
   boot, shown as *set by environment*, and can't be edited.
 - **Boot-time access controls.** **Allow self-service sign-up** (`MIABI_REGISTRATION_ENABLED`) and **Allow
   self-service password reset** (`MIABI_PASSWORD_RESET_ENABLED`) aren't stored settings. The Registration

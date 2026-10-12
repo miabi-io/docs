@@ -21,7 +21,7 @@ This means there is no hidden code path to "turn on" Enterprise in a Community b
 
 The official **`miabi/miabi` images and release binaries are the Enterprise build** — the enterprise code is compiled in but stays dormant, so they run as free **Community until a license is installed**. That's the frictionless path: pull `miabi/miabi:latest`, and if you later buy a license, drop it in and features unlock — no re-pull or redeploy.
 
-Miabi publishes **one edition**. The tags are `miabi/miabi:latest`, `miabi/miabi:<version>`, and their `-rootless` forms (mirrored to `ghcr.io/miabi-io/miabi`). There are no `-ce` or `-ee` image variants.
+Miabi publishes **one edition**. The tags are `miabi/miabi:latest`, `miabi/miabi:<version>`, and their `-rootless` forms. There are no `-ce` or `-ee` image variants.
 
 If you want a build with **zero enterprise code** (the deny-all stub), build it from source without the tag: `go build ./cmd/miabi`, or `docker build --build-arg GO_TAGS= -f docker/Dockerfile .` for an image. `make build` and the published images both pass `-tags enterprise`. No pure-Community image is published.
 
