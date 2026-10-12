@@ -31,8 +31,21 @@ Adding a node to the fleet is a separate workflow — see [Adding a Node](/docs/
 
 Open a node for the operational detail: running versus total containers, images, volumes and
 networks; live CPU and memory (read from the host when the control plane can see `/proc`, otherwise
-added up from container stats); GPUs; every container, published port, volume and network on it; and,
-from there, [housekeeping](/docs/nodes/housekeeping) and [Docker import](/docs/nodes/docker-import).
+added up from container stats); storage; GPUs; every container, published port, volume and network on
+it; and, from there, [housekeeping](/docs/nodes/housekeeping) and [Docker import](/docs/nodes/docker-import).
+
+Storage appears in two places on the node page:
+
+- **Resource usage → Storage** is the disk holding Docker's data root, where images, containers and
+  volumes without a [storage class](/docs/storage/storage-classes) live. It shows used and total
+  space, and the bar turns amber at 85% full.
+- **Storage classes** lists every class whose volumes can land on this node: the classes registered
+  on it, plus [shared](/docs/storage/storage-classes) classes registered on another node of its
+  cluster. Each row shows the class's path, used and total space, and reclaim policy. The card is
+  hidden when the node has only the built-in class, which is the data-root disk above.
+
+Storage figures come from a periodic measurement on the node, not a live reading, so they are still
+shown while the node is offline. A disk that has not been measured yet reads **Not measured yet**.
 
 The [admin dashboard](/docs/administration/platform-admin#overview) summarises the fleet: nodes
 online out of total, how many are offline or cordoned, and clusters split into swarm and standalone.

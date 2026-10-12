@@ -163,8 +163,9 @@ a disk without touching the ones already there, **disable** the class instead.
 ## Capacity
 
 Each class's filesystem is measured on the same schedule as volume usage, so the storage-classes
-page shows free space per disk. Volumes on a class are sized by measuring their directory, because
-`docker system df` reports the volume's mountpoint stub rather than the data behind the bind.
+page shows free space per disk, and each node's page lists the classes on that node with their used
+and total space (see [Nodes & Capacity](/docs/administration/nodes-and-capacity#viewing-the-fleet)).
+Volumes on a class are sized by measuring their directory, because `docker system df` reports the volume's mountpoint stub rather than the data behind the bind.
 
 ## What this is not
 

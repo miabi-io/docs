@@ -321,7 +321,7 @@ tab. See [Registry](/docs/registry/administration).
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `MIABI_NODE_GATEWAY_IMAGE` | `jkaninda/goma-gateway:1.0.0` | Goma image deployed on edge-gateway nodes. The default is the gateway version this Miabi build is tested against |
+| `MIABI_NODE_GATEWAY_IMAGE` | `jkaninda/goma-gateway:1.1.0` | Goma image deployed on edge-gateway nodes. The default is the gateway version this Miabi build is tested against |
 | `MIABI_CONTROL_URL` | falls back to `MIABI_API_URL` | Public URL remote nodes reach the control plane at |
 | `MIABI_NETWORK_POOL_CIDR` | `10.64.0.0/12` | Address pool workspace networks are carved from. Must not overlap the shared `miabi-proxy` network (`10.63.0.0/16` by default — set with `miabi setup --subnet` or `spec.networking.proxy.subnet`), your LAN or a VPN |
 | `MIABI_NETWORK_SUBNET_PREFIX` | `24` | Prefix length per workspace network (a `/12` pool ⇒ 4096 networks) |
@@ -354,6 +354,8 @@ Self-service sign-up is off until you turn it on. See [Authentication](/docs/sec
 | `MIABI_REGISTRATION_ENABLED` | `false` | Open the `/register` page. Fixed at boot — **restart** to apply, and it is shown read-only in Platform Settings |
 | `MIABI_REQUIRE_EMAIL_VERIFICATION` | — | Require a new account to confirm its address before it can sign in. Unset leaves it editable in Platform Settings; set here it is pinned read-only. Sign-up refuses to open if this is on with no SMTP configured |
 | `MIABI_ALLOWED_SIGNUP_DOMAINS` | — | Comma-separated domain allow-list (`acme.com,acme.co.uk`); a subdomain matches its parent. Blank admits any domain. Same pinning rule as above |
+| `MIABI_INVITATION_SIGNUP_ENABLED` | — | `true` / `false`: whether an invitee can [create their account from the invitation](/docs/workspaces/members-and-invitations#signing-up-from-an-invitation) while sign-up is closed. Unset leaves it to Platform Settings (default on) |
+| `MIABI_WORKSPACE_CREATION` | — | `anyone`, `except_invited` or `admins_only`: [who can create workspaces](/docs/workspaces/organizations#who-can-create-workspaces). Unset leaves it to Platform Settings (default `except_invited`). Any other value refuses to boot |
 
 ## Licensing
 

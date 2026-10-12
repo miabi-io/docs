@@ -21,6 +21,8 @@ To open it, start the platform with `MIABI_REGISTRATION_ENABLED=true` and restar
 
 Either can also be set from the environment (`MIABI_REQUIRE_EMAIL_VERIFICATION`, `MIABI_ALLOWED_SIGNUP_DOMAINS`), which pins it read-only in the console so an IaC install stays authoritative.
 
+Closed sign-up doesn't keep invited teammates out: someone invited to a workspace can [create their account from the invitation](/docs/workspaces/members-and-invitations#signing-up-from-an-invitation). Who may then start workspaces of their own is a separate setting — see [Who can create workspaces](/docs/workspaces/organizations#who-can-create-workspaces).
+
 Whoever creates it, a new user gets a unique **username** (a lowercase handle derived from the email, editable on the profile page) and a **personal workspace** to start working in. Users can later be invited into shared workspaces — see [Members & Invitations](/docs/workspaces/members-and-invitations).
 
 :::note
