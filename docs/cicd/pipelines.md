@@ -484,3 +484,4 @@ A few things to know before you copy it:
 - [Deploy on push](/docs/cicd/git-push-deploy)
 - [GitHub Actions](/docs/cicd/github-actions) — build on GitHub's runners and deploy the result.
 - [Webhooks & notifications](/docs/cicd/webhooks-and-notifications)
+- [Examples](/docs/cicd/examples) — a ready `.miabi/pipeline.yaml` for Node.js, Go, Python, PHP, Laravel, Java and Spring Boot.

@@ -80,5 +80,6 @@ You now have a deployed app on your own server with automatic SSL. Explore furth
 - [Marketplace](/docs/marketplace/overview) — install WordPress, Ghost, Nextcloud, and more.
 - [Multi-node](/docs/nodes/overview) — add remote Docker hosts.
 - [CI/CD & pipelines](/docs/cicd/pipelines) — build from Git and deploy via [runners](/docs/cicd/runners).
+- [Examples](/docs/cicd/examples) — deployable Node.js, Go, Python, PHP, Laravel, Java and Spring Boot apps with their pipelines and GitOps manifests.
 - [Container registry](/docs/registry/overview) — the built-in registry Git builds push to.
 - [API reference](https://demo.miabi.io/docs) — automate everything via REST.

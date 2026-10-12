@@ -230,3 +230,4 @@ match the CLI's `--server` flag. Both still work and log a warning; precedence i
 - [API tokens](/docs/security/api-tokens) — creating and scoping the token.
 - [Deploy from an image](/docs/applications/deploy-from-image) — pointing the app at your registry.
 - [Releases & rollbacks](/docs/applications/releases-and-rollbacks) — strategies, and undoing a bad deploy.
+- [Examples](/docs/cicd/examples) — working `deploy.yml` and `trigger-pipeline.yml` workflows.
