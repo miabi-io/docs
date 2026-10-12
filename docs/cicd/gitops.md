@@ -374,3 +374,4 @@ per kind.
   packaged as a versioned, one-click template with user inputs.
 - [Pipelines](/docs/cicd/pipelines)
 - [Deploy on push](/docs/cicd/git-push-deploy)
+- [Examples](/docs/cicd/examples) — a GitOps folder for every example app, a multi-app project, and staging and production.
