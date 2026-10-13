@@ -25,8 +25,8 @@ fresh install therefore needs at least one runner before a Git-source app can de
 **GitOps & CI/CD → Runners**.
 
 The command Miabi shows for a new runner uses the `miabi/runner` image. Set `MIABI_RUNNER_IMAGE` on the
-control plane to change it; the installer pins it from `RUNNER_VERSION`. `miabi/runner` versions
-independently of the panel, so its tag does not track the Miabi version.
+control plane to change it, or `RUNNER_VERSION` when installing. It defaults to `miabi/runner:latest`;
+`miabi/runner` versions independently of the panel, so its tag does not track the Miabi version.
 
 ## Registering a dedicated runner
 
@@ -68,9 +68,11 @@ The runner is configured through environment variables:
 
 :::note
 The `docker` backend drives the host's Docker daemon through the mounted socket, so step containers mount
-the job's workspace **from the host**. In a containerized runner, mount `MIABI_RUNNER_BUILDS_DIR` at the
-**same path** inside and outside the container, as above. The `buildkit` backend needs neither the socket
-nor that mount.
+the job's workspace **from the host**. In a containerized runner, put `MIABI_RUNNER_BUILDS_DIR` on a host
+mount, as above. The runner maps the workspace to its host path, so the two paths may differ. Without such a
+mount, the runner logs `container steps will fail` at startup and fails each container step with the same
+hint instead of running it in an empty `/workspace`. The `buildkit` backend needs neither the socket nor
+that mount.
 :::
 
 The runner logs each job's start and finish to its own output, so `docker logs miabi-runner` shows what it
