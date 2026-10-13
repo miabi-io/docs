@@ -484,7 +484,7 @@ Fill these in `.env` before the first `docker compose up`:
 | `MIABI_DOMAIN` | Your panel host, e.g. `miabi.example.com` | Compose aborts |
 | `MIABI_JWT_SECRET` | `openssl rand -hex 32` | Miabi **refuses to boot** outside dev |
 | `MIABI_ENCRYPTION_KEY` | `openssl rand -hex 32` | Miabi **refuses to boot** outside dev |
-| `MIABI_ADMIN_PASSWORD` | The platform admin's password | Miabi **refuses to boot** outside dev on an empty or default value |
+| `MIABI_ADMIN_PASSWORD` | The platform admin's password | Read only on first boot, to seed the admin: outside dev, Miabi **refuses to start** on an empty or default value while no admin exists |
 | `MIABI_WEB_URL` | `https://<MIABI_DOMAIN>` | It is also the default CORS allowlist: unset (and no `MIABI_CORS_ORIGINS`), the allowlist becomes `*` and Miabi **refuses to boot** outside dev |
 
 Also set `DOCKER_GID` to the host's docker group id (`stat -c '%g' /var/run/docker.sock`). It is not
