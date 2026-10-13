@@ -56,7 +56,7 @@ attempts to override them from `env:` — see [The manifest](/docs/getting-start
 | `MIABI_LOGIN_TOKEN_TTL_HOURS` | `24` | Lifetime of the API key minted by `miabi login` and **Copy login command** — see [Signing in from the CLI](/docs/security/authentication) |
 | `MIABI_LOGIN_TOKEN_MAX_TTL_HOURS` | `168` | Longest lifetime a caller may request for that key |
 | `MIABI_ADMIN_EMAIL` | `admin@example.com` | Login of the platform admin seeded on first boot |
-| `MIABI_ADMIN_PASSWORD` | — | **Required in production.** Password for the seeded platform admin. Miabi refuses to start outside dev while this is empty or left at its built-in default |
+| `MIABI_ADMIN_PASSWORD` | — | Password for the platform admin seeded on first boot. Outside dev, Miabi refuses to start while no admin exists and this is empty or left at its built-in default. Once the admin exists it is not read, so it can be removed |
 | `MIABI_LOG_LEVEL` | — | How chatty Miabi's own logs are: `debug`, `info`, `warn`, `error`. Empty follows the environment — `debug` in dev, `info` in production |
 | `TZ` | `UTC` | Timezone for log timestamps and scheduled jobs. Any zoneinfo name (`Europe/Paris`, `America/New_York`) |
 
