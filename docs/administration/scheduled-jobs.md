@@ -42,7 +42,7 @@ one entry each.
 | `image_gc` | daily 04:00 | Prunes the image catalog |
 | `registry_gc` | daily 04:00 | Garbage-collects unreferenced blobs in the built-in registry |
 | `key_rotate` | daily 04:00 | Rotates per-workspace encryption keys older than `MIABI_KEY_ROTATE_MONTHS` |
-| `update-check` | daily 04:37 | Checks whether a newer Miabi release exists |
+| `update-check` | daily 04:37 | Checks versions.miabi.io for newer Miabi, agent, runner and gateway releases |
 | `cert_renew` | daily 06:00 | Renews managed (DNS-01) certificates before they lapse |
 | `certificate_expiry` | daily 08:00 | Warns before a TLS certificate expires |
 | `logstore` | daily | Removes execution logs past their retention |

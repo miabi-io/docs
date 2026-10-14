@@ -21,8 +21,10 @@ Because both happen automatically, upgrading is just a matter of starting the ne
 
 ![The update-available notice shown to platform admins](/img/screenshots/update-available.png)
 
-Once a day, Miabi asks GitHub whether a newer release exists and shows platform admins a dismissible
-notice with a link to the release notes. **The check only notifies — nothing upgrades on its own.**
+Once a day, Miabi reads [versions.miabi.io](https://versions.miabi.io/v1/index.json) to learn the
+latest release of Miabi, the node agent, the runner and the gateway, and shows platform admins a
+dismissible notice with a link to the release notes. A release published as a security fix is shown
+as a red **Security release** notice. **The check only notifies — nothing upgrades on its own.**
 An upgrade is always something you ask for, whether by running `miabi upgrade` (stack) or
 bumping the image and running `docker compose pull && docker compose up -d` (Compose).
 
@@ -34,8 +36,9 @@ version appears.
 |----------|---------|---------|
 | `MIABI_UPDATE_CHECK` | `true` | Set `false` to disable the check entirely (air-gapped hosts, or to avoid the outbound call) |
 
-Nothing about your install is sent: it is an unauthenticated `GET` to `api.github.com` identified
-only by `User-Agent: miabi/<version>`. No install id, no telemetry. A `dev` build never checks.
+Nothing about your install is sent: it is one unauthenticated `GET` of a static file, identified only
+by `User-Agent: miabi/<version>`, with no install id. (Installation counting is separate: see
+[Telemetry](/docs/operations/telemetry).) A `dev` build never checks.
 Admins can read the cached result at `GET /api/v1/admin/update`.
 
 ## Downgrades are not supported
