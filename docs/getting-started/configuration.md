@@ -92,6 +92,7 @@ removes a protection:
 | `MIABI_PLAN_ENFORCEMENT` | `true` | Enforce per-workspace [plan quotas and capability gates](/docs/workspaces/plans-and-quotas). Set `false` to make every quota check pass and every gate open |
 | `MIABI_SECURITY_ENFORCEMENT` | `true` | Stop a platform admin from raw-stopping or removing a Miabi-managed container from the admin node view. Set `false` only as a break-glass escape hatch |
 | `MIABI_UPDATE_CHECK` | `true` | Daily check for a newer Miabi release, surfaced as an admin notice. Notify-only — Miabi never upgrades itself. See [Upgrades](/docs/upgrades/upgrading) |
+| `MIABI_TELEMETRY` | `true` | Send the anonymous startup and daily [telemetry](/docs/operations/telemetry) event. Set `false` (or `DO_NOT_TRACK=1`) to turn it off. Environment only |
 | `MIABI_PASSWORD_RESET_ENABLED` | `true` | Allow self-service password reset (the "forgot password" flow). A critical auth control, so it is fixed at boot — set `false` to disable it, and **restart** to apply. Not editable at runtime |
 
 ### GPUs

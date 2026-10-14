@@ -43,6 +43,7 @@ one entry each.
 | `registry_gc` | daily 04:00 | Garbage-collects unreferenced blobs in the built-in registry |
 | `key_rotate` | daily 04:00 | Rotates per-workspace encryption keys older than `MIABI_KEY_ROTATE_MONTHS` |
 | `update-check` | daily 04:37 | Checks whether a newer Miabi release exists |
+| `telemetry` | daily 04:51 | Sends the anonymous [telemetry](/docs/operations/telemetry) event |
 | `cert_renew` | daily 06:00 | Renews managed (DNS-01) certificates before they lapse |
 | `certificate_expiry` | daily 08:00 | Warns before a TLS certificate expires |
 | `logstore` | daily | Removes execution logs past their retention |
@@ -56,6 +57,7 @@ Not every job exists on every install. A job only registers when what it serves 
 | `gpu_inventory` | `MIABI_GPU_ENABLED=true` |
 | `key_rotate` | `MIABI_KEY_AUTO_ROTATE=true` |
 | `update-check` | `MIABI_UPDATE_CHECK` is not `false`, on a release build |
+| `telemetry` | `MIABI_TELEMETRY` is not `false` and `DO_NOT_TRACK` is unset, on a release build |
 | `database_sizes` | `MIABI_DATABASE_SIZE_CRON` is not empty |
 | `marketplace` | A marketplace registry is configured |
 | `logstore` | The shared log store is enabled |
