@@ -135,7 +135,7 @@ which renames it.
 | `MIABI_FORCE_STACK` | — | Install even though a Compose stack is present. See the caution above. |
 | `MIABI_CLI_VERSION` | — | Which `miabi` CLI release to install (default: pinned in the script). |
 | `MIABI_CLI_BASE_URL` | — | Fetch the CLI from a mirror instead of the GitHub release — an internal artifact store for an air-gapped install. Must serve the same archive and `checksums.txt` names. |
-| `MIABI_RELEASE_API` | GitHub's API | Where `miabi setup`/`upgrade` look up the latest platform version when neither `--version` nor `--image` is given. Point it at a mirror serving GitHub's releases JSON, or pass `--version` to skip the lookup. |
+| `MIABI_RELEASE_API` | — | A mirror for the latest-version lookup `miabi setup`/`upgrade` make when neither `--version` nor `--image` is given (by default [versions.miabi.io](https://versions.miabi.io)). It must serve GitHub's releases JSON; or pass `--version` to skip the lookup. |
 
 :::tip One email is enough
 `acme_email` (the Let's Encrypt contact) and `admin_email` (the platform admin's login) **fall back
@@ -356,8 +356,10 @@ answer, so `--yes` is not optional there.
 `setup` installs `miabi/miabi` at the **latest published Miabi release**, looked up when it runs —
 the version is not baked into the CLI. That decoupling is deliberate: the CLI releases on its own
 cadence, so a CLI built months ago still installs today's Miabi, and `miabi stack status` shows both.
-The lookup goes to GitHub's releases API (or `MIABI_RELEASE_API`); if it cannot be reached, `setup`
-warns and falls back to `miabi/miabi:latest`, which costs you automatic rollback and drift detection.
+The lookup reads the stable release from [versions.miabi.io](https://versions.miabi.io), falling back
+to GitHub's releases API (or a `MIABI_RELEASE_API` mirror instead of both). A security release is
+called out when it is picked. If neither can be reached, `setup` warns and falls back to
+`miabi/miabi:latest`, which costs you automatic rollback and drift detection.
 
 To pin a release, pass `--version 1.8.0`. To install something else, including from a private
 registry, pass the image verbatim:
