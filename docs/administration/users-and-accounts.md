@@ -38,7 +38,10 @@ setting and re-applies it on every boot.
   stays closed: the accounts it created could neither sign in nor verify themselves.
 - **The allow-list is not revealed.** An address from a domain that is not allowed gets the same
   answer as a successful sign-up, so nobody can probe it for your organisation's domains.
-- A self-chosen password must be at least 12 characters.
+- **Passwords are at least 12 characters** wherever one is set: sign-up, invitations, changes,
+  resets, accounts an admin creates, and the first admin's `MIABI_ADMIN_PASSWORD`. Sign-in still
+  accepts passwords of 8 or more set under the earlier rule; directory (LDAP/AD) passwords follow
+  the directory's own policy.
 
 A new account is an ordinary user, never a platform admin. Every sign-up is written to the
 [audit log](/docs/operations/audit-log). For the sign-up and verification flow a user sees, see
@@ -46,12 +49,17 @@ A new account is an ordinary user, never a platform admin. Every sign-up is writ
 
 ## Creating an account
 
-**Users → New user.** You set the name, email, username and initial password, and choose
-whether the account is a platform admin.
+**Users → New user.** You set the name, email and username, and choose whether the account is a
+platform admin. Miabi generates a strong temporary password and shows it once, right after the
+account is created: copy it and share it with the user through a secure channel. It can't be shown
+again; if it's lost, use **Reset password**.
 
-An admin-set password is marked **must change**: the user is sent to a
-change-password screen at first sign-in and cannot reach the console until they set their
-own. You never need to learn the password they end up with.
+The temporary password is marked **must change**: the user is sent to a change-password screen at
+first sign-in and cannot reach the console until they set their own. You never need to learn the
+password they end up with.
+
+Through the API, `POST /api/v1/admin/users` generates the password when `password` is omitted and
+returns it once in the response; a password you supply must be at least 12 characters.
 
 ## Account actions
 
