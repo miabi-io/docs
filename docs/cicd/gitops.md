@@ -10,6 +10,8 @@ description: Declarative miabi.io/v1 manifests reconciled continuously from Git,
 
 ![GitOps source and reconciliation](/img/screenshots/gitops.png)
 
+![Manifests from Git reach the workspace through pull-based sync or a one-shot apply, via one plan and the REST API; a console edit is flagged as drift and reconciled back to Git](/img/diagrams/gitops.png)
+
 ## Declarative manifests
 
 A manifest describes *what you want*, not the steps to get there. Manifests use the `miabi.io/v1` API version and a `kind` for each resource type, with a `spec` capturing the desired configuration:

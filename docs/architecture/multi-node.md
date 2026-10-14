@@ -9,6 +9,8 @@ description: How one control plane drives many clusters, how remote nodes connec
 One node is the default and the whole platform. Adding more changes where containers run, not how
 you use Miabi: a single control plane drives every node, grouped into **clusters**.
 
+![One control plane driving a default cluster, a standalone cluster and a remote swarm over outbound agent tunnels, with visitors served by each cluster's own gateway](/img/diagrams/topology.png)
+
 ```mermaid
 flowchart TB
     Visitor(["Visitors"])

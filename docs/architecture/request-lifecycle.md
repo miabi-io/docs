@@ -9,6 +9,10 @@ description: What happens between a visitor's request and your container, and wh
 Every public request takes the same path. Knowing it is the difference between debugging a 502 in a
 minute and guessing for an hour.
 
+![A request from the browser through DNS, then TLS, routing and middlewares in Goma Gateway, to the app container, with the analytics event on the side](/img/diagrams/request.png)
+
+In sequence:
+
 ```mermaid
 sequenceDiagram
     autonumber

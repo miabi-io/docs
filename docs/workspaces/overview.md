@@ -25,6 +25,8 @@ Internally the numeric ID and a stable UID remain the durable references, so a r
 
 ## Multi-tenant isolation
 
+![The platform holds organizations, organizations hold workspaces, and each workspace has its own plan, resources, isolated network and data key](/img/diagrams/tenancy.png)
+
 Miabi is multi-tenant by design. Isolation is **enforced in two layers**:
 
 - **Middleware** checks your role on every request.

@@ -16,6 +16,8 @@ once as soon as the new container is healthy.
 
 ![A canary rollout showing the traffic split with Pause, Promote and Abort](/img/screenshots/canary-rollout.png)
 
+![Goma Gateway splitting traffic 90/10 between the stable and canary releases, the automatic ramp from 10% to 100%, and abort back to the stable release](/img/diagrams/canary.png)
+
 ## Starting a canary
 
 Set the app's **deploy strategy** to `canary` in its settings, or start one from the app's
