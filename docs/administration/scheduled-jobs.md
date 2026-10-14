@@ -56,6 +56,7 @@ Not every job exists on every install. A job only registers when what it serves 
 | `gpu_inventory` | `MIABI_GPU_ENABLED=true` |
 | `key_rotate` | `MIABI_KEY_AUTO_ROTATE=true` |
 | `update-check` | `MIABI_UPDATE_CHECK` is not `false`, on a release build |
+| `telemetry` | `MIABI_TELEMETRY` is not `false` and `DO_NOT_TRACK` is unset, on a release build |
 | `database_sizes` | `MIABI_DATABASE_SIZE_CRON` is not empty |
 | `marketplace` | A marketplace registry is configured |
 | `logstore` | The shared log store is enabled |
