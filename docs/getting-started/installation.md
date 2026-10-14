@@ -78,7 +78,13 @@ enough](#install-options).
 Answering prompts over a pipe is unreliable, so pass `MIABI_DOMAIN` and `MIABI_ADMIN_EMAIL` as above
 rather than letting it ask.
 
-To pin a release, set `MIABI_VERSION=v1.4.0`.
+The script installs the newest stable release, which it reads from
+[versions.miabi.io](https://versions.miabi.io) along with the gateway and CI runner versions that
+release was tested with, and the newest stable `miabi` CLI (which manages any stack version). To pin a release, set `MIABI_VERSION=v1.4.0` (and `GOMA_VERSION` with
+it, for the gateway that release was tested with). A `GOMA_VERSION`, `RUNNER_VERSION` or
+`MIABI_CLI_VERSION` you set yourself always wins, and with all four set the script makes no lookup.
+If versions.miabi.io can't be reached, the install stops rather than falling back to `:latest`
+images.
 
 :::caution An existing Compose install
 The installer **refuses** to run on a host that already runs Miabi under Compose, because the two do
@@ -122,8 +128,8 @@ which renames it.
 | `MIABI_DOMAIN` | `--domain` | Panel hostname. Required. |
 | `MIABI_ACME_EMAIL` | `--acme-email` | Let's Encrypt contact. |
 | `MIABI_ADMIN_EMAIL` | `--admin-email` | First admin's login. |
-| `GOMA_VERSION` | `--gateway-image` | Goma Gateway image. |
-| `RUNNER_VERSION` | `--runner-image` | Image shown in the CI runner enrollment command. |
+| `GOMA_VERSION` | `--gateway-image` | Goma Gateway version (default: tested with the Miabi release). |
+| `RUNNER_VERSION` | `--runner-image` | Runner version shown in the CI runner enrollment command (default: tested with the Miabi release). |
 | `MIABI_CONTROL_URL` | `--control-url` | URL remote nodes and agents dial back on. Defaults to the panel's own URL. |
 | `MIABI_REGISTRY_ENABLED` | `--registry` | Enable the [built-in registry](/docs/registry/overview). |
 | `MIABI_REGISTRY_HOST` | `--registry-host` | Its hostname (default `registry.<domain>`). Needs its own DNS record — it gets its own certificate. |
@@ -133,7 +139,7 @@ which renames it.
 | `MIABI_NO_HOST_PROC` | `--no-host-proc` | Do **not** bind the host's `/proc`. See below. |
 | `MIABI_CONFIG_FILE` | `--file` | Where the manifest lives (default `/etc/miabi/miabi.yaml`). `MIABI_ETC` sets its directory. |
 | `MIABI_FORCE_STACK` | — | Install even though a Compose stack is present. See the caution above. |
-| `MIABI_CLI_VERSION` | — | Which `miabi` CLI release to install (default: pinned in the script). |
+| `MIABI_CLI_VERSION` | — | Which `miabi` CLI release to install (default: the newest stable). |
 | `MIABI_CLI_BASE_URL` | — | Fetch the CLI from a mirror instead of the GitHub release — an internal artifact store for an air-gapped install. Must serve the same archive and `checksums.txt` names. |
 | `MIABI_RELEASE_API` | GitHub's API | Where `miabi setup`/`upgrade` look up the latest platform version when neither `--version` nor `--image` is given. Point it at a mirror serving GitHub's releases JSON, or pass `--version` to skip the lookup. |
 
