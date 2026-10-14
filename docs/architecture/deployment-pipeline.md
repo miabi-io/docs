@@ -9,6 +9,10 @@ description: What happens between pressing Deploy and traffic reaching the new c
 A deploy is an API call that returns immediately and a job that does the work. Nothing about a build
 or an image pull happens inside your HTTP request.
 
+![From git push through a signed webhook, a pipeline on a runner and the registry, to a new container behind the health gate: a pass swaps the alias, a fail refuses the deploy](/img/diagrams/delivery.png)
+
+Inside the control plane, a deploy runs like this:
+
 ```mermaid
 sequenceDiagram
     autonumber

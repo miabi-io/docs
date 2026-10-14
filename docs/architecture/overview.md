@@ -10,6 +10,10 @@ Miabi is one Go binary, a reverse proxy, and two datastores. Everything else —
 databases, remote nodes — is Docker containers it manages. This section explains how those pieces
 fit together and what happens when you use them.
 
+![One host: Goma Gateway at the edge, the miabi control plane with PostgreSQL and Redis, workspaces on their own networks, build runners, remote clusters and S3 backups](/img/diagrams/platform.png)
+
+The diagram below breaks the same install down into its components.
+
 ```mermaid
 flowchart TB
     Client["Browser · CLI · API<br/>Terraform · GitOps"]
