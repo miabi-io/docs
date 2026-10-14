@@ -249,13 +249,12 @@ node gateway's request events, so the node contributes nothing to
 [Workspace Analytics](/docs/operations/analytics) and its traffic is simply missing from the graphs.
 
 A node with no badge is either current or has never reported a version. Miabi deliberately shows
-nothing rather than guessing: an install that cannot reach GitHub must not have its whole fleet
+nothing rather than guessing: an install that cannot reach versions.miabi.io must not have its whole fleet
 painted as out of date. The **Unsupported** verdict is decided locally against the minimum, so it
 stays accurate on an air-gapped install where the release check has never succeeded.
 
-Only stable releases are offered. Release candidates and betas are filtered out by tag as well as by
-GitHub's own prerelease flag, so a candidate cannot reach your nodes because someone forgot to tick a
-box.
+Only stable releases are offered. Release candidates and betas are filtered out by version as well as
+by channel, so a candidate cannot reach your nodes even if it is published to the wrong channel.
 
 ### Upgrading an agent
 
