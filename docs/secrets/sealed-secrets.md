@@ -121,7 +121,7 @@ next one becomes available. It needs a signed-in session: API keys can't rotate 
 ## Moving or restoring a workspace
 
 - **Disaster recovery**: sealing keys live in the control-plane database, wrapped under
-  `MIABI_ENCRYPTION_KEY`, so a platform restore (`miabi restore`) brings them back.
+  `MIABI_ENCRYPTION_KEY`, so a [platform restore](/docs/administration/platform-backup#rebuilding-on-a-fresh-host) (`miabi restore`) brings them back.
 - **Portable backups**: a portable workspace bundle carries the sealing keys,
   sealed by the bundle passphrase, so the restored workspace opens the same Git repositories. If the
   target workspace already has keys, it keeps its own active key and adds the imported ones as older

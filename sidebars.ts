@@ -219,6 +219,7 @@ const sidebars: SidebarsConfig = {
         'administration/scheduled-jobs',
         'administration/branding',
         'administration/install-manifest',
+        'administration/platform-backup',
       ],
     },
     {

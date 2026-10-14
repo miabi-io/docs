@@ -6,7 +6,7 @@ description: How to unlock Miabi Enterprise — contact sales for a signed, offl
 
 # Licensing
 
-Miabi Enterprise is unlocked by a **signed license key**. The key is verified **offline**, with **no phone-home** — your instance never contacts a licensing server to validate or renew.
+Miabi Enterprise is unlocked by a **signed license key**. The key is verified **offline**, with **no phone-home** — your instance never contacts a licensing server to validate or renew. The anonymous [installation statistics](/docs/operations/telemetry) are separate, and can be turned off.
 
 ![License activation](/img/screenshots/license.png)
 
