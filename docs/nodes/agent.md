@@ -88,18 +88,22 @@ docker run -d --name miabi-agent --restart unless-stopped \
 
 ### Install script
 
-The install script does the same thing with a preflight check and status verification. It **does not
-install Docker** — it checks that Docker is present and running, then starts the agent and confirms
-it stayed up:
+The install script does the same thing with a preflight check and status verification. It installs
+**Docker Engine** when the host has none (run it as root; the same way the
+[Miabi installer](/docs/getting-started/installation) does), then starts the agent and confirms it
+stayed up. It installs the agent's newest stable release, read from
+[versions.miabi.io](https://versions.miabi.io):
 
 ```bash
 curl -fsSL https://get.miabi.io/agent | \
   MIABI_CONTROL_URL=https://miabi.example.com MIABI_NODE_TOKEN=mbn_xxxxxxxx bash
 ```
 
-You can also pass the values as flags (`--control-url`, `--token`), override the image with
-`--image` / `MIABI_AGENT_IMAGE` (or just its tag with `AGENT_VERSION`), rename the container with
-`--name` / `MIABI_AGENT_NAME`, or skip TLS verification with `--insecure`. Run with no values on an
+You can also pass the values as flags (`--control-url`, `--token`), pin a release with
+`AGENT_VERSION=v0.6.2` or the whole image with `--image` / `MIABI_AGENT_IMAGE` (either skips the
+lookup), rename the container with `--name` / `MIABI_AGENT_NAME`, or skip TLS verification with
+`--insecure`. Set `MIABI_SKIP_DOCKER_INSTALL=1` on a host whose packages are managed elsewhere: the
+script then requires Docker to be present instead of installing it. Run with no values on an
 interactive shell and it prompts for them.
 
 :::note
