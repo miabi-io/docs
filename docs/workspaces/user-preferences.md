@@ -65,7 +65,7 @@ your account preference on first sign-in rather than being reset.
 | **Accent** | The console's highlight colour: **Purple** (the default), **Blue**, **Indigo**, **Slate**, **Orange** or **Lime**. It applies immediately and follows your account to other browsers. Status colours — success, warning, danger — keep their own meaning. |
 | **Open on** | The console section a new session opens on inside your default workspace — Dashboard, Applications, Databases, Routes, and so on. |
 | **Time zone** | How timestamps are *displayed*. They are always stored and served in UTC. The page offers your browser's detected zone in one click. |
-| **Language** | **English** or **Français**. Translations are still on the way, so the console stays in English for now. A value saved before this became a fixed choice is mapped to its language (`fr-CA` → French), or to English. |
+| **Language** | **English** or **Français**. The whole console, including the sign-in pages, is translated. A value saved before this became a fixed choice is mapped to its language (`fr-CA` → French), or to English. |
 
 :::note
 If a platform admin enforces the brand accent under [Branding](/docs/administration/branding), the

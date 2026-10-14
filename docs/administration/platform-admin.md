@@ -100,7 +100,7 @@ dashboard. The sidebar is grouped as below, and this table is the map.
 | *(fields pinned by the install manifest)* | A setting stated in `/etc/miabi/miabi.yaml` — a backup destination, the external base domain, the registry host — is **read-only in the console**, shown with the variable that decides it. That is deliberate: it keeps an install described by infrastructure-as-code authoritative. Remove the field from the manifest and converge to hand the setting back. |
 | **Branding** | The sign-in page and console identity: name, logos, favicon, accent policy and sign-in notice (Enterprise). See [Branding](/docs/administration/branding). |
 | **Deployment Config** | Registry mirror and platform image pins. See [Scheduled Jobs & Image Defaults](/docs/administration/scheduled-jobs#image-defaults). |
-| **Platform Backup** | Backing up and restoring the platform itself (Enterprise). See [Backups](/docs/storage/backups). |
+| **Platform Backup** | Backing up and restoring the platform itself (Enterprise). See [Platform backup & disaster recovery](/docs/administration/platform-backup). |
 
 ### Enterprise
 
