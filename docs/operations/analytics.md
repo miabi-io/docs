@@ -171,17 +171,31 @@ count](#live-visitors), which is immediate.
 
 The country map and the [geo-block middleware](/docs/networking/routing-and-middlewares)
 need a GeoIP database on the gateway. **Miabi ships and downloads none** — see
-[why](#why-miabi-does-not-ship-one) — so this is a one-time manual step:
+[why](#why-miabi-does-not-ship-one) — so you supply it:
 
 1. Download a country-level database in MaxMind-DB (`.mmdb`) format — the options are
    below.
-2. Save it as **`/etc/miabi/country.mmdb`** (beside `goma.yml`; if you moved the config
-   with `MIABI_ETC`, put it there instead). The name `GeoLite2-Country.mmdb` is also
-   recognized.
-3. Restart the gateway: `miabi restart miabi-gateway`.
+2. Save it as **`/etc/miabi/geoip/country.mmdb`** (the `geoip/` directory beside
+   `goma.yml`; if you moved the config with `MIABI_ETC`, it is there instead). The name
+   `GeoLite2-Country.mmdb` is also recognized.
 
-Countries start appearing on the next traffic. To turn geo off again without deleting
-the file, set `MIABI_GEOIP=off`.
+No restart: the gateway checks the file every 5 minutes, so countries start appearing
+within 5 minutes. To turn geo off without deleting the file, set
+`MIABI_GEOIP=off` and re-run `sudo miabi setup`.
+
+### Updating the database
+
+The free databases are refreshed monthly. Replace the file in `/etc/miabi/geoip/` however
+you like — copy over it, `mv` a new one into place, or point
+[`geoipupdate`](https://github.com/maxmind/geoipupdate) at the directory
+(`DatabaseDirectory /etc/miabi/geoip`). The gateway loads the new database within 5
+minutes, without a restart and without dropping a request. A corrupt or half-copied file
+is ignored and the previous database stays in use; the gateway log says why.
+
+:::note Upgrading from an earlier release
+Earlier releases read the database from `/etc/miabi/country.mmdb`. `sudo miabi setup`
+(or `miabi upgrade`) moves it into `/etc/miabi/geoip/` for you.
+:::
 
 ### Country header for your apps
 
@@ -268,9 +282,9 @@ attributed to a workspace).
 
 **No country data / empty map.** The gateway has no GeoIP database — Miabi never
 installs one. See [GeoIP database](#geoip-database); analytics keeps working
-without it, just without countries. If you did place the file, check the install
-log for `GeoIP: using …` (it is picked up when the gateway is created, not while
-it runs) and confirm the name is `country.mmdb`.
+without it, just without countries. If you did place the file, confirm it is in
+`/etc/miabi/geoip/` and named `country.mmdb`, wait up to 5 minutes, and check the gateway log
+(`docker logs miabi-gateway`) for a GeoIP line saying why it was not loaded.
 
 ## What it is not
 
