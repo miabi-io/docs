@@ -183,6 +183,27 @@ need a GeoIP database on the gateway. **Miabi ships and downloads none** — see
 Countries start appearing on the next traffic. To turn geo off again without deleting
 the file, set `MIABI_GEOIP=off`.
 
+### Country header for your apps
+
+With a database in place, the gateway can also tell your apps where each request comes
+from, so they don't need a GeoIP database of their own (for localisation, currency or tax
+defaults, consent banners). Turn it on in the install manifest:
+
+```yaml
+spec:
+  gateway:
+    countryHeader: true
+```
+
+Then re-run `sudo miabi setup`, which recreates the gateway. Every request reaching an
+app carries `X-Goma-Country` with the ISO 3166-1 alpha-2 code, e.g. `X-Goma-Country: DE`.
+
+- The header is **omitted** when the country is unknown: no database, a private or
+  internal address, or an address the database does not cover.
+- A client cannot fake it: any `X-Goma-Country` sent with the request is stripped before
+  the gateway sets its own.
+- It covers WebSocket and server-sent-event connections too.
+
 ### Where to get one
 
 | Database | License | Cost |
