@@ -11,6 +11,7 @@ const sidebars: SidebarsConfig = {
         'getting-started/installation',
         'getting-started/configuration',
         'getting-started/quickstart',
+        'getting-started/existing-server',
         'getting-started/air-gapped',
       ],
     },
