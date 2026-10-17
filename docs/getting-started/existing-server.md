@@ -78,7 +78,8 @@ environment variables.
 
 For each imported app, declare its container port, then add a route for its domain —
 [Exposing an application](/docs/applications/exposing-your-app#method-2--your-own-domain) walks
-through it. Your DNS already points at this server, so the gateway can request certificates as soon
+through it, and [Migrating from Traefik, Caddy and nginx](/docs/routes/migrating) translates your
+old proxy configuration. Your DNS already points at this server, so the gateway can request certificates as soon
 as each route exists.
 
 Do the apps that matter most first: each one is back online as soon as its route and certificate are

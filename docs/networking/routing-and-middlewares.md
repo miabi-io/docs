@@ -16,7 +16,8 @@ and Miabi generates the routing.
 This page explains what the gateway does with a route. For the step-by-step of making an
 application reachable — declaring a port, one-click external access, attaching your own
 domain, or publishing a host port — start at
-**[Exposing an Application](/docs/applications/exposing-your-app)**.
+**[Exposing an Application](/docs/applications/exposing-your-app)**. For the route itself — its
+fields, how requests are matched, and examples — see **[Understanding routes](/docs/routes/overview)**.
 :::
 
 ## How routing works
