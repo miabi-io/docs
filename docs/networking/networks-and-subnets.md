@@ -214,7 +214,7 @@ Turn it on with `MIABI_NETWORK_IPV6=true`, or in the install manifest:
 ```yaml
 spec:
   networking:
-    proxy:    { name: miabi,          subnet: 10.63.0.0/16, ipv6: true }
+    proxy:    { name: miabi-proxy,    subnet: 10.63.0.0/16, ipv6: true }
     internal: { name: miabi-internal, subnet: 10.62.0.0/16 }
     pool:
       cidr: 10.64.0.0/12
