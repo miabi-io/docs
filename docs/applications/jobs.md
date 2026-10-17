@@ -72,6 +72,8 @@ and `miabi_job` resources.
 
 - A cronjob a Git source manages shows a **gitops** badge. It is read-only here: **Run now**, pause
   and resume still work, but other edits are made in its manifest.
+- A cronjob created by `miabi apply` shows an **apply** badge. You can edit or delete it here, but
+  the next apply of its manifest overwrites your edits.
 - Declared jobs are listed on the **Declared** tab with their run policy and the state of their last
   run. **Run again** runs one by hand; the next sync doesn't run it a second time.
 - A run held for the app's deploy shows **waiting for the app's deploy**. If that deploy fails, the

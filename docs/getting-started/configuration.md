@@ -56,7 +56,7 @@ attempts to override them from `env:` — see [The manifest](/docs/getting-start
 | `MIABI_LOGIN_TOKEN_TTL_HOURS` | `24` | Lifetime of the API key minted by `miabi login` and **Copy login command** — see [Signing in from the CLI](/docs/security/authentication) |
 | `MIABI_LOGIN_TOKEN_MAX_TTL_HOURS` | `168` | Longest lifetime a caller may request for that key |
 | `MIABI_ADMIN_EMAIL` | `admin@example.com` | Login of the platform admin seeded on first boot |
-| `MIABI_ADMIN_PASSWORD` | — | **Required in production.** Password for the seeded platform admin. Miabi refuses to start outside dev while this is empty or left at its built-in default |
+| `MIABI_ADMIN_PASSWORD` | — | **Required in production.** Password for the seeded platform admin. At least 12 characters. Miabi refuses to start outside dev while this is empty, shorter, or left at its built-in default |
 | `MIABI_LOG_LEVEL` | — | How chatty Miabi's own logs are: `debug`, `info`, `warn`, `error`. Empty follows the environment — `debug` in dev, `info` in production. It also sets database query logging: every query at `debug`, failed and slow (over 1s) queries at `info` and `warn`, failed queries only at `error`. Queries are logged without their bound values |
 | `TZ` | `UTC` | Timezone for log timestamps and scheduled jobs. Any zoneinfo name (`Europe/Paris`, `America/New_York`) |
 
@@ -91,7 +91,7 @@ removes a protection:
 |----------|---------|-------------|
 | `MIABI_PLAN_ENFORCEMENT` | `true` | Enforce per-workspace [plan quotas and capability gates](/docs/workspaces/plans-and-quotas). Set `false` to make every quota check pass and every gate open |
 | `MIABI_SECURITY_ENFORCEMENT` | `true` | Stop a platform admin from raw-stopping or removing a Miabi-managed container from the admin node view. Set `false` only as a break-glass escape hatch |
-| `MIABI_UPDATE_CHECK` | `true` | Daily check for a newer Miabi release, surfaced as an admin notice. Notify-only — Miabi never upgrades itself. See [Upgrades](/docs/upgrades/upgrading) |
+| `MIABI_UPDATE_CHECK` | `true` | Daily check (from `versions.miabi.io`) for newer Miabi, agent, runner and gateway releases, surfaced as admin notices; a security release is flagged as one. Notify-only — Miabi never upgrades itself. See [Upgrades](/docs/upgrades/upgrading) |
 | `MIABI_TELEMETRY` | `true` | Send the anonymous startup and daily [telemetry](/docs/operations/telemetry) event. Set `false` (or `DO_NOT_TRACK=1`) to turn it off. Environment only |
 | `MIABI_PASSWORD_RESET_ENABLED` | `true` | Allow self-service password reset (the "forgot password" flow). A critical auth control, so it is fixed at boot — set `false` to disable it, and **restart** to apply. Not editable at runtime |
 
@@ -322,7 +322,7 @@ tab. See [Registry](/docs/registry/administration).
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `MIABI_NODE_GATEWAY_IMAGE` | `jkaninda/goma-gateway:1.1.0` | Goma image deployed on edge-gateway nodes. The default is the gateway version this Miabi build is tested against |
+| `MIABI_NODE_GATEWAY_IMAGE` | `jkaninda/goma-gateway:1.1.2` (v1.10.20) | Goma image deployed on edge-gateway nodes. The default is the gateway version this Miabi release is tested against, published with it on `versions.miabi.io` |
 | `MIABI_CONTROL_URL` | falls back to `MIABI_API_URL` | Public URL remote nodes reach the control plane at |
 | `MIABI_NETWORK_POOL_CIDR` | `10.64.0.0/12` | Address pool workspace networks are carved from. Must not overlap the shared `miabi-proxy` network (`10.63.0.0/16` by default — set with `miabi setup --subnet` or `spec.networking.proxy.subnet`), your LAN or a VPN |
 | `MIABI_NETWORK_SUBNET_PREFIX` | `24` | Prefix length per workspace network (a `/12` pool ⇒ 4096 networks) |

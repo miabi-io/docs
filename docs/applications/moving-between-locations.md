@@ -114,8 +114,8 @@ changes.
   Certificates Miabi issues through a connected DNS provider carry over.
 - **Private reachability**: locations do not route to each other. The plan warns when another app
   reaches this one by its private name.
-- **GitOps**: a manifest that sets `placement.location` must be updated to the new location, or the next
-  sync refuses the app. A manifest that does not set it keeps working.
+- **GitOps and apply**: a manifest that sets `placement.location` must be updated to the new location,
+  or the next sync (or `miabi apply`) refuses the app. A manifest that does not set it keeps working.
 
 These blockers also stop a move:
 

@@ -33,8 +33,13 @@ proxy's own metrics or access logs instead.
 ## The four views
 
 Open **Analytics** in the sidebar. A shared header carries the time range
-(30 min · 1h · 24h · 7d · 30d), an app filter, a **live visitor count**, and the
-absolute window the relative range resolves to — all four tabs share them.
+(30 min · 1h · 24h · 7d · 30d, or **Custom**), an app filter, a **live visitor count**, and the
+absolute window the range resolves to — all four tabs share them.
+
+**Custom** picks a From and To date; both days are included, cut at your local midnight. It reaches
+at most 90 days back, and no further than the plan's [retention](#retention--export-community-vs-enterprise). Over the API it is
+`range=<from>..<to>`, each an RFC 3339 time or a `YYYY-MM-DD` date (UTC midnight), with `to`
+exclusive.
 
 - **Overview** — headline tiles (requests, unique visitors, data served, and
   **server errors (5xx)** with client errors (4xx) beside it), a
@@ -44,10 +49,13 @@ absolute window the relative range resolves to — all four tabs share them.
   ![Analytics Overview: headline tiles, requests over time, and the status breakdown](/img/screenshots/analytics-overview.png)
 
 - **HTTP Traffic** — a world **map of requests by country** (from GeoIP), plus
-  breakdowns by country, method, status code and path. Paths are the **request
-  paths** the gateway saw (`/api/v1/orders/42`), ranked and capped at the busiest
-  few — so an app with ids in its URLs shows many low-count rows rather than one
-  grouped `/api/v1/orders/:id`.
+  breakdowns by country, method, status code and path. **Countries** and **Top paths**
+  list every entry with its share, scroll, and get a filter box once they pass 15
+  rows. Hovering a country row highlights it on the map; clicking the map or a row
+  pins it. Paths are the **request paths** the gateway saw (`/api/v1/orders/42`), not
+  route patterns — so an app with ids in its URLs shows many low-count rows rather
+  than one grouped `/api/v1/orders/:id`, with the rest of the tail folded into an
+  **Other** row.
 
   ![Analytics HTTP Traffic: the requests-by-country map with method, status and path breakdowns](/img/screenshots/analytics-http-traffic.png)
 
@@ -57,7 +65,9 @@ absolute window the relative range resolves to — all four tabs share them.
   top pages, referrers, countries, browsers, operating systems, devices, and a
   human-vs-bot split. `curl` is reported as its own browser family, and a **Top
   user agents** panel lists the raw `User-Agent` strings (clipped to 180
-  characters), so you can see exactly which clients and scripts are calling.
+  characters) with their share and a search box, so you can see exactly which
+  clients and scripts are calling. Top pages and countries show the top 15, with
+  the remainder in an **Other** row.
 
 :::tip 4xx and 5xx are not the same
 Client errors (4xx — 404s, failed auth, bots) are usually noise; server errors
@@ -68,7 +78,7 @@ as an outage.
 
 :::note Times are local, except daily buckets
 Charts label their axis in **your browser's timezone**, and the header spells out
-the absolute window behind the relative range. The one exception is the 7-day and
+the absolute window behind the selected range. The one exception is the 7-day and
 30-day views: those bucket by **UTC day**, so they are labelled in UTC — a bucket
 cut at UTC midnight would otherwise be shown under the wrong date for anyone west
 of Greenwich. Tooltips on daily bars say so.
@@ -136,8 +146,6 @@ nodes forward through their agent instead (see above).
      analytics:
        enabled: true
        stream: goma:analytics
-     geoip:
-       database: /etc/goma/country.mmdb   # optional; see "GeoIP database" below
    ```
 
    …or from the gateway's environment, which overrides the file:
@@ -146,11 +154,11 @@ nodes forward through their agent instead (see above).
    GOMA_ANALYTICS_ENABLED=true
    GOMA_ANALYTICS_STREAM=goma:analytics
    GOMA_REDIS_DB=0            # must equal Miabi's MIABI_REDIS_DB
-   GOMA_GEOIP_DB=/etc/goma/country.mmdb   # optional; see "GeoIP database" below
    ```
 
    The [Compose example](https://github.com/miabi-io/miabi/tree/main/examples/compose)
-   ships both already set.
+   ships analytics already enabled, and a commented-out `./geoip:/etc/goma/geoip:ro` mount for the
+   [GeoIP database](#geoip-database).
 
 2. **Miabi** — the consumer reads that stream (defaults shown):
 
@@ -260,7 +268,8 @@ The full dashboards — every tab, the world map, all breakdowns — are
 | Retention | up to **7 days** | configurable (30/90d+) |
 | CSV export + read API | — | ✅ (`analytics_export`) |
 
-In Community the range picker locks windows past the retention cap; the
+In Community the range picker locks windows past the retention cap, and a custom range can't
+start before it; the
 **Export** button is enabled with an Enterprise license.
 
 ## Troubleshooting

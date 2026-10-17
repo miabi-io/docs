@@ -158,7 +158,7 @@ docker exec -it <control-plane container> miabi admin reset-2fa --email admin@ex
 | Action | Effect |
 |---|---|
 | `recover` | Replaces the password with a temporary one, turns two-factor off, re-enables a disabled account, and ends every session. |
-| `reset-password` | Replaces the password and ends every session. Pass `--password-stdin --yes` to set your own instead of a generated one. |
+| `reset-password` | Replaces the password and ends every session. Pass `--password-stdin --yes` to set your own (at least 12 characters) instead of a generated one. |
 | `reset-2fa` | Turns two-factor off; it must be set up again at the next admin sign-in. Also available as `miabi reset-2fa`. |
 
 A generated password is shown once and must be changed at the next sign-in. Add `--yes` to skip the

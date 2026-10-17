@@ -28,7 +28,7 @@ Every middleware type Miabi curates. Each has a form in the console, validation 
 | [IP access policy](/docs/middlewares/access-policy) | `accessPolicy` | Allow or deny requests by client IP / CIDR range. |
 | [Request body limit](/docs/middlewares/body-limit) | `bodyLimit` | Reject requests whose body exceeds a size limit. |
 | [Block user agents](/docs/middlewares/user-agent-block) | `userAgentBlock` | Reject requests whose User-Agent matches any of the listed patterns. |
-| [Country access policy (GeoIP)](/docs/middlewares/geo-block) | `geoBlock` | Allow or deny requests by client country (GeoIP), with optional country-header enrichment for the backend. |
+| [Country access policy (GeoIP)](/docs/middlewares/geo-block) | `geoBlock` | Allow or deny requests by client country (GeoIP). |
 
 ## Traffic
 

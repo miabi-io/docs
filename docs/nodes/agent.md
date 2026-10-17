@@ -75,8 +75,9 @@ binary — see [Binary](#binary)). The two required values are:
 | `MIABI_CONTROL_URL` | Your control plane's base URL, e.g. `https://miabi.example.com` |
 | `MIABI_NODE_TOKEN` | The node's join token (`mbn_…`), shown once when you added the node |
 
-After you create the node in the console, Miabi shows the exact `docker run` command for that node —
-copy it and run it on the host. It looks like this:
+After you create the node in the console, Miabi shows the exact command for that node in two forms —
+**Docker** (a `docker run`) and **Script** (the [install script](#install-script), which also installs
+Docker when it is missing). Copy one and run it on the host. The Docker form looks like this:
 
 ```bash
 docker run -d --name miabi-agent --restart unless-stopped \

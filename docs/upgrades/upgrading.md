@@ -23,6 +23,7 @@ knows — and refuses to act on a stack it does not own.
 - **Installer / `docker run`** (what `get.miabi.io` builds) → `sudo miabi upgrade`, or
   `docker run … miabi/miabi:<tag> upgrade` if you installed without the CLI. Miabi replaces its own
   container, rolling back if the new one does not come up. (`update` still works, deprecated.)
+  Re-running the [install command](#upgrading-with-the-install-command) upgrades the CLI too.
 - **Compose**, if you set it up yourself → bump `MIABI_IMAGE` in `.env`, then `docker compose pull && docker compose up -d`.
 
 If you are not sure which you have, ask:
@@ -77,6 +78,34 @@ Miabi warns when you use one.
 **It can replace its own container** because the thing driving the upgrade is not that container —
 it is the `miabi` binary on the host. That is the whole reason Miabi owns its containers rather than
 letting Compose own them.
+
+### Upgrading with the install command
+
+`miabi upgrade` moves the stack, not the `miabi` CLI itself. To upgrade both, re-run the command you
+installed with:
+
+```bash
+curl -fsSL https://get.miabi.io | sudo MIABI_DOMAIN=miabi.example.com \
+  MIABI_ADMIN_EMAIL=you@example.com bash
+```
+
+On a host that is already installed, it:
+
+1. installs the newest stable `miabi` CLI over the old one;
+2. runs `miabi setup` against your existing `/etc/miabi/miabi.yaml`, moving Miabi, the gateway and
+   the runner image to the newest stable release and the versions it was tested with.
+
+Your secrets and data are kept — `setup` converges an existing install rather than reinstalling it.
+Pin any component with `MIABI_VERSION`, `GOMA_VERSION`, `RUNNER_VERSION` or `MIABI_CLI_VERSION`, as
+for a fresh [install](/docs/getting-started/installation#install-options).
+
+:::caution
+- Pass the **same `MIABI_DOMAIN`** you installed with. `setup` writes it to the manifest, so a
+  different one moves the panel to that hostname.
+- `setup` recreates changed containers directly. Unlike `miabi upgrade`, it does **not** roll back
+  automatically when the new control plane fails to come up healthy — back up first, and use
+  `miabi upgrade` when you want the rollback.
+:::
 
 ### If the new version does not come up
 

@@ -44,9 +44,9 @@ Each entry names a database the apps reference, its `engine` (`postgres`, `mysql
 
 | Placement | Behaviour |
 |---|---|
-| `auto` (default) | Reuses a running instance of that engine in the workspace (creating a logical database with its own user on it), otherwise provisions a new one. |
+| `auto` (default) | Reuses a running instance of that engine — and of the template's `version`, when it sets one — in the workspace (creating a logical database with its own user on it), otherwise provisions a new one. |
 | `dedicated` | Always provisions a new instance for this install. |
-| `shared` | Requires an existing instance. Not allowed for `redis` or `libsql`, which host no logical databases. |
+| `shared` | Requires an existing instance of that engine (and `version`, when set). Not allowed for `redis` or `libsql`, which host no logical databases. |
 
 Redis and libSQL are always given an instance of their own. The installer shows each database's
 placement and lets the user override it, or pick a specific instance.
