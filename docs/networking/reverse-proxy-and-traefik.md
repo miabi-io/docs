@@ -25,7 +25,7 @@ docker compose -f compose.traefik.yaml up -d
 ```
 
 It replaces the `gateway` (Goma) service with Traefik, which terminates TLS via Let's Encrypt and
-routes by Docker labels on the shared `miabi` network. The Miabi panel itself is routed by labels on
+routes by Docker labels on the shared `miabi-proxy` network. The Miabi panel itself is routed by labels on
 its own service; **your apps get their labels from you** (next section).
 
 ## Routing is by manual labels

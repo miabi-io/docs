@@ -28,26 +28,6 @@ them off avoids the attempts and their log lines.
 **Licence validation is offline.** An Enterprise licence is verified locally against a key built into
 Miabi, so it needs no connection.
 
-### Example
-
-For a stack installed with `get.miabi.io`, add the variables under `env:` in the manifest
-(`/etc/miabi/miabi.yaml`) and re-apply it:
-
-```yaml
-env:
-  MIABI_UPDATE_CHECK: "false"
-  MIABI_TELEMETRY: "false"
-  MIABI_MARKETPLACE_URL: ""
-```
-
-With Docker Compose, set the same variables in `.env`:
-
-```bash
-MIABI_UPDATE_CHECK=false
-MIABI_TELEMETRY=false
-MIABI_MARKETPLACE_URL=
-```
-
 ## Installing without internet access
 
 The installer downloads a few things. On a disconnected host, provide each one yourself:

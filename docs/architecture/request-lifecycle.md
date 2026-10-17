@@ -54,7 +54,7 @@ is **offline** and never reaches step 3. See
 
 App and database containers publish nothing on the host. An app lives on its workspace's Docker
 network; while it has a route, Miabi also attaches its container to the shared proxy network
-([`miabi`](/docs/networking/networks-and-subnets#the-shared-gateway-network)) under a stable alias, and that is where the gateway reaches it. A replicated service is
+([`miabi-proxy`](/docs/networking/networks-and-subnets#the-shared-gateway-network)) under a stable alias, and that is where the gateway reaches it. A replicated service is
 reached over its cluster's ingress overlay instead. The control plane, its database and its cache
 sit on a separate private network no app joins. That has three consequences worth knowing:
 
