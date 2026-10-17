@@ -10,8 +10,8 @@ const sidebars: SidebarsConfig = {
         'getting-started/introduction',
         'getting-started/installation',
         'getting-started/configuration',
-        'getting-started/air-gapped',
         'getting-started/quickstart',
+        'getting-started/air-gapped',
       ],
     },
     {
