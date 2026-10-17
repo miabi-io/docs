@@ -163,7 +163,7 @@ fail-closed). You can also inject the resolved country to the backend via a head
 `X-Country-Code`) for localization.
 
 Geo rules need a **GeoIP database on the gateway**, which Miabi does not install for you:
-put a `.mmdb` country database at `/etc/miabi/country.mmdb` and restart the gateway — see
+put a `.mmdb` country database at `/etc/miabi/geoip/country.mmdb` (picked up within 5 minutes, no restart) — see
 [GeoIP database](/docs/operations/analytics#geoip-database) for where to get one and which
 licenses apply. Without it, no request resolves to a country, so **every** geo rule falls
 through to the fail-open/closed setting — worth knowing before you rely on one to block
