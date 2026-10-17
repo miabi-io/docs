@@ -70,6 +70,15 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
+      label: 'Routes',
+      items: [
+        'routes/overview',
+        'routes/creating-routes',
+        'routes/migrating',
+      ],
+    },
+    {
+      type: 'category',
       label: 'Middlewares',
       items: [
         'middlewares/overview',
