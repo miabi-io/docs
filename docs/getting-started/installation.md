@@ -32,7 +32,8 @@ creates (plus any you explicitly adopt). If you already have containers running,
 [import them](/docs/nodes/docker-import) into Miabi and take over their lifecycle **without
 downtime** — they keep running and simply start showing up in the console. And you don't have to use
 the installer script: the [manual Docker Compose path](#manual-install-with-docker-compose) gives you
-the exact same stack.
+the exact same stack. Moving off an existing reverse proxy? See
+[Installing on an existing server](/docs/getting-started/existing-server).
 :::
 
 ## Supported Docker Engine versions
