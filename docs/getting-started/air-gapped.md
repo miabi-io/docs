@@ -28,24 +28,6 @@ them off avoids the attempts and their log lines.
 **Licence validation is offline.** An Enterprise licence is verified locally against a key built into
 Miabi, so it needs no connection.
 
-## Installing without internet access
-
-The installer downloads a few things. On a disconnected host, provide each one yourself:
-
-| Download | Default source | Offline alternative |
-|---|---|---|
-| The install script | `https://get.miabi.io` | Download it on a connected machine and copy it over |
-| The `miabi` CLI | GitHub releases | `MIABI_CLI_BASE_URL` pointing at an internal artifact store |
-| The latest Miabi version, for `miabi setup`/`upgrade` run without `--version` | `https://versions.miabi.io` | Pass `--version`, or set `MIABI_RELEASE_API` to a mirror |
-| The versions the install script installs | `https://versions.miabi.io` | Set `MIABI_VERSION`, `GOMA_VERSION`, `RUNNER_VERSION` and `MIABI_CLI_VERSION`; with all four set the script looks nothing up |
-| Docker Engine | The Docker package repositories | Install Docker yourself and set `MIABI_SKIP_DOCKER_INSTALL=1` |
-| Container images | Docker Hub | Load them with `docker load`, or pull through an internal registry |
-
-A fresh install needs `miabi/miabi` and `jkaninda/goma-gateway` at the versions you set above (each
-Miabi release lists its tested gateway and runner on `versions.miabi.io`), plus `postgres:17-alpine`
-and `redis:7-alpine`. Remote nodes and CI runners also
-need `miabi/agent` and `miabi/runner`.
-
 See [Installation](/docs/getting-started/installation#install-options) for every installer option.
 
 ## Connections you configure
