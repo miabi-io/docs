@@ -54,6 +54,8 @@ deploys to staging and production unchanged.
 | [`SealedSecret`](#sealedsecret) | A secret value sealed to the workspace's key, safe to commit | 1st |
 | [`Config`](#config) | A set of configuration files mounted into apps | 1st |
 | [`Registry`](#registry) | A container-registry credential for private images | 2nd |
+| [`GitRepository`](#gitrepository) | A Git credential: a repository URL and how to authenticate to it | 2nd |
+| [`GitSource`](#gitsource) | A GitOps project: a Git path of manifests the workspace keeps reconciled | 3rd |
 | [`Middleware`](#middleware) | A gateway policy — rate limit, auth, access rules — routes reference by name | 1st |
 | [`Route`](#route) | An HTTP routing rule (host/path → app:port + TLS) | 4th |
 | [`CronJob`](#cronjob) | A command run in an app on a schedule | 4th |
@@ -246,9 +248,9 @@ spec:
 having the engine pick one. `buildEnv` is build-time only; variables the running container needs
 belong in `env`.
 
-`repository` names a stored Git credential in the workspace. Like `registry`, it is not a declarable
-kind: it resolves against credentials that already exist, so a token created once in the console can
-be reused across manifests.
+`repository` names a Git credential: a [`GitRepository`](#gitrepository) declared in the same bundle,
+or one that already exists in the workspace, so a token created once in the console can be reused
+across manifests.
 
 :::tip Generate it from an existing app
 An application created in the console can be exported as a manifest: **App → Settings → GitOps
@@ -324,9 +326,13 @@ spec:
 
 | `instance` | Behaviour |
 |---|---|
-| `auto` (default) | Reuse a compatible running instance; provision a dedicated one if none exists. |
+| `auto` (default) | Reuse a running instance of the same engine and `version`; provision a dedicated one if none exists. |
 | `dedicated` | Always provision a fresh instance. Forced for Redis, which has no logical databases. |
-| `shared` | Require an existing compatible instance. Rejected for engines without logical databases. |
+| `shared` | Share a running instance of the same engine and `version`. When the engine runs only at other versions, a dedicated instance is provisioned instead; with no instance of the engine at all, the apply fails. Rejected for engines without logical databases. |
+
+An empty `version` matches an instance at any version. Changing `version` on an existing database is
+refused — its data is not migrated automatically: keep the old version, or delete the database to
+re-create it on an instance of the new one.
 
 `instance` used to be spelled `placement: auto`, before `placement` became a block. That spelling
 still parses; setting it together with `instance` is an error.
@@ -555,6 +561,102 @@ unreadable fingerprint. Deleting a credential leaves apps running — they fall 
 
 ---
 
+## GitRepository
+
+A Git credential: a repository URL and how to authenticate to it. Applications building
+[from source](#building-from-source) and [GitSources](#gitsource) select one by name through
+`repository`. It is the manifest form of **Sources → Git Repositories**.
+
+```yaml
+apiVersion: miabi.io/v1
+kind: GitRepository
+metadata:
+  name: acme-github
+spec:
+  url: https://github.com/acme/web.git
+  auth: token            # public | token | ssh
+  username: x-access-token   # optional
+  secretRef: github-token    # the Secret or SealedSecret holding the token or SSH key
+```
+
+| Field | Default | Description |
+|---|---|---|
+| `url` | — | **Required.** The repository URL. |
+| `auth` | `token` with a `secretRef`, else `public` | `public` takes no `secretRef`; `token` and `ssh` require one. |
+| `username` | `x-access-token` (token), `git` (ssh) | The user the token or key authenticates as. |
+| `secretRef` | — | Name of a [`Secret`](#secret) or [`SealedSecret`](#sealedsecret) holding the token (`auth: token`) or private key (`auth: ssh`). |
+
+The manifest never holds the credential itself, only the vault entry to read it from. That entry is
+read at every clone, so rotating the Secret rotates the credential with no re-apply. Seal it and the
+whole file is safe to commit:
+
+```yaml
+apiVersion: miabi.io/v1
+kind: SealedSecret
+metadata:
+  name: github-token
+spec:
+  value: sealed:v1:…        # miabi secrets seal
+```
+
+:::note
+App builds clone over HTTPS, so an application's `source.repository` needs `auth: token`. `ssh` works
+for a GitSource, which the control plane clones itself.
+:::
+
+---
+
+## GitSource
+
+A [GitOps](/docs/cicd/gitops) project: a repository path of manifests the workspace keeps reconciled.
+Applying one creates the project and syncs it straight away; with `syncPolicy: auto` it then stays in
+step with Git.
+
+```yaml
+apiVersion: miabi.io/v1
+kind: GitSource
+metadata:
+  name: shop
+spec:
+  repository: acme-github     # a GitRepository; or repo: <url> for a public repository
+  ref: main
+  path: deploy/shop
+  syncPolicy: auto
+  prune: true
+  requireSealedSecrets: true
+  deletePolicy: orphan
+```
+
+| Field | Default | Description |
+|---|---|---|
+| `repo` | — | A repository URL. Set exactly one of `repo` and `repository`. |
+| `repository` | — | A [`GitRepository`](#gitrepository) in the bundle or the workspace. It supplies the URL and the credential. |
+| `ref` | `main` | Branch, tag or commit. |
+| `path` | `.` | Directory holding the manifests, relative to the repository root. |
+| `syncPolicy` | `manual` | `auto` syncs on the three-minute sweep; `manual` only when asked. |
+| `prune` | `false` | Delete managed resources that disappear from Git. |
+| `selfHeal` | `false` | Re-apply when live state drifts, not only when Git changes. |
+| `allowEmpty` | `false` | Allow an empty manifest set to prune everything the project owns. |
+| `requireSealedSecrets` | `false` | Refuse a sync while any `Secret` carries a plaintext `value`. |
+| `deletePolicy` | `orphan` | What deleting the project does to the resources it created: `orphan` leaves them running, `cascade` tears them down. |
+
+These are the [source options](/docs/cicd/gitops#source-options) of the console, plus `deletePolicy`.
+`orphan` is the default so that pruning a project by mistake never takes its apps with it.
+
+A project's name is fixed once it is created: it is the handle manifests and nested projects address
+it by. Renaming one in a manifest is refused — delete it and declare it again.
+
+### Nested projects
+
+A GitSource committed to a GitOps project's own repository becomes a **nested project** ("app of
+apps"): the parent creates, updates and prunes it like any other resource, and the console shows it
+as *declared by its parent project* and locks it — change or remove it in the parent's repository.
+
+Nesting stops at three levels (a root, its children and theirs), and a project can never declare
+itself or one of its parents.
+
+---
+
 ## Route
 
 An HTTP routing rule: hostnames (and an optional path) to an application's port, with a TLS mode.
@@ -730,7 +832,8 @@ spec:
 | `suspend` | Only compared when stated. Leave it out and a pause made in the console survives the next sync. |
 
 A CronJob a GitOps source owns is read-only in the console: **Run now**, pause and resume still work
-there, but any other edit is refused with a pointer to the manifest.
+there, but any other edit is refused with a pointer to the manifest. One created by a one-shot
+`miabi apply` stays editable and deletable; the next apply of its manifest overwrites the edits.
 
 ---
 
@@ -912,6 +1015,10 @@ default `{{ }}` markers it fails the apply.
 Beyond the per-field rules above, a bundle is refused when it is parsed if:
 
 - a `Registry` sets `password` without `username`;
+- a `GitRepository` has no `url`, an `auth` other than `public`, `token` or `ssh`, a `secretRef` on a
+  `public` repository, or no `secretRef` on a `token` or `ssh` one;
+- a `GitSource` sets both or neither of `repo` and `repository`, a `syncPolicy` other than `manual` or
+  `auto`, a `deletePolicy` other than `orphan` or `cascade`, or a `path` that is absolute or contains `..`;
 - a `SealedSecret` has no `value`, or one that is not `sealed:v1:<version>:<data>`;
 - a name is declared both as a `Secret` and as a `SealedSecret`;
 - a mount `path` is not absolute, or a mount sits inside a path a volume is mounted at — the volume
@@ -991,19 +1098,20 @@ applies unchanged in another workspace.
 By default, apply and GitOps only create and update: a resource removed from the manifest is left
 running. Opt into **prune** to have removals converge too.
 
-Prune only ever deletes resources this engine created (labelled `miabi.io/managed-by: gitops`), so a
-hand-created app or a database provisioned in the console can never be removed by a manifest. Under
-GitOps it is scoped further, to the project that owns the resource — two sources backed by the same
-repository don't see each other's apps as orphans.
+Prune only ever deletes resources this engine created (labelled `miabi.io/managed-by: gitops` or
+`apply`), so a hand-created app or a database provisioned in the console can never be removed by a
+manifest. Under GitOps it is scoped further, to the project that owns the resource — two sources backed
+by the same repository don't see each other's apps as orphans.
 
 `Secret`, `Config`, `Middleware` and `Domain` resources carry no ownership label, so neither prune nor
 deleting a Git source with cascade ever removes them. Delete them explicitly — `miabi delete` or the
 console.
 
-:::caution One-shot prune is not scoped to a source
+:::caution One-shot prune is workspace-wide
 `miabi apply --prune` (or `"prune": true` on the apply API) has no owning Git source, so it considers
-**every** resource apply or GitOps created in the workspace — including those a Git source owns. A
-bundle that doesn't declare them deletes them. Preview with `--dry-run` first.
+**every** resource a one-shot apply created in the workspace (`managed-by: apply`) — not only those
+this bundle created earlier. A bundle that doesn't declare them deletes them. Resources a GitOps
+project owns are never pruned by it. Preview with `--dry-run` first.
 :::
 
 :::warning
@@ -1018,6 +1126,7 @@ down a workspace.
 miabi apply -f stack.yaml --dry-run     # print the plan, change nothing
 miabi apply -f stack.yaml               # converge
 miabi apply -f stack.yaml --prune       # converge, and remove what's gone
+miabi apply -f stack.yaml --force       # also change resources a GitOps project owns
 miabi delete -f stack.yaml              # delete exactly what the bundle names
 ```
 
@@ -1025,8 +1134,12 @@ Or over HTTP:
 
 ```http
 POST /api/v1/workspaces/{workspace}/apply
-{ "manifests": "<YAML>", "prune": false, "dry_run": true, "delete": false }
+{ "manifests": "<YAML>", "prune": false, "dry_run": true, "delete": false, "force": false }
 ```
+
+An apply that would update a resource a GitOps project owns is refused with `409`, naming each one:
+change it in the project's repository instead. `force` overrides that, and the project's next sync
+reverts the change.
 
 `delete` is the inverse of apply: it removes exactly the resources the bundle names, regardless of
 which subsystem owns them, and ignores entries that don't exist. It honours `dry_run`.

@@ -159,8 +159,8 @@ country:
 Countries are [ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) codes
 (`US`, `FR`, `DE`, …). Private and internal traffic is never geo-fenced, and when a country
 can't be resolved the request is allowed by default (turn off **Allow unknown country** for
-fail-closed). You can also inject the resolved country to the backend via a header (e.g.
-`X-Country-Code`) for localization.
+fail-closed). To pass the resolved country to your apps for localization, turn on the gateway-wide
+[country header](/docs/operations/analytics#country-header-for-your-apps) (`X-Goma-Country`).
 
 Geo rules need a **GeoIP database on the gateway**, which Miabi does not install for you:
 put a `.mmdb` country database at `/etc/miabi/geoip/country.mmdb` (picked up within 5 minutes, no restart) — see

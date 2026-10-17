@@ -179,7 +179,7 @@ spec:
   cache:
     image: redis:7-alpine
   gateway:
-    image: jkaninda/goma-gateway:0.15.1
+    image: jkaninda/goma-gateway:1.1.2
     config: goma.yml                     # bind-mounted into Goma, read-only
     env:
       GOMA_LOG_LEVEL: info               # debug | trace | info | warn | error | off
@@ -282,9 +282,17 @@ spec:
     config: goma.yml
     env:
       MY_UPSTREAM: https://internal.example.com
+    trustedProxies: [173.245.48.0/20]   # a CDN or load balancer in front of the gateway
+    countryHeader: true                 # send X-Goma-Country to every app
   secrets:
     gomaConfigEncryptionKey: …
 ```
+
+`trustedProxies` lists the IPs or CIDRs of proxies in front of the gateway — a CDN such as Cloudflare,
+or a TLS-terminating load balancer. Only connections from these may set the client IP through
+forwarded headers; leave it unset when the gateway faces the internet directly. `countryHeader` sends
+each client's country to your apps in [`X-Goma-Country`](/docs/operations/analytics#country-header-for-your-apps);
+it needs a [GeoIP database](/docs/operations/analytics#geoip-database).
 
 The gateway config key has exactly one home: `spec.secrets.gomaConfigEncryptionKey` (`gateway.env`
 in the older flat manifest). Miabi encrypts the config that Goma decrypts, so it forwards the key to
@@ -492,7 +500,7 @@ Fill these in `.env` before the first `docker compose up`:
 | `MIABI_DOMAIN` | Your panel host, e.g. `miabi.example.com` | Compose aborts |
 | `MIABI_JWT_SECRET` | `openssl rand -hex 32` | Miabi **refuses to boot** outside dev |
 | `MIABI_ENCRYPTION_KEY` | `openssl rand -hex 32` | Miabi **refuses to boot** outside dev |
-| `MIABI_ADMIN_PASSWORD` | The platform admin's password | Read only on first boot, to seed the admin: outside dev, Miabi **refuses to start** on an empty or default value while no admin exists |
+| `MIABI_ADMIN_PASSWORD` | The platform admin's password, at least 12 characters | Read only on first boot, to seed the admin: outside dev, Miabi **refuses to start** on an empty or default value while no admin exists |
 | `MIABI_WEB_URL` | `https://<MIABI_DOMAIN>` | It is also the default CORS allowlist: unset (and no `MIABI_CORS_ORIGINS`), the allowlist becomes `*` and Miabi **refuses to boot** outside dev |
 
 Also set `DOCKER_GID` to the host's docker group id (`stat -c '%g' /var/run/docker.sock`). It is not

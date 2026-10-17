@@ -29,7 +29,9 @@ subdirectory setting, so monorepos need a `Dockerfile` at the root.
 
 For private repositories, Miabi needs access. Save the repository under **Sources → Git
 Repositories** with an access **token**: the credential is stored per workspace, encrypted at rest,
-and reused across applications.
+and reused across applications. To keep it in Git too, declare it as a
+[`GitRepository`](/docs/cicd/manifest-reference#gitrepository) manifest that references the token
+in the vault.
 
 :::warning SSH keys do not work for app builds
 A saved repository can use the `ssh` auth type, but builds run on a runner, which clones over HTTPS

@@ -37,8 +37,9 @@ in the [full example](#full-example-a-posta-project) below).
 
 Manifests are the source of truth: edit the file, and the change flows into Miabi.
 
-Eleven kinds are available — `Application`, `Stack`, `Database`, `Volume`, `Secret`, `Config`,
-`Registry`, `Middleware`, `Route`, `Domain` and `Project`. The
+Sixteen kinds are available — `Application`, `Stack`, `Database`, `Volume`, `Secret`,
+`SealedSecret`, `Config`, `Registry`, `GitRepository`, `GitSource`, `Middleware`, `Route`, `CronJob`,
+`Job`, `Domain` and `Project`. The
 [manifest reference](/docs/cicd/manifest-reference) documents every field of each; this page covers
 how they are reconciled.
 
@@ -75,8 +76,10 @@ separately (or declare them with `generate: true`). And the export covers **that
 volumes**, not the rest of the workspace: a bundle carrying resources the app does not own would
 prune them if applied elsewhere with `--prune`.
 
-Apps created by a marketplace install, or by apply or GitOps — a one-shot `miabi apply` included —
-cannot be exported: the first is described by its template, and the second already has a manifest.
+Apps created by a marketplace install or by a GitOps project cannot be exported: the first is
+described by its template, and the second already has a manifest in Git. An app created by a one-shot
+`miabi apply` can be — it stays editable in the console, and the next apply of its manifest overwrites
+what you change there.
 
 ### Source options
 
@@ -106,6 +109,43 @@ that stops a wiped directory from tearing down a workspace.
 
 Deleting a source can optionally cascade, tearing down exactly the resources that source created and
 leaving everything else untouched.
+
+### Declaring projects as manifests
+
+A GitOps project can itself be a manifest — a [`GitSource`](/docs/cicd/manifest-reference#gitsource),
+with the Git credential it clones with as a
+[`GitRepository`](/docs/cicd/manifest-reference#gitrepository):
+
+```yaml
+apiVersion: miabi.io/v1
+kind: GitRepository
+metadata:
+  name: acme-github
+spec:
+  url: https://github.com/acme/deploy.git
+  auth: token
+  secretRef: github-token      # a Secret or SealedSecret
+---
+apiVersion: miabi.io/v1
+kind: GitSource
+metadata:
+  name: shop
+spec:
+  repository: acme-github
+  path: shop
+  syncPolicy: auto
+  prune: true
+```
+
+`miabi apply -f projects.yaml` creates every project in the file and syncs each one straight away, so
+one folder can bootstrap a workspace's whole GitOps setup.
+
+Committed to a GitOps project's own repository instead, these become **nested projects** ("app of
+apps"): the parent creates, updates and prunes them, and the console locks them — change or remove
+them in the parent's repository. Nesting stops at three levels, and a project can never declare itself
+or one of its parents.
+
+A project's name can't be changed after it is created, in the console or in a manifest.
 
 ### Source status
 
@@ -368,6 +408,19 @@ unambiguously take part — so a converged resource never shows phantom drift:
 
 The [manifest reference](/docs/cicd/manifest-reference#what-converges-and-what-doesnt) covers this
 per kind.
+
+## Who owns a resource
+
+Every resource a manifest creates is labelled `miabi.io/managed-by`: `gitops` when a GitOps project
+created it, `apply` when a one-shot `miabi apply` did. The owner decides who may change it:
+
+- A sync and its prune only touch the resources of that project.
+- `miabi apply --prune` only considers `apply`-labelled resources, never a project's.
+- A one-shot apply that would **update** a resource a GitOps project owns is refused (HTTP 409),
+  naming each one. Change it in the project's repository, or pass `--force` (`"force": true` over the
+  API) to change it anyway until the project's next sync reverts it.
+- A sync that updates an `apply`-labelled resource takes it over: it becomes `gitops`, owned by that
+  project.
 
 ## Related
 

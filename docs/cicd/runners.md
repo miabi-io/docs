@@ -46,7 +46,7 @@ docker run -d --name miabi-runner --restart unless-stopped \
   miabi/runner:latest
 ```
 
-A new runner starts **offline** and flips to **online** once its tunnel is live; it reports its OS, architecture, and version on connect. From the runner's page you can edit its labels and concurrency, **cordon** it (hold it out of scheduling without disconnecting it), disable it, or remove it.
+A new runner starts **offline** and flips to **online** once its tunnel is live; it reports its OS, architecture, and version on connect, and its page shows an **available** badge naming the new version when a newer runner is released. From the runner's page you can edit its labels and concurrency, **cordon** it (hold it out of scheduling without disconnecting it), disable it, or remove it.
 
 :::note
 How many runners a workspace may register is a plan limit. If you hit it, raise the workspace's quota or remove an idle runner.

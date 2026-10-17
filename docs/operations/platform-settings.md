@@ -20,6 +20,10 @@ field for integers, and a **list** for settings with a fixed set of values, such
 can't be typed in. The API itself does not check a value
 against its type, so use the console or send well-formed values.
 
+Edits **save automatically** a moment after you stop typing, and again when you leave the page; the
+status line reads *Saving…*, *Unsaved changes* or *All changes saved*. A half-typed number is held back
+until it is valid.
+
 Settings are also **cached** in memory, so they're read on the hot path without a database lookup
 every time. Saving refreshes the cache of the process that handled it at once; other control-plane
 processes pick the change up within 15 seconds. No restart is needed.

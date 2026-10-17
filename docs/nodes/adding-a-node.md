@@ -27,7 +27,7 @@ The agent exposes the host's Docker socket to Miabi. Only add hosts you fully co
 
 1. Open **Nodes** in the console (a platform-admin area — see [Platform Administration](/docs/administration/platform-admin)) and choose **Add node**.
 2. Give the node a **display name**, and pick its **access mode** (below). Optionally enter its private address.
-3. For the **Agent** access mode, Miabi generates a **join token** and shows the exact agent command to run on the remote host. The token is shown **once**.
+3. For the **Agent** access mode, Miabi generates a **join token** and shows the exact agent command to run on the remote host, as a `docker run` (**Docker**) or through the install script (**Script**). The token is shown **once**.
 4. On the remote host, run the [agent](/docs/nodes/agent) with that token. It opens an outbound WebSocket tunnel back to the control plane.
 5. The node appears as **online** in the list once the tunnel is established and the Docker socket is reachable.
 
@@ -59,7 +59,7 @@ If a gateway already runs on the node — one you installed yourself — use **I
 
 The join token is the agent's credential: the agent presents it every time it connects, not just the first time. Miabi stores only its hash, so the token is shown **once**, when you add the node. It does not expire.
 
-If you lose it, or it may have leaked, choose **Regenerate token** on the node's page. That invalidates the old token, so update the agent on the host with the new one. **Join command** on the same page shows the agent command again, with a placeholder for the token.
+If you lose it, or it may have leaked, choose **Regenerate token** on the node's page. That invalidates the old token; the dialog then shows the full Docker and Script commands with the new token filled in, so re-run the agent on the host with one of them. **Join command** on the same page shows both commands again, with a placeholder for the token.
 
 :::tip
 Store the agent install command in your provisioning tooling (cloud-init, Ansible, etc.) so new hosts join automatically. Each node has its own token.

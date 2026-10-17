@@ -181,7 +181,7 @@ argument**, or use the app bound with `miabi use`.
 | `miabi db …` | Manage database instances + logical databases (see below). |
 | `miabi secrets …` | Manage the workspace secret vault (see below). |
 | `miabi configs …` | Manage the workspace's configuration files (see below). |
-| `miabi apply -f <file\|dir> [--prune] [--dry-run]` | Converge to [declarative manifests](/docs/cicd/gitops). A directory reads every `.yaml` and `.yml` file under it, the same files a Git source pointed at it reads. |
+| `miabi apply -f <file\|dir> [--prune] [--dry-run] [--force]` | Converge to [declarative manifests](/docs/cicd/gitops). A directory reads every `.yaml` and `.yml` file under it, the same files a Git source pointed at it reads. `--force` also changes resources a GitOps project owns, until its next sync reverts them. |
 | `miabi delete -f <file> [--dry-run]` | Delete exactly the resources a manifest bundle names. |
 | `miabi completion <shell>` | Shell completion (tab-completes app slugs). |
 

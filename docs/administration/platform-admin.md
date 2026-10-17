@@ -19,7 +19,7 @@ so an admin always already exists.
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `MIABI_ADMIN_EMAIL` | `admin@example.com` | Login of the seeded platform admin |
-| `MIABI_ADMIN_PASSWORD` | — | **Required in production.** Miabi refuses to start outside dev while this is empty or left at its built-in default |
+| `MIABI_ADMIN_PASSWORD` | — | **Required in production.** At least 12 characters. Miabi refuses to start outside dev while this is empty, shorter, or left at its built-in default |
 
 The one-line installer generates a password, prints it once at the end of the run, and stores it in
 `/etc/miabi/miabi.yaml` — the **only** copy, so back that file up. Sign in with those credentials;
