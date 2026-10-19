@@ -30,7 +30,7 @@ If you want a build with **zero enterprise code** (the deny-all stub), build it 
 | Capability | Community | Enterprise |
 |---|---|---|
 | Core PaaS (apps, domains, TLS, DBs, backups, monitoring, marketplace) | ✓ | ✓ |
-| Multi-node & cluster (Docker Swarm) | 3 nodes | ✓ unlimited unless the license sets a cap |
+| Multi-node & cluster (Docker Swarm) | 3 nodes + the control plane | ✓ unlimited unless the license sets a cap |
 | Plan catalog | 3 plans | ✓ unlimited unless the license sets a cap |
 | Built-in container registry (local storage) | ✓ | ✓ |
 | Registry S3/MinIO storage | — | ✓ |
@@ -73,7 +73,7 @@ If you want a build with **zero enterprise code** (the deny-all stub), build it 
 | Support | Community (GitHub issues) | [Enterprise support](https://miabi.io/support) — commercial support and SLAs |
 
 :::tip
-The Community edition includes the entire core platform — deploying apps, custom domains, automatic TLS, managed databases, per-database backups, monitoring, the marketplace, and the built-in container registry (local storage) — plus **unlimited workspace-owned build runners**, up to three nodes, three plans, two storage classes, two platform-shared runners, one SSO provider, and seven days of workspace analytics. Audit events are recorded and pruned on schedule in every edition. Most individual developers, startups, and homelabs never need anything beyond it.
+The Community edition includes the entire core platform — deploying apps, custom domains, automatic TLS, managed databases, per-database backups, monitoring, the marketplace, and the built-in container registry (local storage) — plus **unlimited workspace-owned build runners**, up to three nodes besides the control plane, three plans, two storage classes, two platform-shared runners, one SSO provider, and seven days of workspace analytics. Audit events are recorded and pruned on schedule in every edition. Most individual developers, startups, and homelabs never need anything beyond it.
 :::
 
 :::note
