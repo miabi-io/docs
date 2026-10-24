@@ -227,7 +227,7 @@ Miabi also keeps **stateful** apps (those holding node-local storage) as node-pi
 The two runtimes are placed by different things, and the console offers the control that actually decides:
 
 - A **container** app is placed in a [location](#locations); platform admins can also pin a node.
-- A **service** app is placed by the **Swarm scheduler**, which ignores the node you pick. To put it somewhere specific, choose **Placement → Pin to `<node>`**, which emits a real Swarm constraint.
+- A **service** app is placed by the **Swarm scheduler**, which ignores the node you pick. To put it somewhere specific, choose **Placement → Pin to `<node>`**, which emits a real Swarm constraint. In a manifest, set the constraint yourself, for example `node.hostname==worker-2`; see [pinning to a node](/docs/cicd/manifest-reference#pinning-to-a-node).
 
 ### Availability: draining a node
 

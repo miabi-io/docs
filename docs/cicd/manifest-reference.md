@@ -182,6 +182,38 @@ and `security.addCapabilities`, are read as `security.runAsUser`, `deployment.st
 export always writes the new ones.
 :::
 
+### Pinning to a node
+
+A service runs wherever the Swarm scheduler puts it, within its location. To run it on one node,
+name that node in `placement.constraints`:
+
+```yaml
+spec:
+  placement:
+    location: eu-central
+    constraints:
+      - node.hostname==worker-2   # this node only
+  deployment:
+    runtime: service
+    replicas: 1
+```
+
+| Constraint | Matches |
+|---|---|
+| `node.hostname==worker-2` | The node whose Docker hostname is `worker-2`. This is the node's hostname, not its display name in Miabi. |
+| `node.id==<swarm node id>` | One Swarm node by ID. This is what **Placement → Pin to `<node>`** in the console writes, and what an export of a pinned app contains. |
+| `node.labels.disk==ssd` | Any node with that label. Use this when a node may be replaced or renamed. |
+| `node.hostname!=worker-3` | Any node except `worker-3`. Use `!=` to keep an app off a node. |
+| `node.role==worker` | Worker nodes only; `node.role!=manager` does the same. |
+
+Each constraint must read `<attribute>==<value>` or `<attribute>!=<value>`, and all of them must hold
+at once. The node must belong to the app's location, and to the plan's
+[node pool](/docs/nodes/cluster-mode#node-pools) if there is one. A pin no node satisfies is
+accepted, but the service never starts: Swarm leaves its tasks pending.
+
+Container apps (the default runtime) cannot be pinned from a manifest. They take only a
+`placement.location`, and a platform admin can still pin one to a node in the console.
+
 ### Health checks
 
 A health check is what makes a deploy safe: with an `http` or `command` check, a rolling deploy starts
