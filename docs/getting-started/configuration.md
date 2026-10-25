@@ -308,6 +308,7 @@ tab. See [Registry](/docs/registry/administration).
 | `MIABI_REGISTRY_HOST` | — | Registry hostname; pins the field when set. Unset ⇒ the console's value, else `registry.<domain>` under the default cluster's external domain; with neither, image distribution fails. Must be a bare DNS hostname with an optional port (no scheme, no path, not a single label) |
 | `MIABI_REGISTRY_HTTPS_REDIRECT` | `true` | Redirect plaintext registry requests to HTTPS. Set `false` **only** when a TLS terminator (Cloudflare, nginx, a load balancer) sits in front of the gateway and the gateway's `proxy.trustedProxies` is not configured — otherwise the redirect loops and every push and pull fails. Configuring trusted proxies on the gateway is the better fix; see [Running behind a proxy](https://goma.jkaninda.dev/usermanual/running-behind-a-proxy.html) |
 | `MIABI_REGISTRY_STORAGE` | `filesystem` | `filesystem` or `s3`; pins the driver when set. `s3` is an Enterprise feature, verified when selected and at startup |
+| `MIABI_REGISTRY_STORAGE_CLASS` | — | Storage class the `filesystem` driver's volume lives on (a class on the control-plane node, or a shared one); pins the field when set. Unset ⇒ the console's value, else Docker's data root |
 | `MIABI_REGISTRY_IMAGE` | — | Override the registry image (default `registry:3`) |
 | `MIABI_REGISTRY_AUTH_URL` | `http://miabi:9000` | Where the gateway reaches Miabi's registry auth endpoint |
 | `MIABI_REGISTRY_PLATFORM_TOKEN` | — | Pin the platform token (otherwise derived from the master encryption key) |

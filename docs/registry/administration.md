@@ -64,7 +64,7 @@ An invalid `MIABI_REGISTRY_HOST` (a scheme, a path, a wildcard, or a single-labe
 Two changes cannot be undone for you, so each is refused once with an explanation and applied only when you confirm:
 
 - **Moving the hostname.** Every image reference Miabi has recorded — on past deployments and releases — is anchored to the old name, and matching against it is how one workspace's images are told apart from another's. Existing apps keep referencing the old host and fail to pull until they are redeployed.
-- **Switching the storage driver or bucket.** Blobs are not migrated between backends: images already pushed stay in the old one and become invisible.
+- **Switching the storage driver, bucket or storage class.** Blobs are not migrated between backends: images already pushed stay in the old one and become invisible.
 
 Both are legitimate operations — a domain move, a migration to S3. The confirmation exists so they can't happen by mis-click while you are saving the form for another reason, and it tells you how many repositories are at stake.
 
@@ -87,6 +87,14 @@ Configured under **Admin → Container Registry → Storage**, or pinned in the 
 ### Local (filesystem) — free
 
 Images are stored in a managed Docker volume on the control-plane node. This is the default and is included in the **Community** edition.
+
+By default the volume (`mb-registry-data`) lives in Docker's data root, usually the boot disk. To put it on another disk, register that disk as a [storage class](/docs/storage/storage-classes) on the control-plane node (or as a shared class), then pick it under **Storage class**, or set `MIABI_REGISTRY_STORAGE_CLASS`. For example, an HDD class:
+
+```bash
+MIABI_REGISTRY_STORAGE_CLASS=hdd
+```
+
+The registry then runs on its own volume, `mb-registry-data-<class>`, at `<class path>/mb-registry-data-<class>`. The previous volume is kept, and its images are not copied. If the class is unavailable when the registry starts, it refuses to start instead of falling back to the data root, and the class cannot be deleted while the registry uses it.
 
 ### S3 / MinIO — Enterprise
 
@@ -156,6 +164,7 @@ Setting any of these **pins** the matching field: it becomes read-only in the co
 | `MIABI_REGISTRY_ENABLED` | ✓ | Run the registry (default `false`). Setting it to `false` pins it *off*. |
 | `MIABI_REGISTRY_HOST` | ✓ | Public host; defaults to `registry.<external-base-domain>`. |
 | `MIABI_REGISTRY_STORAGE` | ✓ | `filesystem` or `s3`; `s3` requires the `registry_s3` entitlement. |
+| `MIABI_REGISTRY_STORAGE_CLASS` | ✓ | Storage class for the local volume (e.g. `hdd`). Empty = Docker's data root. |
 | `MIABI_REGISTRY_S3_ENDPOINT` / `_BUCKET` / `_REGION` / `_ACCESS_KEY` / `_SECRET_KEY` / `_FORCE_PATH_STYLE` | ✓ | S3/MinIO storage (Enterprise). Pinned individually. |
 | `MIABI_REGISTRY_IMAGE` | — | Override the registry image (default `registry:3`). |
 | `MIABI_REGISTRY_AUTH_URL` | — | Address the gateway uses to reach Miabi's auth endpoint (default `http://miabi:9000`). |

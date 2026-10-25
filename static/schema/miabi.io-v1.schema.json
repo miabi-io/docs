@@ -305,6 +305,10 @@
             }
           ]
         },
+        "readOnlyUser": {
+          "description": "ReadOnlyUser gives the database a second, read-only user (PostgreSQL): SELECT on every table, now and future, referenced as {{ .databases.\u003cname\u003e.readonly_user|readonly_password|readonly_uri }}. Omitted, the database keeps what it has; false removes it.",
+          "type": "boolean"
+        },
         "resources": {
           "$ref": "#/$defs/DatabaseResourcesSpec",
           "description": "Resources limit the database's instance, the engine tuned to the memory. Stating them gives the database an instance of its own, since a reused one already runs with another's size. Omitted, the instance keeps its limits."
@@ -365,6 +369,71 @@
         },
         "wildcard": {
           "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "GitRepositorySpec": {
+      "additionalProperties": false,
+      "description": "GitRepositorySpec is a Git credential. SecretRef names the vault entry holding the token (auth token) or private key (auth ssh), so the manifest is safe to commit when that entry is sealed.",
+      "properties": {
+        "auth": {
+          "description": "public|token|ssh (default token with a secretRef, else public)",
+          "type": "string"
+        },
+        "secretRef": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "username": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "url"
+      ],
+      "type": "object"
+    },
+    "GitSourceSpec": {
+      "additionalProperties": false,
+      "description": "GitSourceSpec is a GitOps project. The repository is either a public URL (repo) or a stored Git credential named by repository, which supplies the URL too. The webhook secret is generated on create and never declared.",
+      "properties": {
+        "allowEmpty": {
+          "type": "boolean"
+        },
+        "deletePolicy": {
+          "description": "DeletePolicy decides what deleting the project does to the resources it created: orphan (the default) leaves them running, cascade tears them down. Orphan keeps a mistaken prune harmless.",
+          "type": "string"
+        },
+        "path": {
+          "description": "manifest directory (default .)",
+          "type": "string"
+        },
+        "prune": {
+          "type": "boolean"
+        },
+        "ref": {
+          "description": "branch, tag or commit (default main)",
+          "type": "string"
+        },
+        "repo": {
+          "type": "string"
+        },
+        "repository": {
+          "type": "string"
+        },
+        "requireSealedSecrets": {
+          "description": "RequireSealedSecrets refuses a sync whose manifests carry a plaintext Secret value.",
+          "type": "boolean"
+        },
+        "selfHeal": {
+          "type": "boolean"
+        },
+        "syncPolicy": {
+          "description": "manual|auto (default manual)",
+          "type": "string"
         }
       },
       "type": "object"
@@ -874,7 +943,7 @@
           "type": "string"
         },
         "repository": {
-          "description": "Repository names a stored Git credential for a private repo, by its name in the workspace. It is not a declarable kind, so it resolves against credentials that already exist — the same rule spec.registry follows for an image pull.",
+          "description": "Repository names a Git credential for a private repo: a GitRepository in the bundle, or one that already exists in the workspace.",
           "type": "string"
         }
       },
@@ -1048,6 +1117,44 @@
         "properties": {
           "spec": {
             "$ref": "#/$defs/DomainSpec"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "GitRepository"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "spec": {
+            "$ref": "#/$defs/GitRepositorySpec"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "GitSource"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "spec": {
+            "$ref": "#/$defs/GitSourceSpec"
           }
         }
       }
@@ -1238,6 +1345,8 @@
         "CronJob",
         "Database",
         "Domain",
+        "GitRepository",
+        "GitSource",
         "Job",
         "Middleware",
         "Project",
