@@ -57,6 +57,35 @@ Quotas are checked **when a resource is created** — and, for CPU and memory, a
 Because the check happens at creation, you never end up with a half-provisioned resource. Free up capacity (delete an unused app or database) or raise the workspace's plan, then retry.
 :::
 
+### App resource defaults
+
+An app with no CPU or memory limit runs unbounded, and adds nothing to the **CPU & memory** totals.
+A plan can close that gap with three settings, under **Admin → Plans → App resource defaults**:
+
+| Setting | API field | Default | Effect |
+|---|---|---|---|
+| Default CPU | `default_cpu_millicores` | `0` (none) | CPU given to an app that sets none. Millicores: `500` is half a core. |
+| Default memory | `default_memory_mb` | `0` (none) | Memory given to an app that sets none. At least 32 MB. |
+| Require limits | `require_resource_limits` | off | Refuse an app that still has no CPU or memory limit after the defaults. |
+
+CPU and memory are resolved separately, whenever an app is created or its settings are saved, from
+the console, the CLI, the API, a manifest, a marketplace install or a Docker Compose import:
+
+1. A value the app sets always wins.
+2. An empty value takes the plan's default, if it has one. The value is written onto the app, so it
+   counts toward the plan's totals and shows in the app's settings.
+3. Still empty with **Require limits** on, the request is refused with **HTTP 400**
+   `RESOURCE_LIMITS_REQUIRED`, naming the missing limit.
+4. Otherwise the app runs without a limit, as before.
+
+Required limits with defaults set means apps get the defaults; without defaults it means every app
+has to state its own. A default can't exceed the plan's own CPU or memory total. A service app's
+limits apply per replica.
+
+Existing apps are not changed: the rules apply the next time their settings are saved. The
+workspace's **Usage** tab warns about apps that still have no limit. A platform admin can override
+the defaults and the requirement for a single workspace, like any other quota.
+
 ## Capability gates
 
 Beyond raw counts, a plan can gate **features**. Examples include custom TLS certificates, privileged host mounts, shell access into containers, shared (NFS/CIFS) storage, connecting DNS providers, [custom container labels](/docs/applications/container-labels), and [GPU access](/docs/applications/gpus) (with a separate **GPUs** quota counting the units a workspace's running apps may hold). Advanced security capabilities such as multiple SSO providers, SAML 2.0, and SCIM provisioning are gated to higher editions. See [Community vs Enterprise](/docs/editions/community-vs-enterprise) for the full breakdown.
