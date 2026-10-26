@@ -83,16 +83,15 @@ never left guessing whether the platform is broken.
 
 ## Who can create workspaces
 
-Limits count workspaces; this setting decides who may start one at all. It has four modes:
+Limits count workspaces; this setting decides who may start one at all. It has three modes:
 
 | Mode | Who may create a workspace |
 |---|---|
 | **Anyone** | Every user. |
 | **Anyone except invited users** *(default)* | Every user except those who [created their account from an invitation](/docs/workspaces/members-and-invitations#signing-up-from-an-invitation). |
 | **Admins only** | Platform admins and the organization's [owner](#ownership). |
-| **Miabi Console** | Nobody in Miabi, admins included: workspaces are created in [Miabi Console](/docs/administration/miabi-console#workspaces-created-only-in-the-console). Set only with `MIABI_WORKSPACE_CREATION=console`. |
 
-Platform admins can always create workspaces, except in **Miabi Console** mode. The platform-wide mode is in
+Platform admins can always create workspaces. The platform-wide mode is in
 [Platform Settings](/docs/operations/platform-settings); with an Enterprise licence each organization
 can set its own, and an admin can **allow** or **deny** one user from their
 [account page](/docs/administration/users-and-accounts#per-user-limits), which beats both.
