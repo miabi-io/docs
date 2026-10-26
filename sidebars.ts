@@ -230,6 +230,7 @@ const sidebars: SidebarsConfig = {
         'administration/branding',
         'administration/install-manifest',
         'administration/platform-backup',
+        'administration/miabi-console',
       ],
     },
     {
