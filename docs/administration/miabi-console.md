@@ -46,22 +46,6 @@ The lock stops Miabi's own admins. It cannot stop someone with root on the serve
 the environment. Use it on instances you run, not as protection on a customer's own server.
 :::
 
-## Sign-in with Miabi Console
-
-After you connect, the console configures itself as a sign-in provider on the instance: a generic
-OIDC provider named `miabi-console`, shown on the login page as **Miabi Console**. It carries group
-sync, so customer members join their workspaces with their role and console staff sign in as
-platform admins. Group sync needs the Enterprise **SSO group mapping** entitlement; without it the
-provider is still configured, for sign-in only.
-
-If you had already added the console as a provider by hand, it is taken over rather than duplicated,
-and its users stay linked. On **Platform admin → SSO** the provider carries a **Miabi Console**
-badge: you can turn it off or hide its button, but its client, issuer and group settings belong to
-the console, and it cannot be deleted here.
-
-Disconnecting the console removes the provider. Miabi refuses to disconnect when your own account
-can sign in only through it; set a password or link another provider first.
-
 ## Workspaces created only in the console
 
 To make sure every workspace is sold and billed, set:
@@ -91,6 +75,3 @@ The console can define plans once and push them to its instances. Plans it pushe
   and a push never overwrites them;
 - they cannot be deleted here. When the console withdraws one, Miabi deletes it, or deactivates it
   while workspaces still use it.
-
-A plan made in Miabi with the same name as a console plan is taken over by the first push. Fields a
-Miabi version does not know are skipped and reported back to the console.
