@@ -375,8 +375,9 @@ sudo miabi stack apply
 
 `stack env` is also reachable as `miabi setup env …` — the same command under the verb an operator
 reaches for when configuring an install. Settings the manifest models with their own field (the
-registry, the networks, the backup destination) are **refused** there, and the error names where the
-value actually lives.
+registry's enablement, host, storage driver and platform token, the networks, the backup destination)
+are **refused** there, and the error names where the value actually lives. Other registry settings,
+such as `MIABI_REGISTRY_STORAGE_CLASS` or the S3 variables, are ordinary env entries.
 
 They all need **root** (they write `/etc/miabi` and use the Docker socket) and a Linux or macOS
 Docker host. `-f, --file` points at a manifest other than `/etc/miabi/miabi.yaml`; so do

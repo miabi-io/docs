@@ -91,7 +91,7 @@ Images are stored in a managed Docker volume on the control-plane node. This is 
 By default the volume (`mb-registry-data`) lives in Docker's data root, usually the boot disk. To put it on another disk, register that disk as a [storage class](/docs/storage/storage-classes) on the control-plane node (or as a shared class), then pick it under **Storage class**, or set `MIABI_REGISTRY_STORAGE_CLASS`. For example, an HDD class:
 
 ```bash
-MIABI_REGISTRY_STORAGE_CLASS=hdd
+miabi stack env set MIABI_REGISTRY_STORAGE_CLASS=hdd --apply
 ```
 
 The registry then runs on its own volume, `mb-registry-data-<class>`, at `<class path>/mb-registry-data-<class>`. The previous volume is kept, and its images are not copied. If the class is unavailable when the registry starts, it refuses to start instead of falling back to the data root, and the class cannot be deleted while the registry uses it.

@@ -357,7 +357,17 @@ Self-service sign-up is off until you turn it on. See [Authentication](/docs/sec
 | `MIABI_REQUIRE_EMAIL_VERIFICATION` | — | Require a new account to confirm its address before it can sign in. Unset leaves it editable in Platform Settings; set here it is pinned read-only. Sign-up refuses to open if this is on with no SMTP configured |
 | `MIABI_ALLOWED_SIGNUP_DOMAINS` | — | Comma-separated domain allow-list (`acme.com,acme.co.uk`); a subdomain matches its parent. Blank admits any domain. Same pinning rule as above |
 | `MIABI_INVITATION_SIGNUP_ENABLED` | — | `true` / `false`: whether an invitee can [create their account from the invitation](/docs/workspaces/members-and-invitations#signing-up-from-an-invitation) while sign-up is closed. Unset leaves it to Platform Settings (default on) |
-| `MIABI_WORKSPACE_CREATION` | — | `anyone`, `except_invited` or `admins_only`: [who can create workspaces](/docs/workspaces/organizations#who-can-create-workspaces). Unset leaves it to Platform Settings (default `except_invited`). Any other value refuses to boot |
+| `MIABI_WORKSPACE_CREATION` | — | `anyone`, `except_invited`, `admins_only` or `console`: [who can create workspaces](/docs/workspaces/organizations#who-can-create-workspaces). `console` leaves creation to [Miabi Console](/docs/administration/miabi-console#workspaces-created-only-in-the-console) and needs `MIABI_BILLING_API_ENABLED=true`. Unset leaves it to Platform Settings (default `except_invited`). Any other value refuses to boot |
+
+## Miabi Console
+
+See [Miabi Console](/docs/administration/miabi-console). Enterprise, with the Billing add-on.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MIABI_BILLING_API_ENABLED` | `false` | Turn on the Billing API Miabi Console calls. Off, its routes answer 404 even with a licence |
+| `MIABI_BILLING_HARD_AFTER_DAYS` | `14` | Days past an unpaid account's grace period before its workspaces are suspended (0 = never) |
+| `MIABI_BILLING_CONNECTION_LOCKED` | `false` | Once connected, the console connection cannot be removed from Miabi: no disconnect, no other console, and the billing service account cannot be suspended or deleted. Needs `MIABI_BILLING_API_ENABLED=true` |
 
 ## Licensing
 
