@@ -57,6 +57,26 @@ Quotas are checked **when a resource is created** — and, for CPU and memory, a
 Because the check happens at creation, you never end up with a half-provisioned resource. Free up capacity (delete an unused app or database) or raise the workspace's plan, then retry.
 :::
 
+## Shared CPU
+
+A CPU limit is a ceiling, not a reservation: an app limited to 1 core that uses 0.1 holds nothing back
+from anyone. On a shared platform, counting every limit against the plan's cores refuses new apps while
+the workspace sits mostly idle.
+
+Set `MIABI_QUOTA_CPU_OVERCOMMIT` to let a workspace's CPU limits add up to a multiple of its plan's
+cores. With `4`, a 2-core plan admits apps whose limits total 8 cores; each app is still held to its own
+limit. It applies to the app and database CPU budgets alike, server-wide. The workspace's usage page
+shows both numbers.
+
+Memory is never overcommitted: a container that runs out of memory is killed, while one short of CPU
+only slows down. The default, `1`, keeps CPU limits within the plan's cores.
+
+:::caution
+Overcommitted CPU is shared, not guaranteed. When many workspaces get busy at once, apps compete for
+the host's cores. Choose the ratio from the CPU your nodes actually use, and sell such plans as shared
+vCPU.
+:::
+
 ## Capability gates
 
 Beyond raw counts, a plan can gate **features**. Examples include custom TLS certificates, privileged host mounts, shell access into containers, shared (NFS/CIFS) storage, connecting DNS providers, [custom container labels](/docs/applications/container-labels), and [GPU access](/docs/applications/gpus) (with a separate **GPUs** quota counting the units a workspace's running apps may hold). Advanced security capabilities such as multiple SSO providers, SAML 2.0, and SCIM provisioning are gated to higher editions. See [Community vs Enterprise](/docs/editions/community-vs-enterprise) for the full breakdown.

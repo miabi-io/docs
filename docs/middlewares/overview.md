@@ -25,6 +25,25 @@ field of each.
 A middleware belongs to the workspace, not to a route, so the same rate limit can guard a dozen
 routes and be tuned in one place.
 
+### What a new workspace starts with
+
+Every new workspace is created with these middlewares. None has any effect until you attach it to a
+route, and you can edit or delete them like any other.
+
+| Name | Type | What it does |
+|---|---|---|
+| `force-https` | `redirectScheme` | Redirects plain HTTP to HTTPS. |
+| `security-headers` | `responseHeaders` | Sets `X-Frame-Options`, `X-Content-Type-Options` and `Referrer-Policy`. |
+| `redirect-to-www` | `redirectHost` | Sends `example.com` to `www.example.com`, keeping the path. |
+| `redirect-to-apex` | `redirectHost` | Sends `www.example.com` to `example.com`, keeping the path. |
+| `hsts` | `responseHeaders` | Tells browsers to use HTTPS only for this host, for a year. |
+| `rate-limit` | `rateLimit` | 100 requests a minute per client, then a 10-minute ban. |
+| `noindex` | `responseHeaders` | Asks search engines not to index the site, for staging and previews. |
+
+The www redirects need the route to serve both names (`example.com` and `www.example.com`), and
+Goma Gateway 1.2.0 or newer. Workspaces created before a middleware was added to this list don't get
+it, but the same policies are presets under **New**.
+
 ### Or declare it
 
 Middlewares are a [declarative resource](/docs/cicd/manifest-reference#middleware), so the same

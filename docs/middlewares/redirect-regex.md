@@ -1,5 +1,5 @@
 ---
-sidebar_position: 14
+sidebar_position: 15
 title: Redirect (regex)
 description: Redirect using a regular-expression match on the request path.
 ---

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 19
+sidebar_position: 20
 title: Request headers
 description: Add, override or remove headers before the request reaches the app.
 ---

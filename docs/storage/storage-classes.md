@@ -157,7 +157,7 @@ class says explicitly what happens to the directory:
 - **Delete** (default) — the volume's directory is removed with the volume.
 - **Retain** — the directory is kept, for you to reclaim by hand.
 
-Deleting a **class** is refused while any volume still references it. To stop new volumes landing on
+Deleting a **class** is refused while any volume or database still keeps its data on it. To stop new volumes landing on
 a disk without touching the ones already there, **disable** the class instead.
 
 ## Capacity
@@ -166,6 +166,20 @@ Each class's filesystem is measured on the same schedule as volume usage, so the
 page shows free space per disk, and each node's page lists the classes on that node with their used
 and total space (see [Nodes & Capacity](/docs/administration/nodes-and-capacity#viewing-the-fleet)).
 Volumes on a class are sized by measuring their directory, because `docker system df` reports the volume's mountpoint stub rather than the data behind the bind.
+
+The built-in `default` class has no directory of its own, so its size is the disk behind each
+node's Docker data root, as the node capacity sweep measures it. Its capacity is the sum over every
+measured node; a node not measured yet is left out rather than counted as empty.
+
+Select a class in **Admin → Storage classes** to open its page. It shows:
+
+- **Capacity**: free and total space, with the share taken by data on this class apart from
+  everything else on the same disk (images, containers, other classes).
+- **Disks by node**, for the `default` class: each node's Docker data disk, free space and when it
+  was last measured.
+- **Data on this class**: every volume and database instance stored there, with its workspace,
+  node and measured size, largest first. Sizes come from the usage sweeps; opening the page never
+  scans a disk.
 
 ## What this is not
 

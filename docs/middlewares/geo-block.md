@@ -1,5 +1,5 @@
 ---
-sidebar_position: 22
+sidebar_position: 23
 title: Country access policy (GeoIP)
 description: Allow or deny requests by client country (GeoIP).
 ---
