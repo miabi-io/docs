@@ -1,5 +1,5 @@
 ---
-sidebar_position: 17
+sidebar_position: 19
 title: Add path prefix
 description: Prepend a path prefix before forwarding the request to the app.
 ---

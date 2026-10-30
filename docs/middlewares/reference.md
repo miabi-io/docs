@@ -35,6 +35,7 @@ Every middleware type Miabi curates. Each has a form in the console, validation 
 | Middleware | Type | What it does |
 |---|---|---|
 | [Rate limit](/docs/middlewares/rate-limit) | `rateLimit` | Throttle requests per client over a time unit. |
+| [Compression](/docs/middlewares/compress) | `compress` | Compress responses with zstd, Brotli or gzip, chosen per client. Text such as HTML, JSON, CSS and JavaScript shrinks to 10–30% of its size. |
 | [HTTP cache](/docs/middlewares/http-cache) | `httpCache` | Cache responses at the gateway so repeat requests never reach the app. |
 
 ## Transform
@@ -42,6 +43,7 @@ Every middleware type Miabi curates. Each has a form in the console, validation 
 | Middleware | Type | What it does |
 |---|---|---|
 | [Force scheme (HTTPS)](/docs/middlewares/redirect-scheme) | `redirectScheme` | Redirect requests to a different scheme — typically http→https. |
+| [Redirect host (www)](/docs/middlewares/redirect-host) | `redirectHost` | Redirect to another host, keeping the path and query — add or remove www, or send aliases to one domain. |
 | [Redirect](/docs/middlewares/redirect) | `redirect` | Redirect every matched request to a fixed URL. |
 | [Redirect (regex)](/docs/middlewares/redirect-regex) | `redirectRegex` | Redirect using a regular-expression match on the request path. |
 | [Rewrite path (regex)](/docs/middlewares/rewrite-regex) | `rewriteRegex` | Rewrite the request path with a regular expression before it reaches the app. |

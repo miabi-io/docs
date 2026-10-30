@@ -33,10 +33,14 @@ A connected DNS provider enables three things:
   nameservers** first, then the system resolver — never the provider's API: a record
   that exists only in a pending zone proves nothing.
 - **Automatic address records** — when a route serves a host under a verified, connected
-  domain, Miabi creates the `A`/`AAAA` (or `CNAME`) record pointing it at the public
-  address of the gateway that serves the route, re-syncs it when the route changes, and
-  removes it when the route goes away. A reconcile job restores managed records deleted
-  out of band.
+  domain, Miabi points it at the public address of the gateway that serves the route: an
+  `A` record for the cluster's IPv4 address and an `AAAA` record for its IPv6 address, or a
+  `CNAME` to its hostname when it has no IP. A `www` host whose bare name is routed by the
+  same app, such as `www.example.com` beside `example.com`, gets a `CNAME` to that name
+  instead, so the two never drift apart. Records are re-synced when the route or the
+  cluster's address changes and removed when the route goes away. A reconcile job restores
+  managed records deleted out of band. Miabi never replaces a record it did not create,
+  including an `A` record where it would write a `CNAME`.
 - **DNS-01 challenges** — required for issuing **wildcard** (`*.example.com`) and
   other [managed certificates](/docs/networking/tls-certificates) via DNS-01. Only a
   connected provider can solve these challenges.

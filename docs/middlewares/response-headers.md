@@ -1,5 +1,5 @@
 ---
-sidebar_position: 20
+sidebar_position: 22
 title: Response headers
 description: Add, override or remove headers on the response, and set CORS or cookies.
 ---

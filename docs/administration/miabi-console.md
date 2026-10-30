@@ -20,3 +20,7 @@ Connecting needs an Enterprise licence with the **Billing** add-on, and
 
 Codes work once and expire after 24 hours. The Billing page shows the connection and lets an admin
 disconnect it.
+
+Workspaces whose domains are hosted in Miabi Console get a **Miabi Console** DNS provider
+automatically, so those domains are verified without adding a TXT record by hand. It is shown with a
+lock and cannot be edited or disconnected in Miabi.

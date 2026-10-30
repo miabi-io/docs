@@ -79,6 +79,33 @@ enough](#install-options).
 Answering prompts over a pipe is unreliable, so pass `MIABI_DOMAIN` and `MIABI_ADMIN_EMAIL` as above
 rather than letting it ask.
 
+The installer needs root. To install into your own home instead (`~/.local/bin` and `~/.miabi`),
+pass `--non-root`; a regular Docker daemon must then already be installed and usable by your user:
+
+```bash
+curl -fsSL https://get.miabi.io | MIABI_DOMAIN=miabi.example.com bash -s -- --non-root
+```
+
+A rootless Docker daemon is not supported, with or without `--non-root`: the control plane gives the
+containers it starts the host's `/var/run/docker.sock`, which a rootless daemon does not serve. The
+installer and `miabi setup` stop with a message when they detect one.
+
+### Automated installs
+
+Provisioning tools such as Ansible, cloud-init or a cloud provider's image can choose the admin
+password instead of reading a generated one from the output. Write it to a file and point
+`MIABI_ADMIN_PASSWORD_FILE` at it, so it stays out of the process list and shell history:
+
+```bash
+curl -fsSL https://get.miabi.io | sudo MIABI_DOMAIN=miabi.example.com \
+  MIABI_ADMIN_EMAIL=you@example.com \
+  MIABI_ADMIN_PASSWORD_FILE=/root/miabi-admin-password bash
+```
+
+The password must be 12 characters to 72 bytes. A shorter or longer one stops the install before
+anything is created. A password you supply is never printed, and it only seeds the first admin:
+re-running the installer later does not change it.
+
 The script installs the newest stable release, which it reads from
 [versions.miabi.io](https://versions.miabi.io) along with the gateway and CI runner versions that
 release was tested with, and the newest stable `miabi` CLI (which manages any stack version). To pin a release, set `MIABI_VERSION=v1.4.0` (and `GOMA_VERSION` with
@@ -129,6 +156,10 @@ which renames it.
 | `MIABI_DOMAIN` | `--domain` | Panel hostname. Required. |
 | `MIABI_ACME_EMAIL` | `--acme-email` | Let's Encrypt contact. |
 | `MIABI_ADMIN_EMAIL` | `--admin-email` | First admin's login. |
+| `MIABI_ADMIN_PASSWORD` | — | First admin's password, 12 characters to 72 bytes (default: generated). Read from the environment by `miabi setup`, never a flag. |
+| `MIABI_ADMIN_PASSWORD_FILE` | — | Installer only: read `MIABI_ADMIN_PASSWORD` from this file. |
+| `MIABI_NETWORK_IPV6` | `--ipv6` | Dual-stack IPv6 for the shared app network and every workspace network. Docker 26 or later allocates the IPv6 subnets. On an existing install, `miabi setup --ipv6` recreates the app network; see [Turning IPv6 on for an existing install](/docs/networking/networks-and-subnets#turning-ipv6-on-for-an-existing-install). |
+| `MIABI_NON_ROOT` | — | Installer only: same as `--non-root`. |
 | `GOMA_VERSION` | `--gateway-image` | Goma Gateway version (default: tested with the Miabi release). |
 | `RUNNER_VERSION` | `--runner-image` | Runner version shown in the CI runner enrollment command (default: tested with the Miabi release). |
 | `MIABI_CONTROL_URL` | `--control-url` | URL remote nodes and agents dial back on. Defaults to the panel's own URL. |
@@ -326,8 +357,7 @@ See
 ### `--no-host-proc`
 
 By default Miabi binds the host's `/proc` read-only, so the Nodes page can report real host CPU and
-memory. Some hosts refuse that bind — a rootless daemon, a hardened host, a socket proxy that
-forbids host binds. Pass `--no-host-proc` (or `MIABI_NO_HOST_PROC=1`) and Miabi reads its own
+memory. Some hosts refuse that bind — a hardened host, a socket proxy that forbids host binds. Pass `--no-host-proc` (or `MIABI_NO_HOST_PROC=1`) and Miabi reads its own
 `/proc` instead, which inside a container already reflects host CPU and memory. **Host metrics keep
 working** — this is a graceful fallback, not a feature you lose.
 
@@ -547,8 +577,9 @@ purpose-built rootless image, use the rootless variant (`docker/Dockerfile.rootl
 ## First run
 
 Open your domain in a browser and sign in as the **platform admin**, seeded into the database on
-first boot. The installer generates the password, prints it once at the end of the run, and stores
-it in `/etc/miabi/miabi.yaml` — which is the only copy, so back that file up. Change the password
+first boot. Unless you [set one](#automated-installs), the installer generates the password, prints
+it once at the end of the run, and stores it in `/etc/miabi/miabi.yaml` — which is the only copy, so
+back that file up. Change the password
 from the UI after your first sign-in.
 
 The login is `admin_email` from the manifest — the address you installed with. If you gave only an

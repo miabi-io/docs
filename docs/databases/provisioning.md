@@ -57,6 +57,23 @@ Start modest. CPU and memory can be changed later, and you can grow the volume a
 data does — so there's no need to over-provision on day one.
 :::
 
+### Engine minimums and defaults
+
+Each engine has a floor it needs to run on; limits below it are refused rather than leaving the
+database crash-looping. The default is what an unsized instance gets when a plan caps database
+resources (see below).
+
+| Engine | Minimum | Default |
+|---|---|---|
+| PostgreSQL | 256 MB, 0.25 CPU | 512 MB, 0.5 CPU |
+| MariaDB | 256 MB, 0.3 CPU | 512 MB, 0.5 CPU |
+| MySQL | 256 MB, 0.3 CPU | 1 GB, 1 CPU |
+| MongoDB | 512 MB, 0.5 CPU | 1 GB, 1 CPU |
+| Redis | 64 MB, 0.1 CPU | 256 MB, 0.25 CPU |
+| libSQL | 64 MB, 0.1 CPU | 256 MB, 0.25 CPU |
+
+Leaving a limit empty means unlimited, which is always allowed outside a capped plan.
+
 ### Changing resources
 
 On the database's page, **Resources** sets new limits. The container is recreated on the same
@@ -71,9 +88,8 @@ a workspace's instances add up to. This budget is separate from the CPU and memo
 and jobs.
 
 When a plan caps it, an instance created without limits — including one installed from the
-marketplace or created by a manifest — gets its engine's default size: 1 CPU, with 512 MB of
-memory for PostgreSQL and MariaDB, 1 GB for MySQL and MongoDB, and 256 MB for Redis and libSQL.
-Removing a limit from an existing instance is refused there. Instances created before the cap
+marketplace or created by a manifest — gets its engine's default size. Removing a limit from an
+existing instance is refused there. Instances created before the cap
 count as zero until they are given limits.
 
 A [manifest](/docs/cicd/manifest-reference#database) or a

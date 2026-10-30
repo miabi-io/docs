@@ -222,8 +222,24 @@ spec:
 ```
 
 The manifest's `ipv6` drives both halves: the platform's `miabi-proxy` network **and** the workspace
-networks the server creates, so you cannot end up with a dual-stack proxy network in front of
-single-stack app networks.
+networks the server creates, so a fresh install cannot end up with a dual-stack proxy network in
+front of single-stack app networks.
+
+### Turning IPv6 on for an existing install
+
+Docker cannot switch IPv6 on for a network that already exists; it has to be recreated. Run:
+
+```bash
+sudo miabi setup --ipv6
+```
+
+The plan it prints says which network will be recreated. On confirmation it detaches every container
+from `miabi-proxy`, recreates the network with IPv6 and reattaches each container with its aliases.
+Routed apps stop answering for a few seconds, so pick a quiet moment. If Docker cannot create the IPv6
+network, `setup` puts the IPv4 one back and reattaches everything before reporting the error.
+
+Workspace networks created from then on are dual-stack. Existing workspace networks stay IPv4 until
+they are recreated, and the containers on them have no IPv6 address until then.
 
 ### Seeing what a network actually got
 

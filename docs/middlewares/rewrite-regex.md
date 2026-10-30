@@ -1,5 +1,5 @@
 ---
-sidebar_position: 15
+sidebar_position: 16
 title: Rewrite path (regex)
 description: Rewrite the request path with a regular expression before it reaches the app.
 ---

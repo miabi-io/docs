@@ -90,6 +90,7 @@ removes a protection:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `MIABI_PLAN_ENFORCEMENT` | `true` | Enforce per-workspace [plan quotas and capability gates](/docs/workspaces/plans-and-quotas). Set `false` to make every quota check pass and every gate open |
+| `MIABI_QUOTA_CPU_OVERCOMMIT` | `1` | How far a workspace's CPU limits may add up past its plan's CPU cores (app and database budgets), e.g. `4` lets a 2-core plan run apps whose limits total 8 cores. Memory is never overcommitted. See [shared CPU](/docs/workspaces/plans-and-quotas#shared-cpu) |
 | `MIABI_SECURITY_ENFORCEMENT` | `true` | Stop a platform admin from raw-stopping or removing a Miabi-managed container from the admin node view. Set `false` only as a break-glass escape hatch |
 | `MIABI_UPDATE_CHECK` | `true` | Daily check (from `versions.miabi.io`) for newer Miabi, agent, runner and gateway releases, surfaced as admin notices; a security release is flagged as one. Notify-only — Miabi never upgrades itself. See [Upgrades](/docs/upgrades/upgrading) |
 | `MIABI_TELEMETRY` | `true` | Send the anonymous startup and daily [telemetry](/docs/operations/telemetry) event. Set `false` (or `DO_NOT_TRACK=1`) to turn it off. Environment only |
