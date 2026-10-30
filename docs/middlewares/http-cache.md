@@ -1,5 +1,5 @@
 ---
-sidebar_position: 17
+sidebar_position: 18
 title: HTTP cache
 description: Cache responses at the gateway so repeat requests never reach the app.
 ---

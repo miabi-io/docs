@@ -35,6 +35,7 @@ Every middleware type Miabi curates. Each has a form in the console, validation 
 | Middleware | Type | What it does |
 |---|---|---|
 | [Rate limit](/docs/middlewares/rate-limit) | `rateLimit` | Throttle requests per client over a time unit. |
+| [Compression](/docs/middlewares/compress) | `compress` | Compress responses with zstd, Brotli or gzip, chosen per client. Text such as HTML, JSON, CSS and JavaScript shrinks to 10–30% of its size. |
 | [HTTP cache](/docs/middlewares/http-cache) | `httpCache` | Cache responses at the gateway so repeat requests never reach the app. |
 
 ## Transform

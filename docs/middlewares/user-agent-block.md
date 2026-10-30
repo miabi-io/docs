@@ -1,5 +1,5 @@
 ---
-sidebar_position: 19
+sidebar_position: 20
 title: Block user agents
 description: Reject requests whose User-Agent matches any of the listed patterns.
 ---

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 22
+sidebar_position: 23
 title: Error interceptor
 description: Replace upstream error responses with a custom body or template.
 ---

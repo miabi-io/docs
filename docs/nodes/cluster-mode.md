@@ -101,15 +101,35 @@ node.
 Inside a location, a new resource goes to the online, uncordoned node with the least container memory
 already placed on it. A service app is scheduled by Swarm, and a standalone cluster has one node.
 
-From a cluster's **Edit** dialog, administrators can:
+From a cluster's page, administrators can:
 
 - restrict it to **platform admins only**, which hides it from workspaces;
 - **cordon** it, so nothing new lands there while running workloads stay;
-- set its **public address**, the IP (or hostname) that DNS records for its routes point at: its gateway,
-  or a load balancer in front of it. A remote cluster learns the IP from the public address its ingress
-  node's agent connects from until you set one;
 - set its **external domain** for one-click app URLs (see [External access](#external-access));
 - choose how service apps are reached by name (see [Service load balancing](#service-load-balancing)).
+
+### Public address
+
+Under **Networking & DNS**, set the **public address** DNS records for the cluster's routes point at: its
+gateway, or a load balancer in front of it.
+
+| Field | Record | Notes |
+|---|---|---|
+| IPv4 address | `A` | |
+| IPv6 address | `AAAA` | A public (global unicast) address. Link-local `fe80::` and unique-local `fc00::/7` addresses are refused. |
+| Hostname | `CNAME` | Used only when no IP is set. The zone apex cannot hold a `CNAME`, so an apex host gets no record. |
+
+Set both IP families to serve visitors on either: each host then gets an `A` and an `AAAA` record. The
+gateway must accept IPv6 connections on ports 80 and 443, which you can check from a host with IPv6:
+
+```bash
+curl -6 -sI http://[2001:db8::10]/
+```
+
+A remote cluster learns one address from the public IP its ingress node's agent connects from until you
+set one. The other family is never guessed, because the gateway may not answer on it.
+
+The page previews the records Miabi writes for a domain such as `example.com` before you save.
 
 Private networks never span locations. Attaching a database, mounting a volume, joining a stack, or
 referencing an app or database from a manifest across two locations is refused with a message naming
@@ -122,7 +142,7 @@ volumes and databases, use a [location migration](/docs/applications/moving-betw
 ### External access
 
 Each cluster has its own **external domain** for [one-click app URLs](/docs/applications/exposing-your-app),
-with an optional certificate provider, both set in the cluster's **Edit** dialog. Point `*.<domain>` at the
+with an optional certificate provider, both set under **External access** on the cluster's page. Point `*.<domain>` at the
 cluster's gateway; the dialog shows the address to use. An app's generated URL is `<label>.<domain>` under
 the domain of the cluster it runs in, from the console and from a manifest's `externalAccess` alike, and a
 cluster without a domain has external access off. Two clusters cannot share a domain.

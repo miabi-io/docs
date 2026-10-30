@@ -91,9 +91,10 @@ Each cluster is served by its own gateway, and the DNS records for an app's rout
 | Remote swarm | The Goma on the swarm's ingress node, over that swarm's overlay | The cluster's public address |
 
 Every app of the default cluster is served by the control plane's Goma, so its nodes run no gateway of
-their own. A cluster's **public address** is an IP, or a hostname for a record that cannot use one, set in
-the cluster's **Edit** dialog: its gateway, or a load balancer in front of it. A remote cluster learns the IP
-from the public address its ingress node's agent connects from, until an administrator sets one.
+their own. A cluster's **public address** is an IPv4 address, an IPv6 address, or both, plus a hostname for
+a record that cannot use an IP, set under **Networking & DNS** on the cluster's page: its gateway, or a load
+balancer in front of it. A remote cluster learns one address from the public IP its ingress node's agent
+connects from, until an administrator sets one; the other family is never guessed.
 
 A remote gateway pulls its routes from the control plane over HTTP with its own token and reloads on
 demand, so routing and middleware definitions stay workspace-level wherever they are served. An
