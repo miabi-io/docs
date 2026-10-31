@@ -1,6 +1,7 @@
 import {themes as prismThemes} from 'prism-react-renderer';
 import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
+import miabiVersions from './src/remark/miabi-versions.mjs';
 
 const config: Config = {
   title: 'Miabi',
@@ -41,6 +42,7 @@ const config: Config = {
           sidebarPath: './sidebars.ts',
           editUrl: 'https://github.com/miabi-io/miabi-docs/tree/main/',
           routeBasePath: 'docs',
+          remarkPlugins: [miabiVersions],
         },
         blog: false,
         theme: {

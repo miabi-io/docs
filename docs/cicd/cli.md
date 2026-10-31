@@ -394,7 +394,7 @@ carry a platform version, because it releases on its own cadence. Re-running `se
 install keeps the image its manifest pins. `MIABI_RELEASE_API` points that lookup at a mirror for a
 host with no route out, and `--version`/`--image` skip it entirely.
 
-On `upgrade`, `--version` accepts `1.8.0` or `v1.8.0` and swaps only the tag on the component's
+On `upgrade`, `--version` accepts `%MIABI_VERSION%` or `v%MIABI_VERSION%` and swaps only the tag on the component's
 current reference, so a private registry and non-Miabi components (the gateway) keep working;
 `--image` replaces the reference outright. On `setup`, `--version` sets the control-plane image to
 `miabi/miabi:<version>`, replacing a private-registry reference — pass `--image` there, or use
