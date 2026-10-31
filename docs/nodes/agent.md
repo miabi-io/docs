@@ -101,7 +101,7 @@ curl -fsSL https://get.miabi.io/agent | \
 ```
 
 You can also pass the values as flags (`--control-url`, `--token`), pin a release with
-`AGENT_VERSION=v0.6.2` or the whole image with `--image` / `MIABI_AGENT_IMAGE` (either skips the
+`AGENT_VERSION=v%AGENT_VERSION%` or the whole image with `--image` / `MIABI_AGENT_IMAGE` (either skips the
 lookup), rename the container with `--name` / `MIABI_AGENT_NAME`, or skip TLS verification with
 `--insecure`. Set `MIABI_SKIP_DOCKER_INSTALL=1` on a host whose packages are managed elsewhere: the
 script then requires Docker to be present instead of installing it. Run with no values on an

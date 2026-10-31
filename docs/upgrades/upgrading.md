@@ -56,9 +56,9 @@ would freeze every install at whatever was current when that CLI was built — a
 never install today's Miabi. To choose a version yourself, or to upgrade with no network:
 
 ```bash
-sudo miabi upgrade --version 1.8.0            # or v1.8.0 — the leading v is optional
-sudo miabi upgrade miabi-gateway --version 0.14.0
-sudo miabi upgrade --image registry.example.com/miabi:1.8.0
+sudo miabi upgrade --version %MIABI_VERSION%            # or v%MIABI_VERSION% — the leading v is optional
+sudo miabi upgrade miabi-gateway --version %GATEWAY_VERSION%
+sudo miabi upgrade --image registry.example.com/miabi:%MIABI_VERSION%
 ```
 
 `--version` swaps **only the tag** on the component's current reference, so a private registry and
@@ -182,7 +182,7 @@ Set the **image** in `.env`, then recreate:
 # 1. Back up first (see /docs/storage/backups)
 
 # 2. Point .env at the new release
-# MIABI_IMAGE=miabi/miabi:1.10.1
+# MIABI_IMAGE=miabi/miabi:%MIABI_VERSION%
 
 # 3. Pull and recreate
 cd /opt/miabi && docker compose pull && docker compose up -d
@@ -192,7 +192,7 @@ docker compose logs -f miabi
 ```
 
 :::caution
-The variable Compose reads is `MIABI_IMAGE` (an image reference, e.g. `miabi/miabi:1.10.1`, with
+The variable Compose reads is `MIABI_IMAGE` (an image reference, e.g. `miabi/miabi:%MIABI_VERSION%`, with
 no leading `v`). `MIABI_VERSION` is an **installer** variable — the server and `compose.yaml` never
 read it, so setting it in `.env` does nothing. The gateway, PostgreSQL and Redis images are pinned in
 `compose.yaml` itself; bump those there when a release asks you to.

@@ -108,7 +108,7 @@ re-running the installer later does not change it.
 
 The script installs the newest stable release, which it reads from
 [versions.miabi.io](https://versions.miabi.io) along with the gateway and CI runner versions that
-release was tested with, and the newest stable `miabi` CLI (which manages any stack version). To pin a release, set `MIABI_VERSION=v1.4.0` (and `GOMA_VERSION` with
+release was tested with, and the newest stable `miabi` CLI (which manages any stack version). To pin a release, set `MIABI_VERSION=v%MIABI_VERSION%` (and `GOMA_VERSION` with
 it, for the gateway that release was tested with). A `GOMA_VERSION`, `RUNNER_VERSION` or
 `MIABI_CLI_VERSION` you set yourself always wins, and with all four set the script makes no lookup.
 If versions.miabi.io can't be reached, the install stops rather than falling back to `:latest`
@@ -201,7 +201,7 @@ spec:
     email: you@example.com               # Let's Encrypt contact
 
   server:
-    image: miabi/miabi:1.10.0
+    image: miabi/miabi:%MIABI_VERSION%
     hostProc: true
     env:
       TZ: UTC
@@ -211,7 +211,7 @@ spec:
   cache:
     image: redis:7-alpine
   gateway:
-    image: jkaninda/goma-gateway:1.1.2
+    image: jkaninda/goma-gateway:%GATEWAY_VERSION%
     config: goma.yml                     # bind-mounted into Goma, read-only
     env:
       GOMA_LOG_LEVEL: info               # debug | trace | info | warn | error | off
@@ -266,7 +266,7 @@ Every tag above is a fixed version, and that is the point: `miabi setup` on two 
 should build the same stack. A floating tag (`latest`, `edge`, `main`, …) **warns**, because it
 breaks the rollout in two ways — a failed upgrade cannot roll back (there is no distinct previous
 image to return to), and drift against it cannot be detected, so the next upgrade reports "already
-at" and does nothing. Use `miabi upgrade --version 1.8.0` instead.
+at" and does nothing. Use `miabi upgrade --version %MIABI_VERSION%` instead.
 :::
 
 :::danger Back up this file
@@ -406,11 +406,11 @@ to GitHub's releases API (or a `MIABI_RELEASE_API` mirror instead of both). A se
 called out when it is picked. If neither can be reached, `setup` warns and falls back to
 `miabi/miabi:latest`, which costs you automatic rollback and drift detection.
 
-To pin a release, pass `--version 1.8.0`. To install something else, including from a private
+To pin a release, pass `--version %MIABI_VERSION%`. To install something else, including from a private
 registry, pass the image verbatim:
 
 ```bash
-sudo miabi setup --domain miabi.example.com --image registry.example.com/miabi:1.7.3
+sudo miabi setup --domain miabi.example.com --image registry.example.com/miabi:%MIABI_VERSION%
 ```
 
 ### Everything else is the same binary
@@ -430,7 +430,7 @@ you'd rather not put a binary in `/usr/local/bin` — notably when **you don't h
 docker run --rm -it \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v /etc/miabi:/etc/miabi \
-  miabi/miabi:1.7.3 install --domain miabi.example.com --admin-email you@example.com
+  miabi/miabi:%MIABI_VERSION% install --domain miabi.example.com --admin-email you@example.com
 ```
 
 `install`, `upgrade`, `restart`, `status` and `uninstall` all run this way. They are the same
@@ -441,10 +441,10 @@ so neither path can drift from the other, flags included:
 # alias it once and the day-two commands are short
 alias miabi-host='docker run --rm -it \
   -v /var/run/docker.sock:/var/run/docker.sock \
-  -v /etc/miabi:/etc/miabi miabi/miabi:1.7.3'
+  -v /etc/miabi:/etc/miabi miabi/miabi:%MIABI_VERSION%'
 
 miabi-host status
-miabi-host upgrade --version 1.8.0    # or --image <ref> for a private registry
+miabi-host upgrade --version %MIABI_VERSION%    # or --image <ref> for a private registry
 miabi-host restart miabi-gateway
 miabi-host uninstall                  # keeps your data; add --volumes to destroy it
 ```
@@ -457,7 +457,7 @@ printing a deprecation notice; it will be removed in a future release.
 Two things this path does *better*:
 
 - **The tag you invoke is the tag you get.** The image asks Docker for its own reference, so
-  `miabi/miabi:1.7.3 install` lands exactly 1.7.3, private registry included, with no inference.
+  `miabi/miabi:%MIABI_VERSION% install` lands exactly %MIABI_VERSION%, private registry included, with no inference.
   The CLI has no container to inspect and looks up the latest release instead.
 - **No root required.** See [Running the installer container as non-root](#running-the-installer-container-as-non-root)
   below — uid 10001 plus the host's docker group is enough.
@@ -478,7 +478,7 @@ docker run --rm -it \
   --group-add "$(stat -c '%g' /var/run/docker.sock)" \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v /etc/miabi:/etc/miabi \
-  miabi/miabi:1.7.3 install --domain miabi.example.com --admin-email you@example.com
+  miabi/miabi:%MIABI_VERSION% install --domain miabi.example.com --admin-email you@example.com
 ```
 
 - `--user 10001:10001` runs as the image's non-root account instead of root.
