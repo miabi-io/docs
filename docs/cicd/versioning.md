@@ -13,7 +13,7 @@ Without one, a build is tagged `run-<number>`. With one, it is tagged `v1.4.2` (
 Deploys are unaffected: Miabi still deploys the **exact digest** a run built. The version is a readable,
 immutable label on that same artifact, shown on the run, the image, the deployment and the release.
 
-Manage policies under **Developers → Versioning**, from the pipeline's runs page, from the CLI, or with
+Manage policies from the **Versioning** tab of the **Pipelines** page or of a single pipeline, from the CLI, or with
 a `versioning:` block in the pipeline file.
 
 ## How a version is chosen
