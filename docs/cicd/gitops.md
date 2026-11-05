@@ -276,8 +276,8 @@ spec:
           POSTA_REDIS_ADDR: "{{ .databases.posta-redis.host }}:{{ .databases.posta-redis.port }}"
           POSTA_REDIS_PASSWORD: "{{ .databases.posta-redis.password }}"
 
-          # Security — resolved from the generated secrets above, so nothing
-          # sensitive is written here.
+          # Security — references to the generated secrets above, resolved
+          # at deploy, so nothing sensitive is written or stored here.
           POSTA_JWT_SECRET: "{{ .secrets.posta-jwt }}"
           POSTA_ENCRYPTION_KEY: "{{ .secrets.posta-encryption-key }}"
 
@@ -332,11 +332,14 @@ database's live connection details into an app's environment, so you never hardc
 {{ .databases.<name>.url }}        # alias of .uri
 ```
 
-Keys listed under `secretEnv` are stored **encrypted at rest**.
+Keys listed under `secretEnv` are stored **encrypted at rest** — use it for values like the database
+password above.
 
 You can also pull values from the [secret vault](/docs/secrets/overview) rather than writing them
-into the file — `{{ .secrets.<name> }}` resolves at apply time, and a `Secret` declared in the same
-bundle is created first, so a bundle can generate its own credentials:
+into the file. In `env`, `{{ .secrets.<name> }}` is stored as a reference to the vault and resolved
+each time the app deploys, so it needs no `secretEnv`, and rotating the secret redeploys the app
+without touching Git — see [secrets in env](/docs/cicd/manifest-reference#secrets-in-env). A `Secret`
+declared in the same bundle is created first, so a bundle can generate its own credentials:
 
 ```yaml
 - apiVersion: miabi.io/v1

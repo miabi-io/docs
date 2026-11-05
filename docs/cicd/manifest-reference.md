@@ -122,6 +122,7 @@ spec:
   env:
     APP_ENV: production
     DATABASE_URL: "{{ .databases.shop-db.uri }}"
+    API_KEY: "{{ .secrets.api-key }}"   # kept as a vault reference, resolved at deploy
   secretEnv:                  # env keys stored encrypted at rest
     - DATABASE_URL
   mounts:
@@ -158,7 +159,7 @@ spec:
 | `deployment.update` | Service only. `parallelism` tasks are replaced at a time, with `delaySeconds` between batches. Omit it to keep the app's setting. Setting `deployment.replicas`, `deployment.update` or `placement.constraints` without `deployment.runtime: service` is an error, not a silent no-op. |
 | `externalLabel` | Pins the external-access subdomain. Platform-wide unique: if taken, it is ignored and a generated label is used — the apply still succeeds. |
 | `ports` | See [port exposure](#port-exposure). |
-| `env` / `secretEnv` | Every `secretEnv` key must also appear in `env`. Values support [interpolation](#interpolation). |
+| `env` / `secretEnv` | Every `secretEnv` key must also appear in `env`. Values support [interpolation](#interpolation). A secret reference is stored as a reference, not its value, so it needs no `secretEnv` — see [secrets in env](#secrets-in-env). List a key under `secretEnv` when its value is sensitive in itself, such as a database password or URI. |
 | `mounts` | Exactly one of `volume` or `config`, and both must be declared in the same bundle. `key` and `mode` are valid only with a `config` — setting them on a volume mount is an error, not a silent no-op. A config mount is always read-only. Privileged host binds are **not** manifest-expressible. |
 | `reloadPolicy` | `restart` (default) redeploys the app when a mounted [`Config`](#config)'s content changes; `none` leaves it running, for apps that watch their own config file. |
 | `security.runAsUser` | The account the container runs as — `uid`, `uid:gid`, `name` or `name:group` — like `docker run --user`. Omit to keep the image's own user. A workspace under the [restricted security profile](/docs/security/container-security-profile) must give a non-root **numeric** uid; a name is refused there, since the image decides what it maps to. Attached volumes are chowned to it on deploy. |
@@ -332,6 +333,26 @@ spec:
 
 Member applications that declare no `placement.location` of their own are created in the stack's location. One
 that declares a different location is refused, naming both.
+
+A stack can also declare [shared environment](/docs/applications/stacks#shared-environment) that every
+member receives on its next deploy:
+
+```yaml
+kind: Stack
+metadata: { name: posta }
+spec:
+  env:
+    POSTA_DB_HOST: "{{ .databases.posta-db.host }}"
+    POSTA_DB_PASSWORD: "{{ .databases.posta-db.password }}"
+    POSTA_JWT_SECRET: "{{ .secrets.posta-jwt-secret }}"   # stays a vault reference
+  secretEnv: [POSTA_DB_PASSWORD]
+```
+
+`env` and `secretEnv` follow the same rules as an [application's](#application), including
+[secrets in env](#secrets-in-env). A member's own variable with the same key wins. A manifest that
+leaves out `env` leaves the stack's variables alone; one that declares it converges them, removing
+keys no longer listed. Changing a shared variable marks the members already deployed for redeploy;
+it does not deploy them.
 
 ---
 
@@ -968,14 +989,14 @@ spec:
 
 ## Interpolation
 
-Application `env` values, a Registry `password`, a Middleware `rule`, and a Config's file contents
-are rendered as templates before they are applied. Four collections are available:
+Application and Stack `env` values, a Registry `password`, a Middleware `rule`, and a Config's file
+contents are rendered as templates before they are applied. Four collections are available:
 
 | Reference | Resolves to |
 |---|---|
 | `{{ .databases.<name>.host }}` | A managed database's connection details. Also `.port`, `.user`, `.password`, `.name`, `.uri` (or its alias `.url`). Bare `{{ .databases.<name> }}` yields the URI. |
 | `{{ .applications.<name>.url }}` | Another application's address. Also `.host`, `.port`, `.scheme`. Bare `{{ .applications.<name> }}` yields the URL. |
-| `{{ .secrets.<name> }}` | A workspace secret's value, resolved **at apply time**. |
+| `{{ .secrets.<name> }}` | A workspace secret. In `env` it is kept as a reference and resolved **at deploy** — see [secrets in env](#secrets-in-env). Elsewhere, its value is resolved at apply time. |
 | `{{ .inputs.<key> }}` | Marketplace templates only — see [creating a template](/docs/marketplace/creating-a-template). |
 
 Helper functions: `randAlphaNum`, `randHex`, `base64`, `default`, `lower`, `upper`.
@@ -1031,13 +1052,40 @@ which is unchanged.
 A [`Config`](#config) whose own file format uses `{{ }}` sets `delimiters` to render on different
 markers, so only the references you meant are substituted.
 
-:::tip Two secret syntaxes
-In a manifest, application `env`, a Middleware `rule` and Config files take `{{ .secrets.NAME }}`,
-resolved once at apply time and stored as a value — rotating the secret needs another apply. The
-runtime form `${{ secrets.NAME }}`, used in [env vars](/docs/applications/environment-variables) set
-in the console, is accepted in a manifest only as a [Registry](#registry) `password`, where it is kept
-as a reference and read at every pull. Anywhere else in a manifest it is not resolved, and under the
-default `{{ }}` markers it fails the apply.
+### Secrets in env
+
+In application and Stack `env`, a secret reference is **never stored as its value**. Apply saves it
+as the vault reference `${{ secrets.NAME }}`, the same form [env vars](/docs/applications/environment-variables)
+set in the console use, and the secret is read into the container each time the app deploys:
+
+```yaml
+env:
+  JWT_SECRET: "{{ .secrets.jwt }}"                         # stored as ${{ secrets.jwt }}
+  DSN: "postgres://app:{{ .secrets.db-pw }}@{{ .databases.pg.host }}/app"
+                                                           # stored as postgres://app:${{ secrets.db-pw }}@pg-host/app
+  API_KEY: "${{ secrets.api-key }}"                        # the runtime form is accepted as-is
+```
+
+- **Rotation reaches the app.** Rotating the secret redeploys every app that references it, including
+  members that inherit it from their stack's shared env. No re-apply is needed, and the next apply
+  reports no change.
+- **It can't be deleted while referenced.** The vault refuses to delete a secret an app or stack env
+  still points at.
+- **A typo still fails the apply.** The secret must exist, or be declared in the same bundle, and
+  `--dry-run` reports an unknown name in either form.
+- **No `secretEnv` needed.** The stored value is a reference, not a secret. Listing the key under
+  `secretEnv` anyway is allowed: the reference is then stored encrypted.
+
+A reference passed through a function, such as `{{ .secrets.key | base64 }}` or
+`{{ default "x" .secrets.key }}`, can't be resolved at deploy. It is resolved at apply time and
+stored as its value, so list that key under `secretEnv`; rotating the secret then needs another apply.
+
+:::tip Outside env
+A Middleware `rule` and Config files resolve `{{ .secrets.NAME }}` at apply time; a Middleware `rule`
+is then encrypted at rest, and a rotated secret converges on the next apply. A Config whose files set
+`delimiters` can instead carry the runtime form `${{ secrets.NAME }}`, resolved for each app that
+mounts it — see [configs](/docs/secrets/configs#referencing-secrets-and-app-env). A [Registry](#registry) `password`
+takes either form, as its table shows.
 :::
 
 ---

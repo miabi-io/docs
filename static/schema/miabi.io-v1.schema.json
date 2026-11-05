@@ -96,6 +96,7 @@
           "type": "string"
         },
         "secretEnv": {
+          "description": "keys stored encrypted; a secret reference needs none",
           "items": {
             "type": "string"
           },
@@ -959,9 +960,23 @@
         "description": {
           "type": "string"
         },
+        "env": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Env is shared by every member application, injected on its next deploy; a member's own variable with the same key wins. Values interpolate like application env.",
+          "type": "object"
+        },
         "placement": {
           "$ref": "#/$defs/PlacementSpec",
           "description": "Placement is where the stack is created. Member applications that name no location follow it."
+        },
+        "secretEnv": {
+          "description": "keys stored encrypted; a secret reference needs none",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
         }
       },
       "type": "object"
