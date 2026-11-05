@@ -265,7 +265,7 @@ spec:
           POSTA_ENV: production
           POSTA_WEB_URL: "https://posta.example.com"    # must match the route host
 
-          # Database — resolved from the managed posta-db instance.
+          # Database — the password stays a reference to posta-db's managed secret.
           POSTA_DB_HOST: "{{ .databases.posta-db.host }}"
           POSTA_DB_PORT: "{{ .databases.posta-db.port }}"
           POSTA_DB_USER: "{{ .databases.posta-db.user }}"
@@ -285,9 +285,6 @@ spec:
           # generated — reveal it once from the vault to sign in.
           POSTA_ADMIN_EMAIL: admin@example.com
           POSTA_ADMIN_PASSWORD: "{{ .secrets.posta-admin-password }}"
-        secretEnv:            # these keys are stored encrypted at rest
-          - POSTA_DB_PASSWORD
-          - POSTA_REDIS_PASSWORD
         resources:
           memory: 512Mi
           cpu: "1"
@@ -332,8 +329,9 @@ database's live connection details into an app's environment, so you never hardc
 {{ .databases.<name>.url }}        # alias of .uri
 ```
 
-Keys listed under `secretEnv` are stored **encrypted at rest** — use it for values like the database
-password above.
+Credentials never land in the app's settings: the password and URI are stored as references to the
+database's managed secrets in the vault, resolved each time the app deploys. `secretEnv` is only for a
+sensitive value you write literally.
 
 You can also pull values from the [secret vault](/docs/secrets/overview) rather than writing them
 into the file. In `env`, `{{ .secrets.<name> }}` is stored as a reference to the vault and resolved

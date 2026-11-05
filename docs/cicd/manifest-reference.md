@@ -121,10 +121,8 @@ spec:
       hostPort: 19090         # omit or 0 to auto-allocate
   env:
     APP_ENV: production
-    DATABASE_URL: "{{ .databases.shop-db.uri }}"
+    DATABASE_URL: "{{ .databases.shop-db.uri }}"   # a reference to the database's managed secret
     API_KEY: "{{ .secrets.api-key }}"   # kept as a vault reference, resolved at deploy
-  secretEnv:                  # env keys stored encrypted at rest
-    - DATABASE_URL
   mounts:
     - volume: web-data        # must be a Volume in the same bundle
       path: /data
@@ -159,7 +157,7 @@ spec:
 | `deployment.update` | Service only. `parallelism` tasks are replaced at a time, with `delaySeconds` between batches. Omit it to keep the app's setting. Setting `deployment.replicas`, `deployment.update` or `placement.constraints` without `deployment.runtime: service` is an error, not a silent no-op. |
 | `externalLabel` | Pins the external-access subdomain. Platform-wide unique: if taken, it is ignored and a generated label is used — the apply still succeeds. |
 | `ports` | See [port exposure](#port-exposure). |
-| `env` / `secretEnv` | Every `secretEnv` key must also appear in `env`. Values support [interpolation](#interpolation). A secret reference is stored as a reference, not its value, so it needs no `secretEnv` — see [secrets in env](#secrets-in-env). List a key under `secretEnv` when its value is sensitive in itself, such as a database password or URI. |
+| `env` / `secretEnv` | Every `secretEnv` key must also appear in `env`. Values support [interpolation](#interpolation). Secret references and database passwords and URIs are stored as vault references, and any other value that resolves a credential is stored encrypted automatically — see [secrets in env](#secrets-in-env). List a key under `secretEnv` only for a sensitive value written literally in the manifest. |
 | `mounts` | Exactly one of `volume` or `config`, and both must be declared in the same bundle. `key` and `mode` are valid only with a `config` — setting them on a volume mount is an error, not a silent no-op. A config mount is always read-only. Privileged host binds are **not** manifest-expressible. |
 | `reloadPolicy` | `restart` (default) redeploys the app when a mounted [`Config`](#config)'s content changes; `none` leaves it running, for apps that watch their own config file. |
 | `security.runAsUser` | The account the container runs as — `uid`, `uid:gid`, `name` or `name:group` — like `docker run --user`. Omit to keep the image's own user. A workspace under the [restricted security profile](/docs/security/container-security-profile) must give a non-root **numeric** uid; a name is refused there, since the image decides what it maps to. Attached volumes are chowned to it on deploy. |
@@ -343,9 +341,8 @@ metadata: { name: posta }
 spec:
   env:
     POSTA_DB_HOST: "{{ .databases.posta-db.host }}"
-    POSTA_DB_PASSWORD: "{{ .databases.posta-db.password }}"
-    POSTA_JWT_SECRET: "{{ .secrets.posta-jwt-secret }}"   # stays a vault reference
-  secretEnv: [POSTA_DB_PASSWORD]
+    POSTA_DB_PASSWORD: "{{ .databases.posta-db.password }}"   # stays a vault reference
+    POSTA_JWT_SECRET: "{{ .secrets.posta-jwt-secret }}"       # stays a vault reference
 ```
 
 `env` and `secretEnv` follow the same rules as an [application's](#application), including
@@ -994,7 +991,7 @@ contents are rendered as templates before they are applied. Four collections are
 
 | Reference | Resolves to |
 |---|---|
-| `{{ .databases.<name>.host }}` | A managed database's connection details. Also `.port`, `.user`, `.password`, `.name`, `.uri` (or its alias `.url`). Bare `{{ .databases.<name> }}` yields the URI. |
+| `{{ .databases.<name>.host }}` | A managed database's connection details. Also `.port`, `.user`, `.password`, `.name`, `.uri` (or its alias `.url`). Bare `{{ .databases.<name> }}` yields the URI. In `env`, the password and URI are kept as references to the database's managed secrets — see [secrets in env](#secrets-in-env). |
 | `{{ .applications.<name>.url }}` | Another application's address. Also `.host`, `.port`, `.scheme`. Bare `{{ .applications.<name> }}` yields the URL. |
 | `{{ .secrets.<name> }}` | A workspace secret. In `env` it is kept as a reference and resolved **at deploy** — see [secrets in env](#secrets-in-env). Elsewhere, its value is resolved at apply time. |
 | `{{ .inputs.<key> }}` | Marketplace templates only — see [creating a template](/docs/marketplace/creating-a-template). |
@@ -1076,9 +1073,26 @@ env:
 - **No `secretEnv` needed.** The stored value is a reference, not a secret. Listing the key under
   `secretEnv` anyway is allowed: the reference is then stored encrypted.
 
-A reference passed through a function, such as `{{ .secrets.key | base64 }}` or
-`{{ default "x" .secrets.key }}`, can't be resolved at deploy. It is resolved at apply time and
-stored as its value, so list that key under `secretEnv`; rotating the secret then needs another apply.
+**Database credentials work the same way.** Every managed database keeps its password and connection
+URL in the vault, as managed secrets named `db_<database>_<logical-db>_password` and `_url`. In `env`,
+`{{ .databases.<name>.password }}`, `.uri`, `.url` and the bare `{{ .databases.<name> }}` are stored as
+references to them, including inside a longer value:
+
+```yaml
+env:
+  DB_PASSWORD: "{{ .databases.shop-db.password }}"         # stored as ${{ secrets.db_shop_db_shop_db_password }}
+  JDBC_URL: "jdbc:{{ .databases.shop-db.uri }}?ssl=true"   # stored as jdbc:${{ secrets.db_shop_db_shop_db_url }}?ssl=true
+  DB_HOST: "{{ .databases.shop-db.host }}"                 # not a credential: stored as its value
+```
+
+The vault's **Used by** then lists the app, and a workspace moved with a
+[portable bundle](/docs/storage/backup-targets) resolves the references to the target's own database.
+The read-only user's credentials have no managed secret and are resolved at apply time.
+
+**Anything else that resolves a credential is stored encrypted.** A reference passed through a
+function, such as `{{ .secrets.key | base64 }}` or `{{ default "x" .secrets.key }}`, can't be resolved
+at deploy, and neither can a read-only password. These are resolved at apply time and the key is
+stored encrypted whether or not `secretEnv` lists it; rotating the secret then needs another apply.
 
 :::tip Outside env
 A Middleware `rule` and Config files resolve `{{ .secrets.NAME }}` at apply time; a Middleware `rule`
