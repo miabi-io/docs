@@ -99,6 +99,10 @@ the same thing on another install. Names resolve within the workspace only.
 - Images land under `pl_<pipeline-name>` in your workspace's registry namespace, kept apart from
   application images so a pipeline and an unrelated app of the same name never collide.
 
+Each build is tagged by the repository's [version policy](/docs/cicd/versioning): `v1.0.0`, then a
+patch bump per build, for a new pipeline. Pipelines created before versioning existed keep
+`run-<number>` tags until you enable it.
+
 :::note One source, not two
 A pipeline binds to an application **or** a repository, never both — each supplies the checkout, so
 together there is no answer to what a run clones. Miabi refuses the combination.
@@ -309,6 +313,7 @@ The runner exports run context to every step as environment variables:
 | `MIABI_IMAGE` | Image ref the `build` step produced (`repo:tag`) — set for steps **after** build |
 | `MIABI_IMAGE_DIGEST` | Immutable `repo@sha256:…` form of the same image |
 | `MIABI_IMAGE_REPOSITORY` | The repository a `build` step pushes to |
+| `MIABI_VERSION` / `MIABI_IMAGE_TAG` | The run's [version](/docs/cicd/versioning) (`1.4.3`) and the tag it renders to (`v1.4.3`), when the repository has a version policy |
 | `MIABI_COMMIT` | Resolved commit the workspace was checked out at |
 | `MIABI_REF` / `MIABI_BRANCH` | The ref and branch the run builds |
 | `MIABI_PIPELINE` | The pipeline's name |
@@ -479,6 +484,7 @@ A few things to know before you copy it:
 ## Related
 
 - [Build runners](/docs/cicd/runners)
+- [Versioning](/docs/cicd/versioning)
 - [Container registry](/docs/registry/overview)
 - [GitOps](/docs/cicd/gitops)
 - [Deploy on push](/docs/cicd/git-push-deploy)

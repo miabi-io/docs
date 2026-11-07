@@ -170,6 +170,7 @@ const sidebars: SidebarsConfig = {
         'cicd/cli',
         'cicd/mcp',
         'cicd/pipelines',
+        'cicd/versioning',
         'cicd/runners',
         'cicd/gitops',
         'cicd/manifest-reference',

@@ -49,6 +49,10 @@ Custom secrets are the ones **you** create and own.
 - **Delete** — allowed only when no app references the secret. If it's still in use, Miabi refuses
   and tells you to remove the references first, so a deploy can never break on a missing secret.
 
+An app references a secret through its own env, its [stack's shared env](/docs/applications/stacks#shared-environment)
+(unless the app overrides that key), or a [config](/docs/secrets/configs) it mounts. All three count
+for rotation and deletion.
+
 ## Generating a value
 
 Nobody should be inventing a database password by hand, and nothing should be routed through a
@@ -112,9 +116,11 @@ Beyond application and job environments, a secret can back:
   secret with `${{ secrets.NAME }}`. The value is read from the vault at every pull or clone, so
   rotating the secret rotates every credential referencing it. Both credential forms are in the
   add/edit dialog under **Use a secret**.
-- **Declarative manifests.** `{{ .secrets.NAME }}` resolves at apply time in an app's `env` and in a
-  `Registry` password — and a [`Secret` resource](/docs/cicd/manifest-reference#secret) can declare
-  or generate the value in the same bundle, so a manifest never has to carry one.
+- **Declarative manifests.** In an app's or stack's `env`, `{{ .secrets.NAME }}` is stored as the
+  reference `${{ secrets.NAME }}` and resolved at deploy, exactly like a variable set in the console
+  (see [secrets in env](/docs/cicd/manifest-reference#secrets-in-env)). A `Registry` password takes
+  either form. A [`Secret` resource](/docs/cicd/manifest-reference#secret) can declare or generate
+  the value in the same bundle, so a manifest never has to carry one.
 - **Configuration files.** A [config](/docs/secrets/configs#referencing-secrets-and-app-env)'s files
   can contain `${{ secrets.NAME }}`, resolved for each app that mounts the config when it deploys.
   Rotating the secret redeploys those apps too, and it can't be deleted while a mounted config still

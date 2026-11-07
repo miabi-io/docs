@@ -64,13 +64,13 @@ app; its `context` points the build at one directory.
 ## Wiring without credentials
 
 The manifests never write a secret into Git. Connection strings come from interpolation and are
-stored encrypted:
+stored encrypted; secrets stay references to the vault:
 
 ```yaml
 env:
   DB_URL: "{{ .databases.python-example-db.uri }}"   # resolved at apply time
-  APP_KEY: "{{ .secrets.laravel-app-key }}"           # a Secret with generate: true
-secretEnv: [DB_URL, APP_KEY]
+  APP_KEY: "{{ .secrets.laravel-app-key }}"           # a Secret with generate: true, resolved at deploy
+secretEnv: [DB_URL]
 ```
 
 See the [manifest reference](/docs/cicd/manifest-reference) for every kind and field.

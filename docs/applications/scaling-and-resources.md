@@ -49,6 +49,30 @@ own addresses in a cluster set to
 [DNS round-robin](/docs/nodes/cluster-mode#service-load-balancing). The app's detail page shows the
 **real nodes** its replicas are running on.
 
+The service runtime is also a [plan capability](/docs/workspaces/plans-and-quotas#capability-gates):
+on a plan that doesn't allow it, new apps are created as containers and an existing container app
+can't be switched to a service. Apps that already run as services keep running and stay editable.
+
+### Changing an app's runtime
+
+An existing app can move between the two runtimes from **App → Settings → Runtime**, or with
+`POST /workspaces/{ws}/apps/{id}/runtime` (`{"runtime": "service", "replicas": 3}`). The console runs a
+**dry run** first (`"dry_run": true` in the API) and lists what would stop the switch and what it changes:
+
+- **Blocked** when the target is a service and cluster mode is off, the plan doesn't allow it, or the
+  app has a GPU, devices or a privileged host mount; when a canary is in progress; and when the app is
+  managed by a manifest (GitOps or `miabi apply`), whose next sync would undo the switch. Change
+  `deployment.runtime` in the manifest instead.
+- **Warned** when replicas drop to 1 on the way to a container, when published host ports stop being
+  bound by a service, and when a node-local volume keeps a single-replica service on its node.
+
+A deployed app is redeployed to switch. The handover is **rolling**: the new runtime starts, the route
+moves to it, then the old container or service is removed. If the app mounts a node-local volume, the
+switch uses **recreate** instead, so the two runtimes never hold the volume at once, and the app stops
+briefly. If a rolling switch fails, the app stays on its previous runtime, which kept serving. An app
+that was never deployed only has its runtime saved. The settings update (`PATCH /apps/{id}`) refuses a
+runtime change with `409` and points to this endpoint.
+
 ## Single-node vs. multi-node
 
 How replicas are placed depends on your deployment:

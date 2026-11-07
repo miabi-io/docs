@@ -59,7 +59,7 @@ Besides feature flags, a license can carry two caps. Where it sets neither, Ente
 
 | Limit | Effect | Community |
 |---|---|---|
-| **Nodes** | Registering a node beyond the cap is refused. Nodes already registered keep working, and the License screen warns when usage is over the cap. | 3 |
+| **Nodes** | Registering a node beyond the cap is refused. The control plane's own host is not counted. Nodes already registered keep working, and the License screen warns when usage is over the cap. | 3 + control plane |
 | **Plans** | Creating a plan beyond the cap is refused. | 3 |
 
 [Storage classes](/docs/storage/storage-classes) are capped the same way, but by edition rather than
@@ -70,8 +70,8 @@ The commercial tiers set them as follows:
 
 | Tier | Nodes | Plans |
 |---|---|---|
-| Professional | 10 | 5 |
-| Business | 25 | 15 |
+| Professional | 10 + control plane | 5 |
+| Business | 25 + control plane | 15 |
 | Enterprise | Unlimited | Unlimited |
 
 The License screen shows current usage against both.
