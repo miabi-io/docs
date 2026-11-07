@@ -191,6 +191,7 @@ const sidebars: SidebarsConfig = {
         'operations/log-storage',
         'operations/audit-log',
         'operations/platform-settings',
+        'operations/migration',
         'operations/telemetry',
       ],
     },
