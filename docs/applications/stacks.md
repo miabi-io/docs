@@ -1,7 +1,7 @@
 ---
 sidebar_position: 8
 title: Stacks
-description: Group related applications compose-style within a workspace and manage them as one unit.
+description: Group related applications compose-style within a workspace, import them from a Docker Compose file, and manage them as one unit.
 ---
 
 # Stacks
@@ -27,6 +27,56 @@ A stack has two names, and only one of them can change:
   detach the stack from its own resources and make an apply create a duplicate. To use a different
   name, create a new stack and move the apps across.
 - **Display name** — the free-text label shown in the console. Change it whenever you like.
+
+## Importing a Docker Compose file
+
+Already have a `docker-compose.yml`? Turn it into a stack instead of recreating each service by hand.
+On **Stacks**, choose **Import Compose**, give the stack a name, pick a location, and paste the file.
+
+```yaml title="docker-compose.yml"
+services:
+  web:
+    image: miabi/guestbook:3.2.0
+    ports:
+      - "8080"
+    environment:
+      REDIS_URL: redis://cache:6379
+  cache:
+    image: redis:8-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - cache-data:/data
+volumes:
+  cache-data:
+```
+
+Miabi creates one application per service, inside the new stack:
+
+| Compose | Becomes |
+|---|---|
+| `image` | The app's image and tag. A service with only `build:` is skipped: build it, push the image, or [deploy it from Git](/docs/applications/deploy-from-git). |
+| `ports` | Declared container ports. A published host port (`"8443:443"`) becomes a [host-port request](/docs/security/security-center#host-ports) an admin approves, unless the workspace is privileged. One already in use is still filed, and the import names what holds it. |
+| `environment` | The app's environment variables, in map or list form. They are imported as plain variables: mark passwords and tokens as secrets afterwards. |
+| `command` | The app's command, in string or list form. |
+| `volumes` | A named volume becomes a Miabi [volume](/docs/storage/volumes) called `<stack>-<volume>`, shared by every service that mounts it. An anonymous volume (`/data`) gets one of its own. A bind mount (`./config:/etc/app`) is skipped. |
+
+Services reach each other by service name on the stack's network, as they did under Compose, so
+`redis://cache:6379` keeps working. Every app and volume lands on the same node.
+
+Everything else in the file is ignored: `depends_on`, `healthcheck`, `restart`, `networks`,
+`env_file`, `secrets`, `deploy`, `labels`, and `${VAR}` interpolation, which is not expanded. A port
+range is skipped. Write `ports` and `volumes` in their short form (`"8080:80"`, `data:/data`): the
+long form (`target:` / `published:`) is refused as invalid Compose. The import reports what it created
+and what it skipped.
+
+Nothing is deployed yet. Review the apps, mark sensitive variables as secrets, add
+[routes](/docs/routes/overview) for the services you want public, then **Deploy all** from the stack
+page.
+
+:::tip Compose projects already running
+To bring containers you already run with Docker Compose under Miabi without redeploying them, use
+[Docker Import](/docs/nodes/docker-import) instead: it adopts the running containers in place.
+:::
 
 ## Shared environment
 
