@@ -1,7 +1,7 @@
 ---
 sidebar_position: 6
 title: Using Traefik instead of Goma
-description: Run Miabi behind Traefik as an alternative edge proxy, and the features that require Goma Gateway.
+description: Run Miabi behind Traefik as an alternative edge proxy, the features that require Goma Gateway, and securing the Miabi console route on Goma.
 ---
 
 # Using Traefik instead of Goma
@@ -103,3 +103,80 @@ for traffic visibility instead.
   This is the recommended path.
 - **Choose Traefik** if you already run Traefik as your edge and prefer label-based routing, and you
   can accept manual per-app labels and the Recreate deploy strategy.
+
+## Securing the Miabi console route
+
+On the default Goma stack, the route that serves the Miabi console and API is not managed from the
+console: it lives in the gateway's base config, `goma.yml`. The file ships with three opt-in
+protections for that route, written out but switched off so a fresh install stays reachable.
+
+| Install | File | Apply a change with |
+|---|---|---|
+| Stack (`miabi setup`) | `/etc/miabi/goma.yml` | `sudo miabi stack restart miabi-gateway` |
+| Compose | `goma.yml` beside `compose.yaml` | `docker compose restart gateway` |
+
+Goma does not hot-reload this file, so a restart is required. On a stack install the config is
+validated before the gateway is stopped, so a broken edit cannot take it down. Once you edit the
+file, upgrades stop replacing it with the shipped default, so later improvements to that default
+reach you only if you merge them yourself.
+
+All three protections attach to the `miabi` route under `gateway.routes`, whose `middlewares` list
+holds them as commented lines:
+
+```yaml
+      middlewares:
+        - miabi-https-redirect
+        #- miabi-ip-allowlist
+        #- miabi-auth-ratelimit
+        #- miabi-block-admin
+```
+
+### Restrict the console to trusted IPs
+
+1. In the top-level `middlewares` list, replace the example `sourceRanges` of `miabi-ip-allowlist`
+   with your office, VPN or admin addresses (IPv4 and IPv6, single hosts or CIDRs).
+2. Uncomment `- miabi-ip-allowlist` on the `miabi` route.
+
+Every other address is refused for the whole console and API. Your [nodes](/docs/nodes/cluster-mode)
+and runners call the same API, so include their addresses, or move them to a separate control
+hostname (below).
+
+### Rate-limit sign-in
+
+Uncomment `- miabi-auth-ratelimit`. It limits only the credential endpoints (sign-in, token sign-in,
+password reset and two-factor verification) to 10 requests a minute per client, with a burst of 5,
+and bans a client for 15 minutes after repeated violations. Tune the numbers in its `rule`.
+
+:::caution Behind a proxy or CDN
+Both of these act on the client IP. If Cloudflare, nginx or a load balancer sits in front of the
+gateway, configure the `proxy:` block in the same file first, with `trustedProxies` set, so Goma
+sees real client addresses. Otherwise every request appears to come from the proxy: the allowlist
+sees one address and all clients share one rate-limit bucket. See
+[Goma Gateway 0.14 notes](/docs/upgrades/upgrading#goma-gateway-014--forwarded-headers-are-only-believed-from-a-trusted-proxy).
+:::
+
+### Move administration to a separate hostname
+
+You can serve workspaces on the public panel hostname and keep platform administration on a
+second, control hostname, the one your nodes and runners dial back on (the install's control URL).
+This takes two blocks, enabled together:
+
+1. Uncomment the `miabi-control` route under `gateway.routes` and set its `hosts` to your control
+   hostname. It must resolve from your nodes, and from the browsers you administer from. It does not
+   have to be public, but a certificate from Let's Encrypt needs a name it can validate from the
+   internet; for a private name, serve it over plain HTTP or give it a certificate of your own.
+2. Uncomment the `miabi-block-admin` middleware in the top-level `middlewares` list, then
+   `- miabi-block-admin` on the `miabi` route.
+
+The panel hostname then answers `404` for `/admin` pages and the `/api/v1/admin/` API, while the
+control hostname serves everything.
+
+:::danger Never enable the admin block on its own
+The gateway serves only the hostnames its routes name. With `miabi-block-admin` on and no
+`miabi-control` route, there is nowhere left to administer the platform from, and the only fix is
+editing `goma.yml` on the host. If you only want to limit who reaches administration, the IP
+allowlist is the gentler option and needs no second hostname.
+:::
+
+The `miabi-control` route is also what you need, on its own, when your control URL is a different
+hostname from the panel's: without a route the gateway does not answer on that name at all.

@@ -69,6 +69,18 @@ Reference the injected connection URL (`DB_URL`) instead of hardcoding credentia
 app to another database needs no code change.
 :::
 
+## Read-only user (PostgreSQL) {#read-only-user}
+
+A PostgreSQL database can have a second user with `SELECT` on every table, current and future —
+for a BI tool, a reporting job, or anyone who should read the data but never change it. On the
+database's detail page, choose **Add a read-only user** on the logical database; its credentials are
+shown with the connection details. **Remove the read-only user** drops it.
+
+Linking the database to an app still injects the main user only. To hand an app the read-only
+credentials, reference them from its environment — in a [manifest](/docs/cicd/manifest-reference#database),
+`readOnlyUser: true` declares the user and `{{ .databases.<name>.readonly_uri }}` (also
+`.readonly_user` and `.readonly_password`) resolves them.
+
 ## libSQL token auth {#libsql-token-auth}
 
 **libSQL** instances don't use a username/password. Instead, Miabi generates a per-instance

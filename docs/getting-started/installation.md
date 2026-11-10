@@ -169,7 +169,10 @@ which renames it.
 | `MIABI_SUBNET` | `--subnet` | CIDR for the shared app network (default `10.63.0.0/16`). |
 | `MIABI_INTERNAL_SUBNET` | `--internal-subnet` | CIDR for [the platform's private network](/docs/networking/networks-and-subnets#the-platforms-private-network) — control plane, database, cache (default `10.62.0.0/16`). |
 | `MIABI_NO_HOST_PROC` | `--no-host-proc` | Do **not** bind the host's `/proc`. See below. |
-| `MIABI_CONFIG_FILE` | `--file` | Where the manifest lives (default `/etc/miabi/miabi.yaml`). `MIABI_ETC` sets its directory. |
+| `MIABI_ETC` | — | Installer only: the directory the manifest is written to (default `/etc/miabi`, or `~/.miabi` with `--non-root`). |
+| `MIABI_CONFIG_FILE` | `--file` | Where `miabi setup` reads the manifest (default `/etc/miabi/miabi.yaml`). The install script ignores it and always uses `$MIABI_ETC/miabi.yaml`. |
+| `MIABI_BIN_DIR` | — | Installer only: where the `miabi` CLI is installed (default `/usr/local/bin`, or `~/.local/bin` with `--non-root`). |
+| `MIABI_SKIP_DOCKER_INSTALL` | — | Installer only: `1` never installs Docker; the preflight fails if it is missing. |
 | `MIABI_FORCE_STACK` | — | Install even though a Compose stack is present. See the caution above. |
 | `MIABI_CLI_VERSION` | — | Which `miabi` CLI release to install (default: the newest stable). |
 | `MIABI_CLI_BASE_URL` | — | Fetch the CLI from a mirror instead of the GitHub release — an internal artifact store for an air-gapped install. Must serve the same archive and `checksums.txt` names. |
@@ -435,7 +438,9 @@ docker run --rm -it \
 
 `install`, `upgrade`, `restart`, `status` and `uninstall` all run this way. They are the same
 commands as `miabi setup` / `miabi upgrade` / `miabi stack …` — one implementation, two front-ends —
-so neither path can drift from the other, flags included:
+so neither path can drift from the other. Two differences: the image's `install` takes no
+`--version` (the image tag *is* the version), and its local database dumps are `db-backup`,
+`db-backups` and `db-restore` rather than `stack backup …`:
 
 ```bash
 # alias it once and the day-two commands are short

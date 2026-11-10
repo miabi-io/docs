@@ -5,19 +5,54 @@ import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import Layout from '@theme/Layout';
 import Heading from '@theme/Heading';
 import CodeBlock from '@theme/CodeBlock';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
 import styles from './index.module.css';
 
 const GITHUB_URL = 'https://github.com/miabi-io/miabi';
+const DEMO_URL = 'https://demo.miabi.io';
 
 const INSTALL_EXAMPLE = `curl -fsSL https://get.miabi.io | sudo MIABI_DOMAIN=miabi.example.com \\
   MIABI_ADMIN_EMAIL=you@example.com bash`;
 
-const INSTALL_NOTE = `# Then open your domain and sign in as the
-# admin — the installer prints the password.
-# Create a workspace, deploy an app, attach a
-# domain, and get automatic SSL. No Docker
-# commands, no CLI required.`;
+const MANIFEST_EXAMPLE = `apiVersion: miabi.io/v1
+kind: Database
+metadata: { name: shop-db }
+spec:
+  engine: postgres
+  version: "17-alpine"
+---
+apiVersion: miabi.io/v1
+kind: Application
+metadata: { name: shop }
+spec:
+  image: ghcr.io/acme/shop:2.4.0
+  ports:
+    - { name: http, container: 8080 }
+  env:
+    DATABASE_URL: "{{ .databases.shop-db.url }}"
+  secretEnv: [DATABASE_URL]
+  deployment:
+    strategy: canary
+    replicas: 3
+---
+apiVersion: miabi.io/v1
+kind: Route
+metadata: { name: shop }
+spec:
+  hosts: [shop.example.com]
+  app: shop
+  port: http`;
+
+const CLI_EXAMPLE = `miabi login --server https://miabi.example.com
+
+# Preview the change, then converge the workspace to it
+miabi apply -f miabi/ --dry-run
+miabi apply -f miabi/
+
+# Watch the rollout
+miabi logs shop --follow`;
 
 function HomepageHeader() {
   return (
@@ -26,11 +61,11 @@ function HomepageHeader() {
       <div className={clsx('container', styles.heroInner)}>
         <span className={styles.badge}>
           <span className={styles.badgeDot} aria-hidden="true" />
-          Open Source &amp; Self-Hosted
+          Open source &amp; self-hosted
         </span>
 
         <p className={styles.heroKicker}>
-          Docker Compose isn’t enough. Kubernetes is overkill.
+          Kubernetes is overkill. Docker Compose isn’t enough anymore.
         </p>
 
         <Heading as="h1" className={styles.heroTitle}>
@@ -39,21 +74,21 @@ function HomepageHeader() {
         </Heading>
 
         <p className={styles.heroSubtitle}>
-          Miabi deploys apps from a Git repo or Docker image onto servers you own — with automatic
-          SSL, managed databases, backups, scaling, and monitoring. The simplicity of Heroku, on
-          your own infrastructure, with no vendor lock-in.
+          Deploy from a Git repo, a container image, or a template onto servers you own. Miabi
+          handles builds, domains, automatic TLS, databases, backups, zero-downtime and canary
+          releases, and GitOps, from one web console or one YAML file.
         </p>
 
         <div className={styles.buttons}>
           <Link
             className="button button--primary button--lg"
-            to="/docs/getting-started/introduction">
-            Get Started
+            to="/docs/getting-started/installation">
+            Install Miabi
           </Link>
           <Link
             className="button button--secondary button--lg"
             to="/docs/getting-started/quickstart">
-            Quick Start
+            Deploy your first app
           </Link>
           <Link
             className={clsx('button button--secondary button--outline button--lg', styles.githubButton)}
@@ -65,21 +100,134 @@ function HomepageHeader() {
           </Link>
         </div>
 
-        <div className={styles.stats}>
+        <p className={styles.heroDemo}>
+          Or <a href={DEMO_URL}>try the live demo</a> first.
+        </p>
+
+        <ul className={styles.stats}>
           {[
-            {value: 'API-First', label: 'Every feature is an API'},
-            {value: 'No Kubernetes', label: 'One VPS to multi-node'},
-            {value: 'Multi-Tenant', label: 'Workspaces + RBAC'},
-            {value: 'AGPL-3.0', label: 'Open core'},
+            {value: 'One binary', label: 'API + web console'},
+            {value: 'Docker & Swarm', label: 'One VPS to many clusters'},
+            {value: 'Multi-tenant', label: 'Workspaces, RBAC, quotas'},
+            {value: 'API-first', label: 'REST, CLI, Terraform, MCP'},
           ].map((stat) => (
-            <div key={stat.value} className={styles.statItem}>
+            <li key={stat.value} className={styles.statItem}>
               <div className={styles.statValue}>{stat.value}</div>
               <div className={styles.statLabel}>{stat.label}</div>
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
     </header>
+  );
+}
+
+type Row = {label: string; compose: string; miabi: string; k8s: string};
+
+const GAP_ROWS: Row[] = [
+  {label: 'Zero-downtime and canary releases', compose: 'No', miabi: 'Built in', k8s: 'With a service mesh'},
+  {label: 'One-click rollback', compose: 'No', miabi: 'Built in', k8s: 'Built in'},
+  {label: 'GitOps reconciliation', compose: 'No', miabi: 'Built in', k8s: 'Argo CD or Flux'},
+  {label: 'Domains and automatic TLS', compose: 'By hand', miabi: 'Built in', k8s: 'Ingress + cert-manager'},
+  {label: 'Managed databases and backups', compose: 'By hand', miabi: 'Built in', k8s: 'Operators'},
+  {label: 'Teams, tenants and quotas', compose: 'No', miabi: 'Built in', k8s: 'Namespaces + policy'},
+  {label: 'What you operate', compose: 'One file', miabi: 'One binary on Docker', k8s: 'A cluster and a team'},
+];
+
+function TheGap() {
+  return (
+    <section className={styles.section}>
+      <div className="container">
+        <div className={styles.sectionHeader}>
+          <p className={styles.eyebrow}>Why Miabi</p>
+          <Heading as="h2" className={styles.sectionTitle}>
+            The middle ground you were missing
+          </Heading>
+          <p className={styles.sectionLead}>
+            You get the parts of Kubernetes you actually wanted, on plain Docker, without
+            Kubernetes to run.
+          </p>
+        </div>
+
+        <div className={styles.tableWrap}>
+          <table className={styles.gapTable}>
+            <thead>
+              <tr>
+                <th scope="col"><span className={styles.srOnly}>Capability</span></th>
+                <th scope="col">Docker Compose</th>
+                <th scope="col" className={styles.gapMiabi}>Miabi</th>
+                <th scope="col">Kubernetes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {GAP_ROWS.map((r) => (
+                <tr key={r.label}>
+                  <th scope="row">{r.label}</th>
+                  <td>{r.compose}</td>
+                  <td className={styles.gapMiabi}>{r.miabi}</td>
+                  <td>{r.k8s}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function WaysToShip() {
+  return (
+    <section className={clsx(styles.section, styles.sectionMuted)}>
+      <div className="container">
+        <div className={styles.sectionHeader}>
+          <p className={styles.eyebrow}>Your workflow</p>
+          <Heading as="h2" className={styles.sectionTitle}>
+            Click, declare, or script it
+          </Heading>
+          <p className={styles.sectionLead}>
+            The console, the manifests, and the CLI all drive the same API, so you can start in the
+            browser and move to Git when you're ready.
+          </p>
+        </div>
+
+        <div className={styles.tabsWrap}>
+          <Tabs groupId="ship" queryString>
+            <TabItem value="console" label="Web console" default>
+              <ol className={styles.steps}>
+                <li>
+                  <strong>Create an application</strong> from a Git repo, a container image, or a
+                  marketplace template.
+                </li>
+                <li>
+                  <strong>Attach a domain.</strong> Miabi verifies it and issues a TLS certificate
+                  automatically.
+                </li>
+                <li>
+                  <strong>Add a database</strong> and wire its credentials into the app's environment.
+                </li>
+                <li>
+                  <strong>Deploy.</strong> Each release is kept, so a rollback is one click away.
+                </li>
+              </ol>
+              <Link to="/docs/getting-started/quickstart">Follow the quick start →</Link>
+            </TabItem>
+            <TabItem value="manifest" label="Manifest">
+              <CodeBlock language="yaml" title="miabi/shop.yaml">
+                {MANIFEST_EXAMPLE}
+              </CodeBlock>
+              <Link to="/docs/cicd/manifest-reference">Read the manifest reference →</Link>
+            </TabItem>
+            <TabItem value="cli" label="CLI">
+              <CodeBlock language="bash" title="Terminal">
+                {CLI_EXAMPLE}
+              </CodeBlock>
+              <Link to="/docs/cicd/gitops">Set up GitOps →</Link>
+            </TabItem>
+          </Tabs>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -93,114 +241,124 @@ function QuickStart() {
             From a fresh server to a running PaaS
           </Heading>
           <p className={styles.sectionLead}>
-            The installer adds Docker if needed, fetches the production stack,
-            generates secrets, and brings everything up behind Goma Gateway with
-            automatic TLS.
+            The installer adds Docker if needed, generates secrets, and starts Miabi behind Goma
+            Gateway with automatic TLS. It also runs alongside containers you already have.
           </p>
         </div>
 
-        <div className={styles.codeColumns}>
+        <div className={styles.installBlock}>
           <CodeBlock language="bash" title="Install Miabi">
             {INSTALL_EXAMPLE}
-          </CodeBlock>
-          <CodeBlock language="bash" title="What happens next">
-            {INSTALL_NOTE}
           </CodeBlock>
         </div>
 
         <div className={styles.codeCta}>
-          <Link to="/docs/getting-started/installation">
-            Read the full installation guide →
-          </Link>
+          <Link to="/docs/getting-started/installation">Full installation guide</Link>
+          <span aria-hidden="true">·</span>
+          <Link to="/docs/getting-started/existing-server">Install on a server you already use</Link>
+          <span aria-hidden="true">·</span>
+          <Link to="/docs/getting-started/air-gapped">Air-gapped install</Link>
         </div>
       </div>
     </section>
   );
 }
 
-type FeatureItem = {
-  title: string;
-  description: string;
-  link: string;
-};
+type FeatureItem = {title: string; description: string; link: string};
+type FeatureGroup = {name: string; items: FeatureItem[]};
 
-const FEATURES: FeatureItem[] = [
+const FEATURE_GROUPS: FeatureGroup[] = [
   {
-    title: 'Applications & Deployments',
-    description: 'Deploy from Git, a Docker image, or a template. Builds, releases, one-click rollback, zero-downtime updates, and per-app resource limits.',
-    link: '/docs/applications/overview',
+    name: 'Ship',
+    items: [
+      {
+        title: 'Applications',
+        description: 'Deploy from Git (Dockerfile or buildpacks), an image, or a template. Releases, rollbacks, jobs, stacks, and environments.',
+        link: '/docs/applications/overview',
+      },
+      {
+        title: 'Rolling and canary releases',
+        description: 'Old containers keep serving until the new release is healthy, and traffic shifts to it gradually. No service mesh.',
+        link: '/docs/applications/canary-deployments',
+      },
+      {
+        title: 'GitOps and manifests',
+        description: 'Declare a workspace in miabi.io/v1 YAML. Plan, apply, prune, or let a Git source keep it in sync.',
+        link: '/docs/cicd/gitops',
+      },
+      {
+        title: 'Pipelines and runners',
+        description: 'Pipeline-as-code with dedicated build runners, version policies, git-push deploy, and signed webhooks.',
+        link: '/docs/cicd/pipelines',
+      },
+      {
+        title: 'Marketplace',
+        description: 'Versioned templates such as WordPress, Ghost, Nextcloud, n8n, and Gitea, with release notes and safe upgrades.',
+        link: '/docs/marketplace/overview',
+      },
+    ],
   },
   {
-    title: 'Domains, Networking & TLS',
-    description: 'DNS-verified domains, routing through Goma Gateway, automatic HTTP-01 SSL, and managed wildcard / DNS-01 certificates.',
-    link: '/docs/networking/domains',
+    name: 'Run',
+    items: [
+      {
+        title: 'Domains, routing, and TLS',
+        description: 'DNS-verified domains, automatic certificates (HTTP-01, DNS-01, wildcard), and 20+ gateway middlewares.',
+        link: '/docs/networking/domains',
+      },
+      {
+        title: 'Databases',
+        description: 'PostgreSQL, MySQL, MariaDB, Redis, MongoDB, and libSQL with managed credentials and in-place upgrades.',
+        link: '/docs/databases/overview',
+      },
+      {
+        title: 'Storage and backups',
+        description: 'Volumes, storage classes, and scheduled database and volume backups to S3-compatible storage.',
+        link: '/docs/storage/backups',
+      },
+      {
+        title: 'Built-in registry',
+        description: 'A private registry namespaced per workspace, on local disk or S3, distributed to every node.',
+        link: '/docs/registry/overview',
+      },
+      {
+        title: 'Nodes and clusters',
+        description: 'Start on one server. Add nodes over an outbound agent tunnel, or run Docker Swarm clusters as locations.',
+        link: '/docs/nodes/overview',
+      },
+    ],
   },
   {
-    title: 'Databases',
-    description: 'Provision PostgreSQL, MySQL, MariaDB, Redis, and MongoDB with managed credentials and in-place version upgrades.',
-    link: '/docs/databases/overview',
-  },
-  {
-    title: 'Storage & Backups',
-    description: 'Persistent volumes plus scheduled and manual database and volume backups to local, MinIO, or S3.',
-    link: '/docs/storage/backups',
-  },
-  {
-    title: 'Marketplace',
-    description: 'One-click installs from versioned official templates: WordPress, Ghost, Nextcloud, n8n, Gitea, Umami, and more.',
-    link: '/docs/marketplace/overview',
-  },
-  {
-    title: 'Multi-node & Clustering',
-    description: 'Add remote Docker hosts via an outbound agent tunnel, with optional auto-detected Docker Swarm cluster mode.',
-    link: '/docs/nodes/overview',
-  },
-  {
-    title: 'CI/CD & GitOps',
-    description: 'Pipeline-as-code, declarative GitOps reconciliation from miabi.io/v1 manifests, git-push deploy, and signed webhooks.',
-    link: '/docs/cicd/pipelines',
-  },
-  {
-    title: 'Monitoring & Operations',
-    description: 'Container CPU/memory/disk metrics with retained history, a Prometheus client, and an append-only audit log.',
-    link: '/docs/operations/monitoring',
-  },
-  {
-    title: 'Workspace Analytics',
-    description: 'HTTP traffic, latency percentiles, and cookieless web analytics for every app — derived from the gateway, so there is nothing to instrument.',
-    link: '/docs/operations/analytics',
-  },
-  {
-    title: 'Workspaces & Teams',
-    description: 'Multi-tenant workspaces own every resource, with members, invitations, organizations, and role-based access.',
-    link: '/docs/workspaces/overview',
-  },
-  {
-    title: 'Security',
-    description: 'JWT sessions with revocation, API tokens, 2FA, OAuth/OIDC SSO, and per-workspace encryption with key rotation.',
-    link: '/docs/security/authentication',
-  },
-  {
-    title: 'RBAC & Plans',
-    description: 'Owner, Admin, Developer, and Viewer roles enforced in middleware and by workspace scoping, plus per-workspace quotas.',
-    link: '/docs/workspaces/roles-and-permissions',
-  },
-  {
-    title: 'Open Core',
-    description: 'AGPL-3.0 and fully functional Community edition, with Enterprise features unlocked by a signed, offline license key.',
-    link: '/docs/editions/community-vs-enterprise',
+    name: 'Operate and secure',
+    items: [
+      {
+        title: 'Monitoring and analytics',
+        description: 'Container metrics, logs, request latency, and cookieless web analytics, all derived from the gateway.',
+        link: '/docs/operations/analytics',
+      },
+      {
+        title: 'Alerts',
+        description: 'Stateful alerts on app events with deduplication and auto-resolve, in every member’s inbox.',
+        link: '/docs/operations/alerts',
+      },
+      {
+        title: 'Workspaces and teams',
+        description: 'Every resource belongs to a workspace, with members, organizations, roles, plans, and quotas.',
+        link: '/docs/workspaces/overview',
+      },
+      {
+        title: 'Identity and security',
+        description: 'SSO, passkeys, 2FA, API tokens, service accounts, secrets encrypted per workspace, and an audit log.',
+        link: '/docs/security/authentication',
+      },
+      {
+        title: 'Migration and upgrades',
+        description: 'Move workspaces between installs, import running containers, and upgrade Miabi in place.',
+        link: '/docs/operations/migration',
+      },
+    ],
   },
 ];
-
-function Feature({title, description, link}: FeatureItem) {
-  return (
-    <Link to={link} className={styles.card}>
-      <Heading as="h3" className={styles.cardTitle}>{title}</Heading>
-      <p className={styles.cardDescription}>{description}</p>
-      <span className={styles.cardArrow} aria-hidden="true">→</span>
-    </Link>
-  );
-}
 
 function Features() {
   return (
@@ -209,47 +367,69 @@ function Features() {
         <div className={styles.sectionHeader}>
           <p className={styles.eyebrow}>Features</p>
           <Heading as="h2" className={styles.sectionTitle}>
-            Everything you need to run apps on your own server
+            Everything you need to run apps on your own servers
           </Heading>
-          <p className={styles.sectionLead}>
-            A complete PaaS — applications, domains, TLS, databases, storage,
-            backups, a marketplace, multi-node clustering, CI/CD, monitoring,
-            teams, and security — driven entirely from the web console.
-          </p>
         </div>
 
-        <div className={styles.featureGrid}>
-          {FEATURES.map((feature) => (
-            <Feature key={feature.title} {...feature} />
-          ))}
-        </div>
+        {FEATURE_GROUPS.map((group) => (
+          <div key={group.name} className={styles.featureGroup}>
+            <Heading as="h3" className={styles.groupTitle}>{group.name}</Heading>
+            <div className={styles.featureGrid}>
+              {group.items.map((f) => (
+                <Link key={f.title} to={f.link} className={styles.card}>
+                  <span className={styles.cardTitle}>{f.title}</span>
+                  <p className={styles.cardDescription}>{f.description}</p>
+                  <span className={styles.cardArrow} aria-hidden="true">→</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     </section>
   );
 }
 
-function CallToAction() {
+const START_HERE: FeatureItem[] = [
+  {title: 'New to Miabi', description: 'What it is and how the pieces fit.', link: '/docs/getting-started/introduction'},
+  {title: 'Coming from Docker Compose', description: 'Import running containers or deploy a stack.', link: '/docs/nodes/docker-import'},
+  {title: 'Automating', description: 'CLI, manifests, GitHub Actions, and Terraform.', link: '/docs/cicd/cli'},
+  {title: 'Running the platform', description: 'Nodes, settings, backups, and upgrades.', link: '/docs/administration/platform-admin'},
+];
+
+function StartHere() {
   return (
     <section className={styles.section}>
       <div className="container">
+        <div className={styles.sectionHeader}>
+          <p className={styles.eyebrow}>Start here</p>
+          <Heading as="h2" className={styles.sectionTitle}>
+            Pick your path
+          </Heading>
+        </div>
+        <div className={styles.pathGrid}>
+          {START_HERE.map((p) => (
+            <Link key={p.title} to={p.link} className={styles.pathCard}>
+              <span className={styles.cardTitle}>{p.title}</span>
+              <p className={styles.cardDescription}>{p.description}</p>
+            </Link>
+          ))}
+        </div>
+
         <div className={styles.cta}>
           <Heading as="h2" className={styles.ctaTitle}>
             Ready to run your own platform?
           </Heading>
           <p className={styles.ctaLead}>
-            Install Miabi on a fresh Linux host and deploy your first app in
-            minutes — no Docker commands, no CLI required.
+            Community edition is AGPL-3.0 and fully functional. Enterprise features unlock with an
+            offline license key.
           </p>
           <div className={styles.buttons}>
-            <Link
-              className="button button--primary button--lg"
-              to="/docs/getting-started/installation">
+            <Link className="button button--primary button--lg" to="/docs/getting-started/installation">
               Install Miabi
             </Link>
-            <Link
-              className="button button--secondary button--lg"
-              to="/docs/getting-started/quickstart">
-              Quick Start
+            <Link className="button button--secondary button--lg" to="/docs/editions/community-vs-enterprise">
+              Compare editions
             </Link>
           </div>
         </div>
@@ -263,12 +443,14 @@ export default function Home(): ReactNode {
   return (
     <Layout
       title="Documentation"
-      description={`${siteConfig.title} — ${siteConfig.tagline}`}>
+      description={`${siteConfig.title}: ${siteConfig.tagline}`}>
       <HomepageHeader />
       <main>
+        <TheGap />
+        <WaysToShip />
         <QuickStart />
         <Features />
-        <CallToAction />
+        <StartHere />
       </main>
     </Layout>
   );

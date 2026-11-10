@@ -11,9 +11,48 @@ on startup — see [Overview](/docs/upgrades/overview) for what happens while it
 
 ## Back up first
 
-:::caution
-**Always back up your database before upgrading**, and especially before a major-version upgrade. Migrations modify your schema and data in place. A backup is your only way back if something goes wrong — see [Backups](/docs/storage/backups).
-:::
+Migrations modify your schema and data in place, and Miabi does **not** dump the database for you
+before an upgrade. A rolled-back image does not undo a migration, so a dump taken just before is your
+way back. On a stack install, take one from the host:
+
+```bash
+sudo miabi stack backup                      # writes /etc/miabi/backups/miabi-<version>-<time>.dump
+sudo miabi stack backup --dir /mnt/backups   # or somewhere else
+sudo miabi stack backups                     # list the dumps
+```
+
+This is a `pg_dump` of the control-plane database only: not volumes, certificates, tenant data or
+the manifest. It needs only PostgreSQL running, not the panel. The dump's secrets decrypt only with
+the encryption key in `/etc/miabi/miabi.yaml`, so keep a copy of that file with it. For off-host
+recovery of the whole platform, use [Platform backup](/docs/administration/platform-backup); for
+what runs inside workspaces, see [Backups](/docs/storage/backups).
+
+### Restoring a dump
+
+```bash
+sudo miabi stack restore miabi-%MIABI_VERSION%-20261017T120000Z.dump
+```
+
+Give a path, or a bare name from `stack backups`. Miabi stops the control plane, loads the dump into
+a scratch database, swaps it in only once it loaded cleanly, and starts the control plane again.
+Everything written since the dump is replaced.
+
+- The current database is dumped first, labelled `pre-restore`, so a restore can itself be undone.
+  The five newest `pre-restore` dumps are kept; dumps you took yourself are never deleted.
+- A dump taken by a **newer** Miabi than the one running is refused, since the control plane only
+  migrates forward. Upgrade to that version first, or pass `--force`.
+- `--yes` skips the confirmation prompt.
+
+If you run the installer image instead of the CLI, the same commands are `db-backup`, `db-backups`
+and `db-restore`. Their default directory, `backups/` beside the manifest, is inside the `/etc/miabi`
+mount, so the dumps land on the host:
+
+```bash
+docker run --rm -it \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v /etc/miabi:/etc/miabi \
+  miabi/miabi:%MIABI_VERSION% db-backup
+```
 
 ## Upgrade procedure
 
@@ -103,7 +142,7 @@ for a fresh [install](/docs/getting-started/installation#install-options).
 - Pass the **same `MIABI_DOMAIN`** you installed with. `setup` writes it to the manifest, so a
   different one moves the panel to that hostname.
 - `setup` recreates changed containers directly. Unlike `miabi upgrade`, it does **not** roll back
-  automatically when the new control plane fails to come up healthy — back up first, and use
+  automatically when the new control plane fails to come up healthy — [back up first](#back-up-first), and use
   `miabi upgrade` when you want the rollback.
 :::
 
@@ -127,8 +166,8 @@ rolled-back   … rolled back to miabi/miabi:1.3.0, which is running
 :::caution A rollback is recovery, not undo
 Restoring the previous **image** does not undo a schema **migration** the new version already
 applied. Miabi's migrations are additive, so an older binary against a newer schema generally works —
-but the supported recovery path for a genuinely bad upgrade is still to restore the pre-upgrade
-backup. See [Downgrades](/docs/upgrades/overview#downgrades-are-not-supported).
+but the supported recovery path for a genuinely bad upgrade is still to
+[restore the pre-upgrade dump](#restoring-a-dump). See [Downgrades](/docs/upgrades/overview#downgrades-are-not-supported).
 :::
 
 ### Restarting without upgrading
@@ -254,5 +293,6 @@ topologies — needs no change. The connection really is HTTPS, so no forwarded 
 ## Where to go next
 
 - [Overview](/docs/upgrades/overview) — update notifications and the migration model.
-- [Backups](/docs/storage/backups) — restoring the pre-upgrade backup is the supported recovery path.
+- [Back up first](#back-up-first) — restoring the pre-upgrade dump is the supported recovery path.
+- [Platform backup](/docs/administration/platform-backup) — off-host recovery of the whole platform.
 - [Platform Settings](/docs/operations/platform-settings) — instance-wide configuration.

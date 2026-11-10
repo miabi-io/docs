@@ -31,7 +31,10 @@ has these top-level sections, all optional except `metadata`:
   [stack](/docs/applications/stacks). A template with more than one application is always installed
   as a stack; declaring `stack` makes a single-app template one too.
 - **`applications`** — the app(s) to deploy, with their image, tag, command, env, secretEnv, ports,
-  mounts, resources, and healthcheck.
+  mounts, resources, healthcheck, and `restartPolicy` (`no`, `always`, `unless-stopped` or
+  `on-failure`).
+- **`routes`** — public routes created at install, each pointing an app's port at a hostname the
+  installer typed in (see [below](#routes)).
 
 A template must declare at least one application or database. Resources a template creates are named
 after the **install**, not the template: installing it as `shop` creates a volume `shop-data` and a
@@ -199,6 +202,32 @@ working `Project` manifest, turning it into a template is mostly a matter of rep
 values with `{{ .inputs.* }}` fields and adding the `metadata` block.
 :::
 
+## Routes
+
+A template can expose its app at install time instead of leaving the user to add a route afterwards.
+The hostname must come from an input, so a template can never claim a name the installer didn't
+choose:
+
+```yaml
+inputs:
+  - key: public_url
+    label: Public URL
+    placeholder: https://blog.example.com
+routes:
+  - app: web
+    host: "{{ .inputs.public_url }}"   # a URL or a bare hostname; only the hostname is kept
+    port: 2368                         # optional; the app's first declared port when omitted
+```
+
+The app must declare at least one port, and `port`, when set, must be one of them. A literal
+hostname, an unknown app, or the same app and host twice is refused when the template is validated.
+
+A route never blocks an install. When it can't be created, the install finishes and the report says
+why: no public URL was given, the value isn't a public hostname (`localhost`, an IP address, a
+single label), its domain isn't registered in the workspace, or another route already uses the
+host. A route whose domain is still unverified is created and goes live once the domain is verified.
+Routes are named after the install and the app (`shop-web`), with a numeric suffix if taken.
+
 ## Shipping configuration files
 
 Plenty of apps can't be configured through environment variables alone — nginx wants an `nginx.conf`,
@@ -271,6 +300,9 @@ encrypted.
 Official and community templates live in the marketplace repository on GitHub:
 
 **[github.com/miabi-io/marketplace](https://github.com/miabi-io/marketplace)**
+
+If your project's README points people at its template, a [Deploy on Miabi badge](/docs/development/badges)
+makes the link easy to spot.
 
 The quickest way is from Miabi itself: in **Marketplace → Import**, or on a custom template's page,
 select **Submit to marketplace**. It opens a prefilled submission form on GitHub with your manifest;

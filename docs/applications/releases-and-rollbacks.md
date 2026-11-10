@@ -55,6 +55,22 @@ deploy strategy:
 3. The proxy route is **switched** to the new container.
 4. The old container is retired.
 
+### Health checks
+
+Step 2 is only as good as the app's health check. Set it in the app's **Settings → Healthcheck**:
+
+| Type | What it does |
+|---|---|
+| **Image default** (default) | Uses the image's own `HEALTHCHECK`, if it declares one. Deploys don't wait for it. |
+| **HTTP** | Probes a path and port inside the container. Miabi copies a small probe in, so the image needs no `curl` or `wget`. |
+| **Command** | Runs a command through the shell; a non-zero exit means unhealthy. |
+| **None** | No check at all, and the image's own `HEALTHCHECK` is turned off too — for workers and schedulers that serve no HTTP. |
+
+With **HTTP** or **Command**, a deploy waits for the new container to report healthy before it goes
+live, and a release that never turns healthy fails the deploy while the running one keeps serving.
+Interval, timeout, retries and start period are tunable. The same settings are available in a
+[manifest](/docs/cicd/manifest-reference#health-checks).
+
 Weighted **canary** rollout — running the new release beside the stable one and shifting a share of
 traffic to it — is a separate, opt-in strategy, not what an ordinary deploy does. See
 [Canary Deployments](/docs/applications/canary-deployments).

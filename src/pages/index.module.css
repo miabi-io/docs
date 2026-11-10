@@ -120,13 +120,21 @@
 
 /* ---------- Stats ---------- */
 
+.heroDemo {
+  margin: 1.25rem 0 0;
+  font-size: 0.95rem;
+  color: var(--ifm-color-emphasis-700);
+}
+
 .stats {
+  list-style: none;
+  padding: 0;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1.5rem;
   width: 100%;
-  max-width: 40rem;
-  margin-top: 3.5rem;
+  max-width: 52rem;
+  margin-top: 3rem;
 }
 
 .statItem {
@@ -187,26 +195,123 @@
   margin: 0;
 }
 
-/* ---------- Quick start ---------- */
+/* ---------- Compose vs Miabi vs Kubernetes ---------- */
 
-.codeColumns {
-  display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-  gap: 1.25rem;
-  align-items: start;
+.tableWrap {
+  max-width: 56rem;
+  margin: 0 auto;
+  overflow-x: auto;
 }
 
-.codeColumns :global(.theme-code-block) {
+.gapTable {
+  display: table;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.gapTable th,
+.gapTable td {
+  border: none;
+  border-bottom: 1px solid var(--ifm-toc-border-color);
+  padding: 0.8rem 1rem;
+  text-align: left;
+}
+
+.gapTable thead,
+.gapTable thead tr {
+  background: transparent;
+}
+
+.gapTable thead th {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ifm-color-emphasis-700);
+}
+
+.gapTable tbody th {
+  font-weight: 600;
+}
+
+.gapTable tr,
+.gapTable tr:nth-child(2n) {
+  background: transparent;
+}
+
+.gapTable td {
+  color: var(--ifm-color-emphasis-700);
+}
+
+.gapTable .gapMiabi {
+  color: var(--ifm-color-primary);
+  font-weight: 700;
+  background: rgba(147, 51, 234, 0.06);
+}
+
+[data-theme='dark'] .gapTable .gapMiabi {
+  background: rgba(192, 132, 252, 0.08);
+}
+
+/* ---------- Ways to ship ---------- */
+
+.tabsWrap {
+  max-width: 50rem;
+  margin: 0 auto;
+}
+
+.tabsWrap :global(.theme-code-block) {
+  margin-bottom: 1rem;
+}
+
+.steps {
+  margin: 1.25rem 0 1.25rem;
+  padding-left: 1.4rem;
+}
+
+.steps li {
+  margin-bottom: 0.75rem;
+  line-height: 1.6;
+}
+
+/* ---------- Quick start ---------- */
+
+.installBlock {
+  max-width: 50rem;
+  margin: 0 auto;
+}
+
+.installBlock :global(.theme-code-block) {
   margin-bottom: 0;
 }
 
 .codeCta {
-  text-align: center;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem 0.9rem;
   margin-top: 1.75rem;
   font-weight: 600;
 }
 
+.codeCta span {
+  color: var(--ifm-color-emphasis-500);
+}
+
 /* ---------- Feature grid ---------- */
+
+.featureGroup + .featureGroup {
+  margin-top: 2.75rem;
+}
+
+.groupTitle {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ifm-color-emphasis-700);
+  margin-bottom: 1rem;
+}
 
 .featureGrid {
   display: grid;
@@ -234,7 +339,9 @@
 }
 
 .cardTitle {
-  font-size: 1.15rem;
+  display: block;
+  font-size: 1.1rem;
+  color: var(--ifm-heading-color);
   font-weight: 700;
   margin-bottom: 0.5rem;
   padding-right: 1.5rem;
@@ -261,6 +368,32 @@
 .card:hover .cardArrow {
   opacity: 1;
   transform: translateX(0);
+}
+
+/* ---------- Start here ---------- */
+
+.pathGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 4rem;
+}
+
+.pathCard {
+  display: block;
+  padding: 1.25rem 1.4rem;
+  border-radius: 12px;
+  border: 1px solid var(--ifm-toc-border-color);
+  border-left: 3px solid var(--ifm-color-primary);
+  color: inherit;
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.pathCard:hover {
+  text-decoration: none;
+  color: inherit;
+  background: var(--ifm-background-surface-color);
+  border-color: var(--ifm-color-primary);
 }
 
 /* ---------- Call to action ---------- */
@@ -297,8 +430,8 @@
     padding: 4.5rem 0 3rem;
   }
 
-  .codeColumns {
-    grid-template-columns: 1fr;
+  .pathGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .featureGrid {
@@ -312,7 +445,32 @@
 }
 
 @media screen and (max-width: 600px) {
-  .featureGrid {
+  .featureGrid,
+  .pathGrid {
     grid-template-columns: 1fr;
   }
+
+  .gapTable th,
+  .gapTable td {
+    padding: 0.65rem 0.6rem;
+    font-size: 0.85rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .card:hover,
+  .cardArrow {
+    transition: none;
+    transform: none;
+  }
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }

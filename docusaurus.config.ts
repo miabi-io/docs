@@ -87,7 +87,7 @@ const config: Config = {
           label: 'Documentation',
         },
         {
-          href: 'https://github.com/miabi-io/miabi',
+          href: 'https://demo.miabi.io/docs',
           label: 'API Reference',
           position: 'left',
         },
@@ -106,7 +106,7 @@ const config: Config = {
           items: [
             {label: 'Introduction', to: '/docs/getting-started/introduction'},
             {label: 'Installation', to: '/docs/getting-started/installation'},
-            {label: 'API Reference', href: 'https://github.com/miabi-io/miabi'},
+            {label: 'API Reference', href: 'https://demo.miabi.io/docs'},
           ],
         },
         {
@@ -128,7 +128,7 @@ const config: Config = {
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} Jonas Kaninda. Community edition licensed under AGPL-3.0-or-later.`,
+      copyright: `Copyright © ${new Date().getFullYear()} Miabi. Community edition licensed under AGPL-3.0-or-later.`,
     },
     prism: {
       theme: prismThemes.github,

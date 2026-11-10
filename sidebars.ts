@@ -214,7 +214,9 @@ const sidebars: SidebarsConfig = {
         'security/authentication',
         'security/api-tokens',
         'security/two-factor-auth',
+        'security/passkeys',
         'security/sso',
+        'security/saml-and-scim',
         'security/siem',
         'security/encryption',
         'security/container-security-profile',
@@ -230,6 +232,7 @@ const sidebars: SidebarsConfig = {
         'administration/nodes-and-capacity',
         'administration/scheduled-jobs',
         'administration/branding',
+        'administration/announcements',
         'administration/install-manifest',
         'administration/platform-backup',
         'administration/miabi-console',
@@ -254,7 +257,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'Development',
-      items: ['development/contributing'],
+      items: ['development/contributing', 'development/badges'],
     },
     {
       type: 'link',

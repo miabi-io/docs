@@ -19,6 +19,9 @@ Each application has per-app **resource limits** you set in its settings:
 | **CPU** | The maximum CPU share each container may consume |
 | **Memory** | The maximum memory each container may use before it's constrained |
 
+If you leave a limit empty, the workspace's plan may fill it in with a default, or refuse the app
+until both are set. See [App resource defaults](/docs/workspaces/plans-and-quotas#app-resource-defaults).
+
 Limits protect the host and your other apps from a single noisy service. Set them based on the app's real needs, and leave headroom for the brief overlap during [zero-downtime deploys](/docs/applications/releases-and-rollbacks).
 
 :::tip
