@@ -250,6 +250,11 @@ const sidebars: SidebarsConfig = {
       ],
     },
     {
+      type: 'category',
+      label: 'Development',
+      items: ['development/contributing'],
+    },
+    {
       type: 'link',
       label: 'API Reference',
       href: 'https://demo.miabi.io/docs',
