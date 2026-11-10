@@ -124,8 +124,9 @@ spec:
     APP_ENV: production
     DATABASE_URL: "{{ .databases.shop-db.uri }}"
     API_KEY: "{{ .secrets.api-key }}"   # kept as a vault reference, resolved at deploy
-  secretEnv:                  # env keys stored encrypted at rest
-    - DATABASE_URL
+    LICENSE_KEY: "lic-1234"
+  secretEnv:                  # literal values to store encrypted at rest
+    - LICENSE_KEY
   mounts:
     - volume: web-data        # must be a Volume in the same bundle
       path: /data
@@ -160,7 +161,7 @@ spec:
 | `deployment.update` | Service only. `parallelism` tasks are replaced at a time, with `delaySeconds` between batches. Omit it to keep the app's setting. Setting `deployment.replicas`, `deployment.update` or `placement.constraints` without `deployment.runtime: service` is an error, not a silent no-op. |
 | `externalLabel` | Pins the external-access subdomain. Platform-wide unique: if taken, it is ignored and a generated label is used — the apply still succeeds. |
 | `ports` | See [port exposure](#port-exposure). |
-| `env` / `secretEnv` | Every `secretEnv` key must also appear in `env`. Values support [interpolation](#interpolation). A secret reference is stored as a reference, not its value, so it needs no `secretEnv` — see [secrets in env](#secrets-in-env). List a key under `secretEnv` when its value is sensitive in itself, such as a database password or URI. |
+| `env` / `secretEnv` | Every `secretEnv` key must also appear in `env`. Values support [interpolation](#interpolation). A key that reads a secret or a database credential (`{{ .secrets.* }}`, `{{ .databases.<name>.password }}`, `.uri`) needs no `secretEnv`: it is stored as a vault reference and resolved at deploy, and a credential that has to be stored as its value is encrypted automatically — see [secrets in env](#secrets-in-env). List a key under `secretEnv` when you write a sensitive value into the manifest literally. |
 | `mounts` | Exactly one of `volume` or `config`, and both must be declared in the same bundle. `key` and `mode` are valid only with a `config` — setting them on a volume mount is an error, not a silent no-op. A config mount is always read-only. Privileged host binds are **not** manifest-expressible. |
 | `reloadPolicy` | `restart` (default) redeploys the app when a mounted [`Config`](#config)'s content changes; `none` leaves it running, for apps that watch their own config file. |
 | `security.runAsUser` | The account the container runs as — `uid`, `uid:gid`, `name` or `name:group` — like `docker run --user`. Omit to keep the image's own user. A workspace under the [restricted security profile](/docs/security/container-security-profile) must give a non-root **numeric** uid; a name is refused there, since the image decides what it maps to. Attached volumes are chowned to it on deploy. |
@@ -334,7 +335,6 @@ spec:
     DB_HOST: "{{ .databases.shop-db.host }}"
     DB_PASSWORD: "{{ .databases.shop-db.password }}"
     API_TOKEN: "{{ .secrets.shop-api-token }}"
-  secretEnv: [DB_PASSWORD] # keys stored encrypted at rest; each must also be in env
 ```
 
 Member applications that declare no `placement.location` of their own are created in the stack's location. One
@@ -1096,7 +1096,7 @@ env:
 
 A reference passed through a function, such as `{{ .secrets.key | base64 }}` or
 `{{ default "x" .secrets.key }}`, can't be resolved at deploy. It is resolved at apply time and
-stored as its value, so list that key under `secretEnv`; rotating the secret then needs another apply.
+stored as its value, still encrypted without a `secretEnv` entry; rotating the secret then needs another apply.
 
 :::tip Outside env
 A Middleware `rule` and Config files resolve `{{ .secrets.NAME }}` at apply time; a Middleware `rule`

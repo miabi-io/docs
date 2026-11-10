@@ -18,31 +18,41 @@ const INSTALL_EXAMPLE = `curl -fsSL https://get.miabi.io | sudo MIABI_DOMAIN=mia
 
 const MANIFEST_EXAMPLE = `apiVersion: miabi.io/v1
 kind: Database
-metadata: { name: shop-db }
+metadata: { name: guestbook-db }
 spec:
   engine: postgres
   version: "17-alpine"
 ---
 apiVersion: miabi.io/v1
-kind: Application
-metadata: { name: shop }
+kind: Database
+metadata: { name: guestbook-cache }
 spec:
-  image: ghcr.io/acme/shop:2.4.0
+  engine: redis
+  version: "8-alpine"
+---
+apiVersion: miabi.io/v1
+kind: Application
+metadata: { name: guestbook }
+spec:
+  image: miabi/guestbook:3.2.0
   ports:
     - { name: http, container: 8080 }
   env:
-    DATABASE_URL: "{{ .databases.shop-db.url }}"
-  secretEnv: [DATABASE_URL]
+    DATABASE_URL: "{{ .databases.guestbook-db.url }}"
+    REDIS_URL: "{{ .databases.guestbook-cache.url }}"
+  healthcheck:
+    type: http
+    path: /healthz
+    port: 8080
   deployment:
     strategy: canary
-    replicas: 3
 ---
 apiVersion: miabi.io/v1
 kind: Route
-metadata: { name: shop }
+metadata: { name: guestbook }
 spec:
-  hosts: [shop.example.com]
-  app: shop
+  hosts: [guestbook.example.com]
+  app: guestbook
   port: http`;
 
 const CLI_EXAMPLE = `miabi login --server https://miabi.example.com
@@ -52,7 +62,7 @@ miabi apply -f miabi/ --dry-run
 miabi apply -f miabi/
 
 # Watch the rollout
-miabi logs shop --follow`;
+miabi logs guestbook --follow`;
 
 function HomepageHeader() {
   return (
@@ -213,7 +223,7 @@ function WaysToShip() {
               <Link to="/docs/getting-started/quickstart">Follow the quick start →</Link>
             </TabItem>
             <TabItem value="manifest" label="Manifest">
-              <CodeBlock language="yaml" title="miabi/shop.yaml">
+              <CodeBlock language="yaml" title="miabi/guestbook.yaml">
                 {MANIFEST_EXAMPLE}
               </CodeBlock>
               <Link to="/docs/cicd/manifest-reference">Read the manifest reference →</Link>
