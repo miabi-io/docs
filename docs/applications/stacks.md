@@ -41,6 +41,9 @@ at rest. Every application in the stack receives it on its next deploy.
   as running older configuration, and the stack page offers **Redeploy** for just those apps rather
   than **Deploy all**.
 - **Secret values are masked.** A workspace **Admin** can reveal one; revealing is audited.
+- **Vault references work here too.** A shared value can be `${{ secrets.NAME }}`. Rotating that
+  secret redeploys every member that receives it, and the vault won't delete it while the stack
+  still references it.
 
 ## Talking to each other
 
