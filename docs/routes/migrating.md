@@ -84,7 +84,6 @@ spec:
   hosts: [guestbook.example.com, www.guestbook.example.com]
   app: guestbook
   port: 8080
-  tls: acme
   middlewares: [force-https]
 ```
 
@@ -227,7 +226,7 @@ and `api` alongside these routes.
 | `request_header` | [Request headers](/docs/middlewares/request-headers) |
 | `request_body max_size` | [Request body limit](/docs/middlewares/body-limit) |
 | `respond` with a status | [Block access](/docs/middlewares/access), or the route's [maintenance mode](/docs/networking/routing-and-middlewares#maintenance-mode) |
-| `tls internal` | a `tlsProvider` pointing at an internal CA, or an uploaded certificate |
+| `tls internal` | a `tls.provider` pointing at an internal CA, or an uploaded certificate |
 | `encode gzip` | no equivalent — let the app compress |
 | `file_server` | deploy the static files as an app (an nginx or Caddy image), then route to it |
 

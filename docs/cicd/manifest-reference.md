@@ -112,7 +112,8 @@ spec:
     retries: 3                # default 3
     startPeriodSeconds: 20    # default 0 — grace before failures count
   ports:
-    - container: 8080
+    - name: http              # optional; a Route can target the port by name
+      container: 8080
       scheme: http            # http | https (default http) — how the proxy talks to it
       protocol: tcp           # tcp | udp (default tcp)
       externalAccess: true    # public HTTPS URL through the reverse proxy
@@ -703,12 +704,13 @@ spec:
     - example.com
     - www.example.com
   app: web                  # must be an Application in the same bundle
-  port: 8080
+  port: http                # a port number, or the name of one of the app's ports
   path: /                   # default /
   rewrite: /                # replace the matched prefix before the app sees it
   methods: [GET, POST]      # omit to accept every method
-  tls: acme                 # acme | custom | off (default acme)
-  tlsProvider: internal-ca  # tls: acme only — which certManager provider issues it
+  tls:                      # omit for HTTPS with an ACME certificate
+    enabled: true           # false serves plain HTTP
+    provider: internal-ca   # which certManager provider issues the ACME certificate
   middlewares:              # the gateway chain, IN EXECUTION ORDER
     - api-ratelimit
     - admin-auth
@@ -730,20 +732,34 @@ is rendered as plain text, JSON, or XML depending on the caller, are in
 A parked route still reports its sync status as *live*: the gateway is serving it, it is simply
 serving your notice.
 
+### Port
+
+`port` is the container port the route sends traffic to. It takes a number, or the `name` of one
+of the target application's `ports`, so a route keeps working when the port number changes in one
+place. A name is resolved when the manifest is parsed, and one the application does not declare is
+refused. Omitted, the route uses the application's first port.
+
+Port names are lowercase letters, digits and dashes, contain at least one letter, and are unique
+within the application; a port that serves both `tcp` and `udp` may use one name for both. A name
+set in the console is kept when the manifest names no ports, and exported with the application.
+
 ### TLS
+
+The `tls` block decides what the route serves; the fields that are set pick the mode.
 
 | `tls` | What it serves |
 |---|---|
-| `acme` (default) | A certificate the gateway issues and renews itself. `tlsProvider` picks which certManager provider issues it, for an install running more than one — a public ACME issuer and an internal CA, say. Omit it for the gateway's default. |
-| `custom` | A certificate you imported. **`certificate: <name>` is required** — it names a stored Certificate in the workspace. |
-| `off` | No TLS. The route answers plain HTTP only. |
+| omitted, or `{}` | A certificate the gateway issues and renews itself (ACME). |
+| `provider: <name>` | An ACME certificate from that certManager provider, for an install running more than one — a public ACME issuer and an internal CA, say. Omit it for the gateway's default. |
+| `certificate: <name>` | A certificate you imported. The name is a stored Certificate in the workspace. |
+| `enabled: false` | No TLS. The route answers plain HTTP only. |
 
 ```yaml
 spec:
   hosts: [secure.example.com]
   app: web
-  tls: custom
-  certificate: example-wildcard   # imported out of band; see below
+  tls:
+    certificate: example-wildcard   # imported out of band; see below
 ```
 
 Certificates are **not a declarable kind**, and deliberately so: one carries a private key, which
@@ -752,9 +768,12 @@ it here — the same rule [`registry`](#application) follows for a pull credenti
 nothing in the workspace fails the apply rather than creating a route that claims a hostname and
 serves no TLS on it.
 
-The combinations are checked when the manifest is parsed, because either half alone reads as
-deliberate and behaves as a mistake: `tls: custom` without a `certificate` cannot serve TLS at all,
-and a `certificate` on an `acme` route is silently ignored. Both are refused.
+Contradictory fields are refused when the manifest is parsed: `provider` together with
+`certificate`, and either one with `enabled: false`.
+
+The earlier spelling still parses: `tls: acme | custom | off` as a string, with `certificate` and
+`tlsProvider` beside it. It plans the same as the block, so moving a manifest to the block changes
+nothing on the route. Setting a field in both spellings is refused. Exports write the block.
 
 **`rewrite`** replaces the matched path prefix before the request reaches the app, so a route on
 `/api` can serve a backend that expects `/`. **`methods`** narrows the route to those HTTP methods;
@@ -1075,12 +1094,14 @@ resource never shows phantom drift:
 container labels, the `security` block, and per-port exposure (`externalAccess` / `publish` as present-or-not).
 
 **Diffed only when stated** — `deployment` (runtime, replicas, strategy, update), `placement`
-(location, constraints), each `healthcheck` field, and `stack`. A manifest silent about them leaves
-what the console set alone, so removing `stack` from a manifest does not take the app out of its stack.
+(location, constraints), each `healthcheck` field, `stack`, `ports` (each port's number, protocol and
+scheme, in any order) and each port's `name`. A manifest silent about them leaves what the console set
+alone, so removing `stack` from a manifest does not take the app out of its stack, and a manifest with
+no `ports` keeps the app's ports. When `ports` is stated, the app's ports become exactly that list; a
+port listed without a `name` keeps the name it already has.
 
-**Not diffed** — create-time structure that cannot be mapped back unambiguously: ports themselves and
-mounts. Ports are set only when the app is created — recreate it to change them. A mount change is
-written by the next apply that updates the app for another reason; recreate it to be certain.
+**Not diffed** — mounts, which cannot be mapped back unambiguously. A mount change is written by the
+next apply that updates the app for another reason; recreate it to be certain.
 
 Mounts aren't diffed, but a mounted config's *content* still converges: each app carries a
 fingerprint of every config it mounts, so editing a file plans as an update of the app itself. An app
