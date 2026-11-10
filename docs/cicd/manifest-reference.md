@@ -329,10 +329,22 @@ spec:
   description: Storefront — web, worker and its datastores
   placement:
     location: eu-central # optional; the workspace default when omitted
+  env:                   # shared by every member; an app's own key of the same name wins
+    DB_HOST: "{{ .databases.shop-db.host }}"
+    DB_PASSWORD: "{{ .databases.shop-db.password }}"
+    API_TOKEN: "{{ .secrets.shop-api-token }}"
+  secretEnv: [DB_PASSWORD] # keys stored encrypted at rest; each must also be in env
 ```
 
 Member applications that declare no `placement.location` of their own are created in the stack's location. One
 that declares a different location is refused, naming both.
+
+`env` is compared only when stated, so a manifest without it leaves variables set in the console
+alone. When an apply changes it, every member that has been deployed is redeployed with the new
+values at the end of the apply. An app the same apply already deployed is not deployed twice, and a
+stopped member is only marked as needing a redeploy. A `{{ .secrets.name }}` reference stays a
+pointer to the vault, so rotating that secret redeploys the members too; when one apply changes
+both, each member is redeployed once.
 
 ---
 

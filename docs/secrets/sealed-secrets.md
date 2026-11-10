@@ -98,7 +98,8 @@ secret as changed, and Miabi opens and stores the new value.
 - If the opened value is **unchanged** (you re-sealed the same value), the secret keeps its version
   and nothing redeploys.
 - If it **changed**, the secret's version bumps and the apps referencing it redeploy, as with any
-  rotation.
+  rotation. The redeploy happens once, at the end of the apply: an app the same apply already
+  deployed, or one that a changed stack env also reaches, is not deployed a second time.
 
 A sealed secret is shown with a **Sealed** badge in the vault. A value you set by hand in the console
 or with `miabi secrets set` is replaced at the next apply or sync: Git stays the source of truth.
