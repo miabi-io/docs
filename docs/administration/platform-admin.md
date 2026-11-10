@@ -68,10 +68,10 @@ dashboard. The sidebar is grouped as below, and this table is the map.
 | Section | Responsibility |
 |---|---|
 | **Organizations** | Tenant realms owning workspaces, users, their own SSO and their own locations (Enterprise beyond the built-in one). See [Organizations](/docs/workspaces/organizations). |
-| **Workspaces** | Cross-workspace visibility, privileged workspaces, and key rotation. See [Workspace Oversight](/docs/administration/workspace-oversight). |
-| **Plans** | Define what a workspace may consume and which capabilities it unlocks. See [Plans & Quotas](/docs/workspaces/plans-and-quotas). |
+| **Workspaces** | Cross-workspace visibility, privileged workspaces, and making a workspace read-only or suspending it. See [Workspace Oversight](/docs/administration/workspace-oversight). |
+| **Plans & Quotas** | Define what a workspace may consume and which capabilities it unlocks. See [Plans & Quotas](/docs/workspaces/plans-and-quotas). |
 | **Database sizes** | Named CPU and memory sizes plans offer (Enterprise). See [Database sizes](/docs/workspaces/plans-and-quotas#database-sizes). |
-| **Announcements** | Broadcast a notice to user inboxes — to everyone or selected workspaces, scheduled or immediate, with an optional expiry and a pinned banner (Enterprise). |
+| **Announcements** | Broadcast a notice to user inboxes — to everyone or selected workspaces, scheduled or immediate, with an optional expiry and a pinned banner (Enterprise). See [Announcements](/docs/administration/announcements). |
 
 ### Infrastructure
 

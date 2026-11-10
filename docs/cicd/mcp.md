@@ -48,7 +48,7 @@ The **[CLI](/docs/cicd/cli)**, installed and authenticated:
 brew install miabi-io/tap/miabi
 
 export MIABI_SERVER="https://miabi.example.com"
-export MIABI_TOKEN="mb_…"          # Settings → API tokens
+export MIABI_TOKEN="mb_…"          # Developers → API Keys
 miabi workspace switch acme        # the default workspace for tool calls
 ```
 

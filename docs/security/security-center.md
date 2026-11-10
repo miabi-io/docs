@@ -112,7 +112,8 @@ The allowlist uses the client address Miabi resolves. Behind a proxy or load bal
 passes the real client address, or every admin may be refused.
 :::
 
-Only TOTP is available as a factor today; passkeys, an admin PIN and SSO step-up are not built yet.
+The unlock accepts only a TOTP code today. [Passkeys](/docs/security/passkeys) work for sign-in but are not yet
+accepted as an unlock factor, and an admin PIN and SSO step-up are not available yet.
 
 ### Locked out
 

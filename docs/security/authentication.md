@@ -31,7 +31,7 @@ Sign-up never tells an anonymous caller whether an address is already registered
 
 ## Login
 
-Sign in with **your email address *or* your username**, plus your password. If [two-factor authentication](/docs/security/two-factor-auth) is enabled on your account, you'll be prompted for a TOTP code after your password is verified. Organizations can also offer [single sign-on](/docs/security/sso) through OAuth2/OIDC providers, and on Enterprise the same form can check the password against an [LDAP / Active Directory](/docs/security/sso#ldap--active-directory) directory when it doesn't match a local account.
+Sign in with **your email address *or* your username**, plus your password. If [two-factor authentication](/docs/security/two-factor-auth) is enabled on your account, you'll be prompted for a TOTP code after your password is verified. You can also skip the password entirely with **Sign in with a passkey** once you've added a [passkey](/docs/security/passkeys). Organizations can also offer [single sign-on](/docs/security/sso) through OAuth2/OIDC providers, and on Enterprise the same form can check the password against an [LDAP / Active Directory](/docs/security/sso#ldap--active-directory) directory when it doesn't match a local account.
 
 Your username is also the directory-friendly handle Miabi keys off for the built-in [container registry](/docs/registry/overview) — `docker login` accepts either your workspace name or your username.
 
@@ -73,4 +73,5 @@ Revoke sessions across all your devices by triggering a password reset or signin
 
 - Programmatic access uses [API tokens](/docs/security/api-tokens), not session JWTs.
 - Strengthen accounts with [Two-Factor Authentication](/docs/security/two-factor-auth).
+- Sign in without a password using [Passkeys](/docs/security/passkeys).
 - Enable provider sign-in with [SSO](/docs/security/sso).

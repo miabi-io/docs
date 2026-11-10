@@ -37,9 +37,11 @@ If you want a build with **zero enterprise code** (the deny-all stub), build it 
 | Volumes on the built-in `default` storage class | ✓ | ✓ |
 | [Storage classes](/docs/storage/storage-classes) — volumes on the disks you mount (bare metal, dedicated hosts) | 2 classes, `default` included | ✓ unlimited |
 | [Organizations](/docs/workspaces/organizations) — tenant realms owning workspaces, users, their own SSO and their own locations | the built-in `default` one | ✓ create more |
+| [Passkey](/docs/security/passkeys) (WebAuthn) sign-in | ✓ | ✓ |
 | OAuth/OIDC SSO providers | one | multiple |
 | Hide an SSO provider from the login page | — | ✓ |
-| SAML 2.0 + enforced SSO · SCIM 2.0 provisioning | — | ✓ |
+| Workspace roles from OIDC group claims | — | ✓ |
+| [SAML 2.0 + enforced SSO · SCIM 2.0 provisioning](/docs/security/saml-and-scim) | — | ✓ |
 | LDAP / Active Directory sign-in | — | ✓ |
 | Custom RBAC roles | — | ✓ |
 | Per-resource permission policies | — | ✓ |
@@ -56,7 +58,8 @@ If you want a build with **zero enterprise code** (the deny-all stub), build it 
 | [Live location migration](/docs/applications/moving-between-locations): move an app with its volumes and databases | — | ✓ |
 | Database sizes (named CPU and memory sizes, offered per plan) | — | ✓ |
 | Per-database backups and schedules | ✓ | ✓ |
-| [Recovery points](/docs/storage/backups#recovery-points) — a whole database instance as one set | restore, verify and delete existing ones | ✓ take, adopt and schedule |
+| [Recovery points](/docs/storage/backups#recovery-points) — a whole database instance, or a [volume](/docs/storage/backups#volume-recovery-points), as one set | restore, verify and delete existing ones; a manual volume backup is a plain archive | ✓ take, adopt and schedule |
+| Volume backup schedules | — | ✓ |
 | Platform announcements to user inboxes | — | ✓ |
 | Platform (control-plane) backup & restore | — | ✓ |
 | Workspace analytics | 7 days | ✓ extended retention + CSV export |
@@ -77,7 +80,7 @@ The Community edition includes the entire core platform — deploying apps, cust
 :::
 
 :::note
-Enterprise is about identity, governance, hardware, and scale: [organizations](/docs/workspaces/organizations) that turn one instance into several tenants, multiple and hidden SSO providers with SAML, LDAP and SCIM, custom roles and per-resource policies, the audit log viewer with export and SIEM streaming, quota and per-user limit overrides, advanced multi-cluster placement and database sizes, announcements, platform backup, S3/MinIO storage for the container registry, a private template registry and image mirror, an unlimited shared runner pool, white-label branding, a restricted security profile, and [advanced canary control](/docs/applications/canary-deployments#manual-mode). It is also what puts tenant data on hardware you chose at scale: unlimited [storage classes](/docs/storage/storage-classes) for the disks you mount across a fleet, and [recovery points](/docs/storage/backups#recovery-points) that back up a whole database instance as one set. A commercial license also comes with [Enterprise support](https://miabi.io/support) — commercial support and SLAs, direct to the maintainers. A license can also set explicit node and plan caps; see [Licensing](/docs/editions/licensing#limits).
+Enterprise is about identity, governance, hardware, and scale: [organizations](/docs/workspaces/organizations) that turn one instance into several tenants, multiple and hidden SSO providers with group mapping, SAML, LDAP and SCIM, custom roles and per-resource policies, the audit log viewer with export and SIEM streaming, quota and per-user limit overrides, advanced multi-cluster placement and database sizes, announcements, platform backup, S3/MinIO storage for the container registry, a private template registry and image mirror, an unlimited shared runner pool, white-label branding, a restricted security profile, and [advanced canary control](/docs/applications/canary-deployments#manual-mode). It is also what puts tenant data on hardware you chose at scale: unlimited [storage classes](/docs/storage/storage-classes) for the disks you mount across a fleet, and [recovery points](/docs/storage/backups#recovery-points) that back up a whole database instance or a volume as one set. A commercial license also comes with [Enterprise support](https://miabi.io/support) — commercial support and SLAs, direct to the maintainers. A license can also set explicit node and plan caps; see [Licensing](/docs/editions/licensing#limits).
 :::
 
 ## Where to go next

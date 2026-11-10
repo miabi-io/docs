@@ -63,7 +63,7 @@ and token by environment variable — ideal for CI:
 
 ```bash
 export MIABI_SERVER="https://miabi.example.com"
-export MIABI_TOKEN="mb_…"       # created in the console: Settings → API tokens
+export MIABI_TOKEN="mb_…"       # created in the console: Developers → API Keys
 miabi whoami                    # verify: shows the identity, scopes, and active workspace/app
 ```
 
@@ -156,12 +156,14 @@ argument**, or use the app bound with `miabi use`.
 | `miabi login [--no-browser \| --web] [--scopes read,write,deploy]` · `miabi whoami` | Sign in and save a context; show identity, scopes, and active context. |
 | `miabi context ls \| current \| use \| delete` | List, show, switch, or remove saved contexts (alias: `ctx`). |
 | `miabi workspace ls \| show \| switch <name-or-id>` | List, show, or set the active workspace (alias: `ws`). |
+| `miabi workspace migration start \| status \| cancel` · `workspace import` · `workspace migrate` · `workspace unfreeze` | Move a workspace to another Miabi install — see [Migration](/docs/operations/migration). |
 | `miabi use [app] \| --clear` | Bind (or show/clear) the default app. |
 | `miabi apps ls` | List the workspace's applications (marks the bound app). |
 | `miabi apps create <name> (--image <img> [--tag] \| --git-repo <url> [--git-ref] [--build-method]) [--port] [--node <id>] [--use]` | Create an app from an image or Git source. `--build-method` is `auto`, `dockerfile`, or `buildpack`. |
 | `miabi apps deploy [app] [--tag <tag>] [--strategy <s>] [--no-cache] [--wait] [--timeout 10m]` | Deploy; `--wait` blocks and exits non-zero on failure. `--no-cache` rebuilds every layer (Git-source apps). |
 | `miabi apps start \| stop \| restart [app]` | Control the app's container. |
-| `miabi apps rollback [app] (--to <version> \| --to-previous) [--yes]` | Roll back to a previous release. |
+| `miabi apps rollback [app] (--to <version> \| --to-previous) [--yes] [--wait] [--timeout 10m]` | Roll back to a previous release; `--wait` blocks until the rollback deployment finishes and exits non-zero on failure. |
+| `miabi apps migrate [app] --location <location>` · `miabi migrations [app]` | Move an app, its volumes and databases to another location, then follow, cut over, cancel, roll back or finalize the migration (Enterprise) — see [Moving between locations](/docs/applications/moving-between-locations). |
 | `miabi apps status [app] [--deployment <n>]` | Show app / deployment status. |
 | `miabi apps logs [app] [--follow] [--tail N] [--deployment <n>]` | Runtime logs (or a deployment's build logs with `--deployment`); `--follow` streams. |
 | `miabi apps deployments [app]` | Deploy history — the `NUMBER` column addresses a deployment. |
@@ -253,6 +255,8 @@ miabi volumes backups run web-data [--wait] [--timeout 30m]
 miabi volumes backups restore web-data 42 [--yes]     # overwrites the volume's data
 miabi volumes backups logs web-data 42
 miabi volumes backups rm web-data 42 [--yes]
+miabi volumes backups verify web-data 42           # check the archive is still intact in the bucket
+miabi volumes backups pin web-data 42              # keep a recovery point regardless of retention (unpin to undo)
 ```
 
 `restore` does not stop the apps mounting the volume — stop them first unless the workload tolerates
@@ -359,6 +363,9 @@ installs and operates a Miabi host — see
 | `miabi stack status` | What is running, its health, and any drift from the manifest. |
 | `miabi stack apply [--yes]` | Bring the running stack in line with the manifest: lists the components whose spec changed, then recreates only those. Nothing changed means nothing restarts. |
 | `miabi stack restart [component] [--yes]` | Restart in place so containers re-read their on-disk config. A restart does not apply manifest changes — use `stack apply`. |
+| `miabi stack backup [--dir <path>]` | Dump the platform database to a local file, by default under `backups/` beside the manifest. |
+| `miabi stack backups [--dir <path>]` | List the local dumps. |
+| `miabi stack restore <dump> [--force] [--yes]` | Replace the platform database with a dump. `--force` accepts a dump taken by a newer Miabi than the one running. |
 | `miabi stack uninstall [--volumes] [--yes]` | Remove the stack's containers; `--volumes` also destroys the database. |
 | `miabi stack migrate-config` | Rename the legacy `/etc/miabi/stack.yaml` to `/etc/miabi/miabi.yaml`. |
 | `miabi stack env ls` / `get KEY` | Show the environment the manifest carries. `--gateway` reads the gateway's instead of the control plane's. |
@@ -385,7 +392,7 @@ Docker host. `-f, --file` points at a manifest other than `/etc/miabi/miabi.yaml
 
 `setup` also takes `--admin-email`, `--acme-email`, `--control-url`, `--registry`,
 `--registry-host`, `--subnet`, `--internal-subnet`, `--gateway-image`, `--runner-image`,
-`--goma-config`, and `--no-host-proc`. Each one overwrites the matching manifest field when given
+`--goma-config`, `--no-host-proc`, and `--ipv6`. Each one overwrites the matching manifest field when given
 and leaves it alone otherwise — see [Install options](/docs/getting-started/installation#install-options).
 
 A **fresh** `setup`, and `upgrade` with no component, install the latest published Miabi release,

@@ -24,6 +24,10 @@ A password alone can be phished or leaked. With 2FA, an attacker also needs the 
 
 Once confirmed, every future login will prompt for a TOTP code after your password.
 
+## Passkeys and 2FA
+
+A [passkey](/docs/security/passkeys) counts as both factors, so signing in with one skips the TOTP prompt. 2FA still protects every password sign-in, and adding a passkey asks for a current authenticator code when 2FA is on.
+
 ## Recovery codes
 
 During enrollment, Miabi generates a set of single-use **recovery codes**. Use one to sign in if you lose access to your authenticator device.
@@ -45,4 +49,5 @@ You can turn 2FA off from **Account → Security** with **Disable**, confirming 
 ## Related
 
 - 2FA protects interactive logins; programmatic access uses [API Tokens](/docs/security/api-tokens).
+- Sign in without a password or code using [Passkeys](/docs/security/passkeys).
 - For organization-wide sign-in policies, see [SSO](/docs/security/sso).

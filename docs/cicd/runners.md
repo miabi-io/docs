@@ -118,13 +118,13 @@ The upshot: a pipeline step can build and push with **zero configured credential
 
 ## Managing shared runners
 
-Administrators can register **platform-shared** runners under **Admin → Runners** — runners with no owning workspace that any eligible workspace's jobs can use. Admins manage the shared pool (create, edit, cordon, remove); workspace members can *use* a shared runner but not edit it.
+Administrators can register **platform-shared** runners under **Admin → Shared Runners** — runners with no owning workspace that any eligible workspace's jobs can use. Admins manage the shared pool (create, edit, cordon, remove); workspace members can *use* a shared runner but not edit it.
 
 The Community edition allows up to **2** platform-shared runners; the Enterprise *platform runners* entitlement lifts that limit. Workspace-owned runners count against the workspace plan's **runner** limit instead, when plan enforcement is on. A workspace's access to the shared pool is governed by its plan's *platform runners* capability.
 
 ### Offering only some runners to a plan
 
-With Enterprise, a plan can name **which** shared runners it offers, under **Admin → Plans → (plan) → Shared Runners** — the same shape as binding a plan to locations or database sizes. A plan that names none offers the whole pool, which is how every plan behaves until you narrow one, and the capability still decides whether the pool is in scope at all.
+With Enterprise, a plan can name **which** shared runners it offers, under **Admin → Plans & Quotas → (plan) → Shared Runners** — the same shape as binding a plan to locations or database sizes. A plan that names none offers the whole pool, which is how every plan behaves until you narrow one, and the capability still decides whether the pool is in scope at all.
 
 This binds only the platform's own runners. A workspace's own runners are its machines, so a plan never restricts them — and its builds prefer them anyway. An admin can override the list for a single workspace under **Admin → Workspaces → (workspace)**.
 

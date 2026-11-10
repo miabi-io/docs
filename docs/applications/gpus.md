@@ -62,7 +62,7 @@ install it and rescan.
 
 ## 2. Allow GPUs on a plan (admin)
 
-GPU access is off by default. In **Admin → Plans → \<plan\>**:
+GPU access is off by default. In **Admin → Plans & Quotas → \<plan\>**:
 
 - **Allow GPU access** — the capability gate. A workspace cannot request any GPU until its plan
   allows it.

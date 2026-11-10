@@ -18,7 +18,7 @@ plan a workspace is on.
 
 ## The plan catalog
 
-A platform admin manages plans under **Admin → Plans**. A fresh install is seeded with two:
+A platform admin manages plans under **Admin → Plans & Quotas**. A fresh install is seeded with two:
 
 | Plan | What it is |
 |---|---|
@@ -56,6 +56,25 @@ Quotas are checked **when a resource is created** — and, for CPU and memory, a
 :::note
 Because the check happens at creation, you never end up with a half-provisioned resource. Free up capacity (delete an unused app or database) or raise the workspace's plan, then retry.
 :::
+
+## App resource defaults
+
+An app with no CPU or memory limit runs unbounded, and its usage never counts toward the plan's CPU
+and memory totals. Two settings on the plan's page, under **App resource defaults**, close that gap:
+
+| Setting | What it does |
+|---|---|
+| **Default CPU** | Given to an app that leaves its CPU limit empty, in cores. `0` means no default. |
+| **Default memory** | Given to an app that leaves its memory limit empty, in MB. `0` means no default; otherwise at least 32 MB. |
+| **Require CPU and memory limits on every app** | Refuses an app that still has no CPU or memory limit once the defaults are applied (`RESOURCE_LIMITS_REQUIRED`). |
+
+Defaults are filled in when an app is created and every time its settings are saved; a value the app
+sets itself always wins. A default cannot exceed the plan's own CPU or memory total. On a plan with
+unlimited CPU, **Require** asks only for a memory limit, since there is no CPU total to slip past.
+
+Changing these settings touches no app that already exists until its settings are next saved. The
+workspace's **Usage** tab counts the apps still without a limit, so you can see which ones the totals
+don't cover.
 
 ## Shared CPU
 

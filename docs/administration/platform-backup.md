@@ -38,6 +38,57 @@ recovery point can only be restored onto a host that still has the original `MIA
 never onto a fresh one.
 :::
 
+## Configuring from the environment
+
+Every setting above can also come from `MIABI_PLATFORM_BACKUP_*` variables on the control plane,
+which is how an unattended install takes encrypted backups from first boot. The environment is
+**authoritative, not a seed**: a variable that is set wins on every read, and the matching field in
+**Admin → Platform Backup** is locked rather than accepting an edit that would be ignored. Unset the
+variable to hand the field back to the console.
+
+On a stack install, state these in the `backup` section of the
+[install manifest](/docs/administration/install-manifest#settings-the-manifest-pins), which compiles to
+the same variables.
+
+| Variable | Setting |
+|---|---|
+| `MIABI_PLATFORM_BACKUP_S3_ENDPOINT` | Endpoint. Blank for AWS. |
+| `MIABI_PLATFORM_BACKUP_S3_BUCKET` | Bucket. |
+| `MIABI_PLATFORM_BACKUP_S3_REGION` | Region. |
+| `MIABI_PLATFORM_BACKUP_S3_ACCESS_KEY` | Access key. |
+| `MIABI_PLATFORM_BACKUP_S3_SECRET_KEY` | Secret key. |
+| `MIABI_PLATFORM_BACKUP_S3_USE_SSL` | Use SSL. Default `true`. |
+| `MIABI_PLATFORM_BACKUP_S3_FORCE_PATH_STYLE` | Path-style addressing, for MinIO. Default `false`. |
+| `MIABI_PLATFORM_BACKUP_PATH` | Backup root inside the bucket. |
+| `MIABI_PLATFORM_BACKUP_DATABASE_PATH` | Sub-path for database artifacts. |
+| `MIABI_PLATFORM_BACKUP_VOLUME_PATH` | Sub-path for volume artifacts. |
+| `MIABI_PLATFORM_BACKUP_PASSPHRASE` | Backup passphrase. |
+| `MIABI_PLATFORM_BACKUP_ENCRYPT` | Encrypt artifacts. |
+| `MIABI_PLATFORM_BACKUP_INCLUDE_IDENTITY` | Seal the identity envelope. |
+| `MIABI_PLATFORM_BACKUP_INCLUDE_TENANT_DATA` | Include tenant data. |
+| `MIABI_PLATFORM_BACKUP_SCHEDULE` | A 5-field cron. Setting it also turns the schedule on. |
+| `MIABI_PLATFORM_BACKUP_MAX` | Keep at most this many recovery points. Applied only when greater than `0`. |
+| `MIABI_PLATFORM_BACKUP_RETENTION_DAYS` | Retention in days. Applied only when greater than `0`. |
+
+A few rules decide how they combine:
+
+- **The S3 destination is all-or-nothing.** It counts as configured only when `BUCKET`, `ACCESS_KEY`
+  and `SECRET_KEY` are all set; then the whole destination, endpoint, region and SSL flags included,
+  comes from the environment. With any of the three missing, the S3 variables are ignored and the
+  console stays in charge of the destination.
+- **Secrets stay in memory.** An S3 secret key or passphrase from the environment is never written to
+  the database, so it is never copied into the backups of that database either. The console shows
+  only that one is set.
+- **A passphrase implies encryption.** Setting `PASSPHRASE` turns on `ENCRYPT` and `INCLUDE_IDENTITY`
+  unless you set those explicitly, so an unattended install never takes artifacts in the clear or a
+  recovery point a fresh host could not open. An explicit `false` overrides either.
+
+:::note
+Restart the control plane after changing these. On a stack install, `sudo miabi stack env set …`
+followed by `sudo miabi stack apply` does that, but a variable the manifest's `backup` section
+already states is refused there: change the manifest and re-run `sudo miabi setup` instead.
+:::
+
 ## Which restore do you need?
 
 | Situation | Use |

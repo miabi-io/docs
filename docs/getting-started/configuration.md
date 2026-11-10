@@ -47,7 +47,7 @@ attempts to override them from `env:` — see [The manifest](/docs/getting-start
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `MIABI_PORT` | `9000` | API listen port |
-| `MIABI_ENV` | `dev` | `dev` or `production` |
+| `MIABI_ENV` | `production` | `production` or `dev`. `dev` relaxes the production checks below; never use it on a reachable host |
 | `MIABI_JWT_SECRET` | — | **Required in production.** Signs access tokens |
 | `MIABI_ENCRYPTION_KEY` | — | **Required in production.** AES key for secrets at rest (env vars, DB passwords, custom certs). Miabi refuses to start outside dev without it; in dev, those values are then only base64-encoded |
 | `MIABI_WEB_URL` | — | Public URL of your instance (used for links, OAuth callbacks, invitations). Also the CORS allowlist, so it must be a concrete origin |
@@ -55,9 +55,12 @@ attempts to override them from `env:` — see [The manifest](/docs/getting-start
 | `MIABI_TRUSTED_PROXIES` | *(empty)* | Comma-separated CIDRs or IPs allowed to set `X-Forwarded-For` / `X-Real-IP`. Empty trusts those headers from any client — see [Trusted proxies](#trusted-proxies) |
 | `MIABI_LOGIN_TOKEN_TTL_HOURS` | `24` | Lifetime of the API key minted by `miabi login` and **Copy login command** — see [Signing in from the CLI](/docs/security/authentication) |
 | `MIABI_LOGIN_TOKEN_MAX_TTL_HOURS` | `168` | Longest lifetime a caller may request for that key |
+| `MIABI_PASSKEYS_ENABLED` | `true` | Passkey (WebAuthn) sign-in. Needs `MIABI_WEB_URL`, which passkeys are bound to |
+| `MIABI_PASSKEY_RP_ID` | host of `MIABI_WEB_URL` | The WebAuthn relying-party ID. Set it to a parent domain (`example.com`) only if passkeys must work across its subdomains; changing it later invalidates every registered passkey |
+| `MIABI_PASSKEY_ORIGINS` | — | Extra comma-separated origins allowed to use passkeys, besides `MIABI_WEB_URL`'s own |
 | `MIABI_ADMIN_EMAIL` | `admin@example.com` | Login of the platform admin seeded on first boot |
-| `MIABI_ADMIN_PASSWORD` | — | **Required in production.** Password for the seeded platform admin. At least 12 characters. Miabi refuses to start outside dev while this is empty, shorter, or left at its built-in default |
-| `MIABI_LOG_LEVEL` | — | How chatty Miabi's own logs are: `debug`, `info`, `warn`, `error`. Empty follows the environment — `debug` in dev, `info` in production. It also sets database query logging: every query at `debug`, failed and slow (over 1s) queries at `info` and `warn`, failed queries only at `error`. Queries are logged without their bound values |
+| `MIABI_ADMIN_PASSWORD` | *(built-in, dev only)* | **Required in production.** Password for the seeded platform admin. At least 12 characters. Miabi refuses to start outside dev while this is empty, shorter, or left at its built-in default |
+| `MIABI_LOG_LEVEL` | `info` | How chatty Miabi's own logs are: `debug`, `info`, `warn`, `error`. Set but empty, it is `debug` when `MIABI_DEV_MODE=true` and `info` otherwise. It also sets database query logging: every query at `debug`, failed and slow (over 1s) queries at `info` and `warn`, failed queries only at `error`. Queries are logged without their bound values |
 | `TZ` | `UTC` | Timezone for log timestamps and scheduled jobs. Any zoneinfo name (`Europe/Paris`, `America/New_York`) |
 
 :::caution
@@ -131,7 +134,7 @@ Off by default. See [GPUs](/docs/applications/gpus) for the full workflow.
 | `MIABI_METRICS_SCRAPE_SECONDS` | `60` | Metrics sampling interval |
 | `MIABI_METRICS_RETENTION_HOURS` | `24` | Metrics history window |
 | `MIABI_PROXY_NETWORK` | *(discovered)* | Docker network shared by the gateway and app containers so the proxy can reach backends (legacy alias: `MIABI_GOMA_NETWORK`). Unset, Miabi uses the network labelled `io.miabi.role=control-plane`, else an existing `miabi` network from before the rename, else creates `miabi-proxy` |
-| `MIABI_INTERNAL_NETWORK` | *(unset)* | The platform's [private network](/docs/networking/networks-and-subnets#the-platforms-private-network), where the control-plane database and cache live. Set by `miabi setup` (`spec.networking.internal`); on a Compose stack `.env.example` sets it to `miabi-internal`, the network `compose.yaml` creates |
+| `MIABI_INTERNAL_NETWORK` | `miabi-internal` | The platform's [private network](/docs/networking/networks-and-subnets#the-platforms-private-network), where the control-plane database and cache live. `miabi setup` writes it from `spec.networking.internal`; on a Compose stack it is the network `compose.yaml` creates |
 | `MIABI_GOMA_PROVIDER_DIR` | `/etc/goma/providers` | Directory where Miabi writes per-route Goma config files that the gateway hot-reloads |
 | `MIABI_WEB_DIR` | — | Directory of the built web UI; when set, Miabi serves it as an SPA at `/`. The official image serves the UI from the embedded binary |
 | `DOCKER_HOST` | `unix:///var/run/docker.sock` | Docker Engine endpoint |
@@ -338,6 +341,7 @@ tab. See [Registry](/docs/registry/administration).
 | `MIABI_FORWARD_RELAY_IMAGE` | `alpine/socat:latest` | Image used for the forward relay container |
 | `MIABI_METADATA_GUARD` | `false` | `true` blocks containers on every node from reaching cloud metadata services (`169.254.0.0/16`, Azure's `168.63.129.16`, Alibaba's `100.100.100.200`, AWS's `fd00:ec2::254`) with an nftables table, via an `mb-metadata-guard` container per node. DNS to those addresses stays open. Turning it back off removes the guard and its table. Needs `nft` on the host |
 | `MIABI_HOST_PROC` | `/host/proc` | procfs path for real host CPU/memory. The compose binds `/proc:/host/proc:ro` |
+| `MIABI_NODE_STATS_AGENT` | `true` | Remote nodes' agents push their host CPU/memory readings. `false` measures each remote node with a short-lived helper container instead |
 
 ## Container security profile
 
@@ -365,6 +369,14 @@ Self-service sign-up is off until you turn it on. See [Authentication](/docs/sec
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `MIABI_LICENSE_FILE` | — | Path to a signed license token auto-installed on boot (air-gapped / IaC friendly). A newer DB-installed license still wins |
+
+## Platform backups
+
+The [platform backup](/docs/administration/platform-backup) destination, schedule, retention and
+passphrase can be set with `MIABI_PLATFORM_BACKUP_*` variables instead of the admin page. When set,
+the environment wins and the matching fields are locked in the UI — see
+[Configuring from the environment](/docs/administration/platform-backup#configuring-from-the-environment)
+for the full list.
 
 ## Advanced
 

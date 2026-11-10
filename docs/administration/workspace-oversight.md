@@ -1,7 +1,7 @@
 ---
 sidebar_position: 3
 title: Workspace Oversight
-description: Cross-workspace visibility, privileged workspaces, and moderating the domains, routes and host ports tenants ask for.
+description: Cross-workspace visibility, restricting or suspending a workspace, privileged workspaces, and moderating the domains, routes and host ports tenants ask for.
 ---
 
 # Workspace Oversight
@@ -21,6 +21,48 @@ runs under.
 Admin visibility here is deliberately **structural, not contents**. You can see that a
 workspace has eleven applications and who owns it; reading their secrets is not an admin
 capability. Secrets are encrypted per workspace, and the admin console has no key.
+
+## Restricting a workspace
+
+A platform admin can put a hold on a workspace — for abuse, an unpaid invoice, or an investigation —
+without deleting anything. Open it from **Platform admin → Workspaces**; the **Restriction** card
+offers two states:
+
+| | **Read-only** | **Suspended** |
+|---|---|---|
+| Running apps and databases | Keep running | Stopped |
+| Changes through the console, CLI or API | Refused | Refused |
+| Automated deploys (git push, GitOps sync, scheduled or pushed pipelines) | Refused | Refused |
+| CronJobs | Keep running on schedule | Paused |
+| Control-manager restarts of failed apps | Continue | Stopped apps stay stopped |
+| The workspace's routes | Serve normally | Answer `503` with a notice that the site is temporarily unavailable |
+
+Members can still sign in and look around. A banner across the workspace says it is read-only or
+suspended by the platform administrator, with your **Reason** and, when set, its end date. Refused
+requests return `WORKSPACE_READ_ONLY` or `WORKSPACE_SUSPENDED`, with the reason in the message.
+
+To set one, pick the **State**, write a **Reason** (shown to the workspace's members), optionally set
+**Ends on**, and click **Apply restriction**. Suspending asks for confirmation first. Data, volumes
+and backups are always kept.
+
+- **Lifting** — **Lift restriction** makes the workspace fully usable again. Lifting a suspension
+  restarts exactly the apps and databases it stopped, not ones a member had stopped on purpose.
+  Switching a suspended workspace to read-only restarts them the same way.
+- **End date** — leave **Ends on** blank to keep the restriction until you lift it. With a date set,
+  Miabi lifts it automatically: a job checks every five minutes, so it ends within a few minutes of
+  the date.
+- **Stop all / Start all** — the same card stops or starts every workload in the workspace without
+  restricting it. Nothing is deleted.
+
+The platform's system workspace cannot be restricted. Every restriction you set or lift is written to
+the [audit log](/docs/operations/audit-log).
+
+:::note Frozen workspaces
+A third state, **Frozen**, is set only by a [workspace migration](/docs/operations/migration): apps
+are stopped and changes refused while the workspace is copied, but databases keep running so they can
+be exported. Its owner unfreezes it from the workspace, or you can lift it from the Restriction card.
+No other restriction can be set on a frozen workspace until then.
+:::
 
 ## Privileged workspaces
 

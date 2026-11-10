@@ -1,7 +1,7 @@
 ---
 sidebar_position: 6
 title: Manifest reference
-description: Every miabi.io/v1 kind and field accepted by apply and GitOps — Application, Stack, Database, Volume, Secret, Config, Registry, Middleware, Route, CronJob, Job, Domain and Project.
+description: Every miabi.io/v1 kind and field accepted by apply and GitOps — Application, Stack, Database, Volume, Secret, SealedSecret, Config, Registry, Middleware, Route, CronJob, Job, Domain, GitRepository, GitSource and Project.
 ---
 
 # Manifest reference
@@ -48,7 +48,7 @@ deploys to staging and production unchanged.
 |---|---|---|
 | [`Application`](#application) | A long-running container workload | 3rd |
 | [`Stack`](#stack) | Groups applications into one unit and network | 2nd |
-| [`Database`](#database) | A managed Postgres / MySQL / MariaDB / Redis database | 2nd |
+| [`Database`](#database) | A managed PostgreSQL, MySQL, MariaDB, Redis, MongoDB or libSQL database | 2nd |
 | [`Volume`](#volume) | Persistent storage | 1st |
 | [`Secret`](#secret) | A named encrypted value | 1st |
 | [`SealedSecret`](#sealedsecret) | A secret value sealed to the workspace's key, safe to commit | 1st |
@@ -146,8 +146,8 @@ spec:
 
 | Field | Notes |
 |---|---|
-| `image` | **Required** unless `source` is set — exactly one of the two. Repository without a tag, e.g. `ghcr.io/acme/web`. |
-| `tag` | Defaults to `latest` when composing the pull reference. |
+| `image` | **Required** unless `source` is set — exactly one of the two. A repository, e.g. `ghcr.io/acme/web`, optionally with its tag: `image: nginx:1.25` is the same as `image: nginx` with `tag: "1.25"`. A registry port (`registry.example.com:5000/team/web`) is not a tag. |
+| `tag` | The tag to pull. Defaults to the tag in `image`, else `latest`. Setting it alongside a tag in `image` is allowed only when both match. |
 | `digest` | A `sha256:…` pin. CI writes it; GitOps converges the runtime to it. |
 | `registry` | Names a [`Registry`](#registry) credential. It need not be declared in the same bundle — an undeclared name resolves against the workspace's existing credentials. An unknown name is an error, not a silent anonymous pull. |
 | `command` | Overrides the image's command (argv form). |
@@ -368,6 +368,7 @@ spec:
   resources:            # optional; gives the database an instance of its own
     memory: 1Gi
     cpu: "0.5"
+  readOnlyUser: true    # optional, PostgreSQL only
 ```
 
 | `instance` | Behaviour |
@@ -388,6 +389,12 @@ engine tuned to the memory — see [resource sizing](/docs/databases/provisionin
 Stating them gives the database an instance of its own, since one it reused would already run with
 another's size: `auto` provisions a new instance instead of reusing one, and `shared` with
 `resources` is an error.
+
+`readOnlyUser: true` adds a second user with `SELECT` on every table, current and future — for
+reporting tools, BI dashboards, or a replica-style reader. Its credentials are available as
+`{{ .databases.<name>.readonly_user }}`, `.readonly_password` and `.readonly_uri` (or `.readonly_url`).
+`false` removes the user; omitted, whatever the database has is kept, so a user added in the console
+survives. It is refused on engines other than PostgreSQL.
 
 Omitted, the instance keeps whatever limits it has, so a size set in the console or by the plan's
 default is left alone. A stated limit converges, restarting the instance, and `"0"` removes it. A
@@ -1005,7 +1012,7 @@ contents are rendered as templates before they are applied. Four collections are
 
 | Reference | Resolves to |
 |---|---|
-| `{{ .databases.<name>.host }}` | A managed database's connection details. Also `.port`, `.user`, `.password`, `.name`, `.uri` (or its alias `.url`). Bare `{{ .databases.<name> }}` yields the URI. |
+| `{{ .databases.<name>.host }}` | A managed database's connection details. Also `.port`, `.user`, `.password`, `.name`, `.uri` (or its alias `.url`), and, with [`readOnlyUser: true`](#database), `.readonly_user`, `.readonly_password` and `.readonly_uri`. Bare `{{ .databases.<name> }}` yields the URI. |
 | `{{ .applications.<name>.url }}` | Another application's address. Also `.host`, `.port`, `.scheme`. Bare `{{ .applications.<name> }}` yields the URL. |
 | `{{ .secrets.<name> }}` | A workspace secret. In `env` it is kept as a reference and resolved **at deploy** — see [secrets in env](#secrets-in-env). Elsewhere, its value is resolved at apply time. |
 | `{{ .inputs.<key> }}` | Marketplace templates only — see [creating a template](/docs/marketplace/creating-a-template). |
@@ -1105,6 +1112,8 @@ takes either form, as its table shows.
 
 Beyond the per-field rules above, a bundle is refused when it is parsed if:
 
+- an `Application`'s `image` carries a tag that differs from its `tag`;
+- a `Database` sets `readOnlyUser: true` on an engine other than PostgreSQL;
 - a `Registry` sets `password` without `username`;
 - a `GitRepository` has no `url`, an `auth` other than `public`, `token` or `ssh`, a `secretRef` on a
   `public` repository, or no `secretRef` on a `token` or `ssh` one;
