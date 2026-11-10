@@ -22,7 +22,7 @@ and obtains certificates from **Let's Encrypt using the HTTP-01 challenge**. Thi
 installs, and renews the certificate with no extra configuration. This is the right
 choice for ordinary single-hostname domains.
 
-A route can also be set to TLS **None** (`tls: off` in a manifest), in which case it answers plain
+A route can also be set to TLS **None** (`tls: { enabled: false }` in a manifest), in which case it answers plain
 HTTP only.
 
 #### Choosing the issuer
@@ -31,7 +31,7 @@ The gateway's `certManager` can define more than one named provider — a public
 and an internal CA, say — with one of them as the default. Routes use the default unless
 told otherwise:
 
-- **Per route** — a [declarative Route](/docs/cicd/manifest-reference) sets `tlsProvider` to
+- **Per route** — a [declarative Route](/docs/cicd/manifest-reference) sets `tls.provider` to
   pick the provider for its automatic certificate.
 - **Per cluster** — the one-click URLs generated for apps in a cluster use that cluster's
   **certificate provider**, set by a platform admin next to its external domain in the

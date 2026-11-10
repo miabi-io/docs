@@ -48,8 +48,7 @@ metadata: { name: guestbook }
 spec:
   hosts: [guestbook.example.com, www.guestbook.example.com]
   app: guestbook
-  port: 8080
-  tls: acme
+  port: 8080            # or a port name the app declares, like http
   middlewares: [force-https]
 ```
 
@@ -162,8 +161,8 @@ spec:
   hosts: [hooks.example.com]
   app: receiver
   methods: [POST]
-  tls: custom
-  certificate: example-wildcard   # a Certificate already stored in the workspace
+  tls:
+    certificate: example-wildcard   # a Certificate already stored in the workspace
 ```
 
 Certificates are never declared in a manifest, since they carry a private key. Upload the certificate

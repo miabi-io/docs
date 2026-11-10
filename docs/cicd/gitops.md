@@ -316,8 +316,7 @@ spec:
       spec:
         hosts: [posta.example.com]
         app: posta
-        port: 9000
-        tls: acme                # acme | custom | off
+        port: 9000               # TLS omitted: HTTPS with an ACME certificate
         middlewares: [posta-ratelimit]   # the gateway chain, in execution order
 ```
 
@@ -403,9 +402,9 @@ unambiguously take part — so a converged resource never shows phantom drift:
 - **Diffed:** image, tag, digest, build `source`, registry credential, command, resource caps,
   non-secret env, container labels, the `security` block, and per-port exposure. Routes and domains
   compare every field they declare.
-- **Diffed only when stated:** `deployment` and `placement`, so a manifest silent about them leaves
-  the console's settings alone.
-- **Not diffed:** create-time structure — the ports themselves, mounts, and stack membership.
+- **Diffed only when stated:** `deployment`, `placement` and `ports`, so a manifest silent about
+  them leaves the console's settings alone.
+- **Not diffed:** create-time structure — mounts and stack membership.
 - **Never diffed:** secret values (an existing `Secret` is always in sync), and `secretEnv` values,
   which appear in a plan as `(secret)`.
 
