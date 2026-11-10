@@ -65,6 +65,14 @@ Because templates are **versioned**, upgrades are deliberate:
    version and the new one, including new volumes and configs, and any **New settings to provide**.
 3. Fill in the new settings and select **Upgrade to v*X***.
 
+The plan also shows the **release notes** of every version the upgrade crosses. A version marked
+**Breaking** needs your attention (a data migration or a configuration change), so read its notes
+before you upgrade.
+
+Some applications can't skip versions; Nextcloud, for example, only upgrades one major version at a
+time. When the newest version can't be reached from yours in one step, the plan upgrades you to the
+furthest version you can reach and says so. Upgrade again afterwards to continue.
+
 An upgrade moves each app to the new image, adds new environment variables, creates new volumes and
 configs and mounts them, then redeploys. It does **not** overwrite environment values you already
 have, and changes it can't apply safely are reported as warnings instead: changed or removed
@@ -78,6 +86,19 @@ Marketplace**.
 Treat a template upgrade like any deploy: take a [backup](/docs/storage/backups) of the app's
 databases and volumes first, then upgrade. If anything goes wrong you can roll back the deployment.
 :::
+
+## Image pinning
+
+Official templates record the exact image each version was published with, by digest. An install or
+upgrade runs that image even if the upstream tag is later moved to a different build. Changing an
+app's image or tag in its settings removes the pin, so your change takes effect.
+
+## Deprecated templates
+
+A template is deprecated when it can no longer be installed safely, for example because upstream
+stopped publishing its image. It disappears from the marketplace and new installs are refused, but
+existing installs keep running and can still be upgraded. The template page names a replacement when
+there is one.
 
 ## Uninstalling
 

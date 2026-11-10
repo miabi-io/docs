@@ -272,7 +272,11 @@ Official and community templates live in the marketplace repository on GitHub:
 
 **[github.com/miabi-io/marketplace](https://github.com/miabi-io/marketplace)**
 
-To contribute a community template:
+The quickest way is from Miabi itself: in **Marketplace → Import**, or on a custom template's page,
+select **Submit to marketplace**. It opens a prefilled submission form on GitHub with your manifest;
+a maintainer turns accepted submissions into a pull request.
+
+To open the pull request yourself:
 
 1. Fork the repository and create `community/<name>/`:
 
@@ -281,6 +285,7 @@ To contribute a community template:
      metadata.yaml            # optional storefront enrichment (featured, screenshots, sourceRepo)
      README.md                # optional long description, shown on the detail page
      <version>/template.yaml  # the install manifest (apiVersion: miabi.io/v1)
+     <version>/release.yaml   # optional release notes, upgrade rules and image digests
    ```
 
    `<name>` is the template handle. It must equal the manifest's `metadata.name` and be unique across
@@ -298,8 +303,27 @@ To contribute a community template:
 
    Then install it for real through **Marketplace → Import** ([previous section](#testing-your-template)).
 
-3. Open a **pull request**. CI re-runs the validator and the index drift check, and a maintainer
-   reviews and merges.
+3. Open a **pull request**. CI re-runs the validator and the index drift check, checks that every
+   image still resolves in its registry, and installs the changed template on a test Miabi before a
+   maintainer reviews and merges.
+
+### Release notes and upgrade rules
+
+Each version can ship a `release.yaml` next to its `template.yaml`. Miabi shows it in the upgrade
+preview:
+
+```yaml
+released: "2026-11-08"
+notes: |
+  Moves to Nextcloud 35. Back up the data volume first.
+breaking: true          # flags the upgrade for review
+requiresFrom: 1.4.0     # older installs must upgrade to 1.4.0 first
+images:                 # app name -> digest the tag resolved to; written by `marketplace lock`
+  nextcloud: sha256:…
+```
+
+It lives outside `template.yaml` so that older Miabi versions, which reject unknown manifest fields,
+keep syncing the catalog.
 
 Merging to `main` redeploys the hosted catalog, so the template is live immediately and Miabi
 instances pick it up on their next sync, under the **Community** tab. Changes under `official/`
