@@ -48,7 +48,7 @@ include:
 - the Miabi version, shown in the web console;
 - how you installed it (install script, Docker Compose, existing server) and the host OS;
 - the steps to reproduce, what you expected, and what happened instead;
-- the output of `sudo miabi stack status`, relevant container logs (`docker logs`) and screenshots.
+- the output of `sudo miabi system status`, relevant container logs (`docker logs`) and screenshots.
 
 Remove secrets, tokens and private hostnames from logs before you paste them.
 

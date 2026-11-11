@@ -24,8 +24,8 @@ Set these variables under the manifest's `spec.server.env` instead, then apply t
 one command, or by editing the file and converging:
 
 ```bash
-sudo miabi stack env set MIABI_LOG_LEVEL=debug   # writes the value and shows the change
-sudo miabi stack apply                           # recreates only the components that changed
+sudo miabi system env set MIABI_LOG_LEVEL=debug  # writes the value and shows the change
+sudo miabi system apply                          # recreates only the components that changed
 
 sudo vi /etc/miabi/miabi.yaml     # spec: { server: { env: { MIABI_LOG_LEVEL: debug, … } } }
 sudo miabi setup                  # re-converges; recreates only what actually changed
@@ -240,8 +240,8 @@ requests coming from them; every other request is attributed to its connection a
 install the gateway reaches the control plane over the private network:
 
 ```bash
-sudo miabi stack env set MIABI_TRUSTED_PROXIES=10.62.0.0/16
-sudo miabi stack apply
+sudo miabi system env set MIABI_TRUSTED_PROXIES=10.62.0.0/16
+sudo miabi system apply
 ```
 
 On a Compose stack, set it in `.env`. Entries are CIDRs (`10.62.0.0/16`) or single addresses

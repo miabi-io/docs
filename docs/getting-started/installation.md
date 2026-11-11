@@ -129,23 +129,23 @@ To migrate: back up, `docker compose down`, re-run with `MIABI_FORCE_STACK=1`, r
 API client you already knew, and the manager of the stack on this host.
 
 ```bash
-sudo miabi stack status                # what is running, and its health
-sudo miabi stack restart               # restart the stack, or one component
+sudo miabi system status               # what is running, and its health
+sudo miabi system restart              # restart the stack, or one component
 sudo miabi upgrade                     # roll forward to a newer release (rolls back on failure)
-sudo miabi stack uninstall             # keeps your data; add --volumes to destroy it
+sudo miabi system uninstall            # keeps your data; add --volumes to destroy it
 ```
 
 `setup` and `upgrade` sit at the top level because they are the host's lifecycle; everything else
-is namespaced under `stack`. All of them need root — they write `/etc/miabi` and talk to the Docker
+is namespaced under `system`. All of them need root — they write `/etc/miabi` and talk to the Docker
 socket — and they only work on the machine they run on.
 
 :::note Upgrading from an earlier install
 The `miabi-stack` wrapper earlier releases installed is **gone**. Replace it in any runbook or cron
 job: `miabi-stack install` → `miabi setup`, `miabi-stack update` → `miabi upgrade`, everything else
-→ `miabi stack <verb>`. Re-running the installer removes it.
+→ `miabi system <verb>`. Re-running the installer removes it.
 
 Your manifest also moves. Miabi reads `/etc/miabi/miabi.yaml` now; if yours is still at
-`/etc/miabi/stack.yaml` the CLI detects it and tells you to run `sudo miabi stack migrate-config`,
+`/etc/miabi/stack.yaml` the CLI detects it and tells you to run `sudo miabi system config migrate`,
 which renames it.
 :::
 
@@ -247,8 +247,8 @@ protection is lost.
 
 Edit it and re-run `sudo miabi setup` — the converge is idempotent, so only what actually changed
 is recreated. For environment variables there is no need to edit by hand:
-`sudo miabi stack env set MIABI_SMTP_HOST=smtp.example.com` writes the value and shows what changes;
-`sudo miabi stack apply` then recreates only the components that changed.
+`sudo miabi system env set MIABI_SMTP_HOST=smtp.example.com` writes the value and shows what changes;
+`sudo miabi system apply` then recreates only the components that changed.
 
 :::note Installs from before this release
 The manifest used to be a flat file starting `version: 1`. Both shapes load, and `miabi setup` writes
@@ -261,7 +261,7 @@ cannot be read by an older CLI, so rolling the CLI back means restoring it.
 The manifest was `/etc/miabi/stack.yaml` before this release, which collided with the `stack.yaml`
 name used for [declarative manifests](/docs/cicd/manifest-reference). The old path is **no longer
 read**, but it is detected: point a command at a host that still has one and it says so, and
-`sudo miabi stack migrate-config` renames it.
+`sudo miabi system config migrate` renames it.
 :::
 
 :::caution Pin your images
@@ -298,7 +298,7 @@ After editing it, restart the gateway to apply it (Goma watches the providers di
 base config):
 
 ```bash
-sudo miabi stack restart miabi-gateway
+sudo miabi system restart miabi-gateway
 ```
 
 `spec.gateway.env` is the gateway's environment: `GOMA_LOG_LEVEL` and `GOMA_ANALYTICS_ENABLED`
@@ -403,7 +403,7 @@ answer, so `--yes` is not optional there.
 
 `setup` installs `miabi/miabi` at the **latest published Miabi release**, looked up when it runs —
 the version is not baked into the CLI. That decoupling is deliberate: the CLI releases on its own
-cadence, so a CLI built months ago still installs today's Miabi, and `miabi stack status` shows both.
+cadence, so a CLI built months ago still installs today's Miabi, and `miabi system status` shows both.
 The lookup reads the stable release from [versions.miabi.io](https://versions.miabi.io), falling back
 to GitHub's releases API (or a `MIABI_RELEASE_API` mirror instead of both). A security release is
 called out when it is picked. If neither can be reached, `setup` warns and falls back to
@@ -419,9 +419,9 @@ sudo miabi setup --domain miabi.example.com --image registry.example.com/miabi:%
 ### Everything else is the same binary
 
 ```bash
-sudo miabi stack status
+sudo miabi system status
 sudo miabi upgrade                # rolls the control plane forward, rolling back if it fails
-sudo miabi stack uninstall        # keeps your data; add --volumes to destroy it
+sudo miabi system uninstall       # keeps your data; add --volumes to destroy it
 ```
 
 ### Install with `docker run` — no binary at all
@@ -437,10 +437,10 @@ docker run --rm -it \
 ```
 
 `install`, `upgrade`, `restart`, `status` and `uninstall` all run this way. They are the same
-commands as `miabi setup` / `miabi upgrade` / `miabi stack …` — one implementation, two front-ends —
+commands as `miabi setup` / `miabi upgrade` / `miabi system …` — one implementation, two front-ends —
 so neither path can drift from the other. Two differences: the image's `install` takes no
 `--version` (the image tag *is* the version), and its local database dumps are `db-backup`,
-`db-backups` and `db-restore` rather than `stack backup …`:
+`db-backups` and `db-restore` rather than `system backup …`:
 
 ```bash
 # alias it once and the day-two commands are short

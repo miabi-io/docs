@@ -18,7 +18,7 @@ installer cannot read the database to learn how to start the database.
 apiVersion: install.miabi.io/v1   # the only accepted value
 kind: ControlPlane                # the only kind
 metadata:
-  name: miabi                     # names the install in `stack status`; nothing else
+  name: miabi                     # names the install in `system status`; nothing else
 spec: {}
 ```
 
@@ -104,14 +104,14 @@ Two fields are derived state, not settings:
 Edit the file and re-run `sudo miabi setup`. For environment variables, don't edit by hand:
 
 ```bash
-sudo miabi stack env ls
-sudo miabi stack env set MIABI_SMTP_HOST=smtp.example.com
-sudo miabi stack env set GOMA_LOG_LEVEL=debug --gateway
-sudo miabi stack env unset MIABI_SMTP_HOST
-sudo miabi stack apply
+sudo miabi system env ls
+sudo miabi system env set MIABI_SMTP_HOST=smtp.example.com
+sudo miabi system env set GOMA_LOG_LEVEL=debug --gateway
+sudo miabi system env unset MIABI_SMTP_HOST
+sudo miabi system apply
 ```
 
-Each edit shows what changes and saves it; `stack apply` then recreates only the components whose
+Each edit shows what changes and saves it; `system apply` then recreates only the components whose
 environment moved (`--apply` on an edit does both at once). The error names where the value lives when a variable is refused:
 
 - **Always refused:** anything Miabi derives from the manifest (domain, secrets, images, networks),

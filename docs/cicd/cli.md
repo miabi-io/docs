@@ -183,7 +183,7 @@ argument**, or use the app bound with `miabi use`.
 | `miabi db …` | Manage database instances + logical databases (see below). |
 | `miabi secrets …` | Manage the workspace secret vault (see below). |
 | `miabi configs …` | Manage the workspace's configuration files (see below). |
-| `miabi apply -f <file\|dir> [--prune] [--dry-run] [--force]` | Converge to [declarative manifests](/docs/cicd/gitops). A directory reads every `.yaml` and `.yml` file under it, the same files a Git source pointed at it reads. `--force` also changes resources a GitOps project owns, until its next sync reverts them. |
+| `miabi apply -f <file\|dir\|url> [--prune] [--dry-run] [--force]` | Converge to [declarative manifests](/docs/cicd/gitops). A directory reads every `.yaml` and `.yml` file under it, the same files a Git source pointed at it reads. An `http(s)://` URL is fetched without your Miabi credentials. `--force` also changes resources a GitOps project owns, until its next sync reverts them. |
 | `miabi delete -f <file> [--dry-run]` | Delete exactly the resources a manifest bundle names. |
 | `miabi completion <shell>` | Shell completion (tab-completes app slugs). |
 
@@ -351,7 +351,7 @@ agent is allowed to do.
 
 ## Managing the host
 
-One group of commands is the exception to "pure API client": **`setup`, `upgrade` and `stack …` act
+One group of commands is the exception to "pure API client": **`setup`, `upgrade` and `system …` act
 on the machine they run on**, through its Docker socket, and never touch the HTTP API. They are what
 installs and operates a Miabi host — see
 [Installation](/docs/getting-started/installation) and [Upgrades](/docs/upgrades/upgrading).
@@ -359,32 +359,36 @@ installs and operates a Miabi host — see
 | Command | What it does |
 |---|---|
 | `miabi setup [-d, --domain <host>] [--version <x.y.z>] [--image <ref>] [--yes]` | Install the stack on this host, or converge an existing install. Idempotent. A fresh install defaults to the latest published release. |
-| `miabi upgrade [component] [--version <x.y.z>] [--image <ref>] [--yes]` | Roll the stack forward, rolling back automatically if the new image never becomes healthy. `--version` swaps only the tag (keeping a private registry); `--image` replaces the whole reference. Also available as `miabi stack upgrade`. |
-| `miabi stack status` | What is running, its health, and any drift from the manifest. |
-| `miabi stack apply [--yes]` | Bring the running stack in line with the manifest: lists the components whose spec changed, then recreates only those. Nothing changed means nothing restarts. |
-| `miabi stack restart [component] [--yes]` | Restart in place so containers re-read their on-disk config. A restart does not apply manifest changes — use `stack apply`. |
-| `miabi stack backup [--dir <path>]` | Dump the platform database to a local file, by default under `backups/` beside the manifest. |
-| `miabi stack backups [--dir <path>]` | List the local dumps. |
-| `miabi stack restore <dump> [--force] [--yes]` | Replace the platform database with a dump. `--force` accepts a dump taken by a newer Miabi than the one running. |
-| `miabi stack uninstall [--volumes] [--yes]` | Remove the stack's containers; `--volumes` also destroys the database. |
-| `miabi stack migrate-config` | Rename the legacy `/etc/miabi/stack.yaml` to `/etc/miabi/miabi.yaml`. |
-| `miabi stack env ls` / `get KEY` | Show the environment the manifest carries. `--gateway` reads the gateway's instead of the control plane's. |
-| `miabi stack env set KEY=VALUE […] [--apply]` | Write variables to the manifest and show what changes. The running stack keeps the old values until `miabi stack apply`; `--apply` does both in one step. |
-| `miabi stack env unset KEY […] [--apply]` | Remove variables. A variable Miabi seeds (`TZ`, `MIABI_LOG_LEVEL`) comes back at its default rather than disappearing, and the output says so. |
+| `miabi upgrade [component] [--version <x.y.z>] [--image <ref>] [--yes]` | Roll the stack forward, rolling back automatically if the new image never becomes healthy. `--version` swaps only the tag (keeping a private registry); `--image` replaces the whole reference. Also available as `miabi system upgrade`. |
+| `miabi system status` | What is running, its health, and any drift from the manifest. |
+| `miabi system apply [--yes]` | Bring the running stack in line with the manifest: lists the components whose spec changed, then recreates only those. Nothing changed means nothing restarts. |
+| `miabi system restart [component] [--yes]` | Restart in place so containers re-read their on-disk config. A restart does not apply manifest changes — use `system apply`. |
+| `miabi system backup [--dir <path>]` | Dump the platform database to a local file, by default under `backups/` beside the manifest. |
+| `miabi system backups [--dir <path>]` | List the local dumps. |
+| `miabi system restore <dump> [--force] [--yes]` | Replace the platform database with a dump. `--force` accepts a dump taken by a newer Miabi than the one running. |
+| `miabi system uninstall [--volumes] [--yes]` | Remove the stack's containers; `--volumes` also destroys the database. |
+| `miabi system config migrate` | Rename the legacy `/etc/miabi/stack.yaml` to `/etc/miabi/miabi.yaml`. |
+| `miabi system env ls` / `get KEY` | Show the environment the manifest carries. `--gateway` reads the gateway's instead of the control plane's. |
+| `miabi system env set KEY=VALUE […] [--apply]` | Write variables to the manifest and show what changes. The running stack keeps the old values until `miabi system apply`; `--apply` does both in one step. |
+| `miabi system env unset KEY […] [--apply]` | Remove variables. A variable Miabi seeds (`TZ`, `MIABI_LOG_LEVEL`) comes back at its default rather than disappearing, and the output says so. |
 
 Edits are saved, not applied, so several of them cost one recreate per component:
 
 ```bash
-sudo miabi stack env set MIABI_SMTP_HOST=smtp.example.com MIABI_SMTP_PORT=587
-sudo miabi stack env set GOMA_LOG_LEVEL=debug --gateway
-sudo miabi stack apply
+sudo miabi system env set MIABI_SMTP_HOST=smtp.example.com MIABI_SMTP_PORT=587
+sudo miabi system env set GOMA_LOG_LEVEL=debug --gateway
+sudo miabi system apply
 ```
 
-`stack env` is also reachable as `miabi setup env …` — the same command under the verb an operator
+`system env` is also reachable as `miabi setup env …` — the same command under the verb an operator
 reaches for when configuring an install. Settings the manifest models with their own field (the
 registry's enablement, host, storage driver and platform token, the networks, the backup destination)
 are **refused** there, and the error names where the value actually lives. Other registry settings,
 such as `MIABI_REGISTRY_STORAGE_CLASS` or the S3 variables, are ordinary env entries.
+
+Before CLI 0.23.0 these commands were `miabi stack …`, and `system config migrate` was
+`miabi stack migrate-config`. The old spelling still works and prints the new one, so existing
+runbooks and cron jobs keep running; update them before the next major release removes it.
 
 They all need **root** (they write `/etc/miabi` and use the Docker socket) and a Linux or macOS
 Docker host. `-f, --file` points at a manifest other than `/etc/miabi/miabi.yaml`; so do
