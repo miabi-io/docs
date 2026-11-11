@@ -956,8 +956,8 @@ on the **Declared** tab of **Jobs** runs it by hand without changing what the ne
 
 ## Domain
 
-An owned hostname or zone: the default TLS policy routes under it inherit, and whether a wildcard
-certificate covers `*.name`. The hostname is `metadata.name`.
+An owned hostname or zone: the default TLS policy routes under it inherit, and whether the claim
+extends to every subdomain. The hostname is `metadata.name`.
 
 ```yaml
 apiVersion: miabi.io/v1
@@ -965,9 +965,13 @@ kind: Domain
 metadata:
   name: example.com
 spec:
-  tls: acme          # acme | custom (default acme)
-  wildcard: true     # also cover *.example.com (needs a DNS provider)
+  tls:
+    mode: acme       # acme | custom (default acme)
+  wildcard: true     # also claim *.example.com
 ```
+
+`wildcard` reserves every subdomain for this workspace, so no other workspace can verify one. It
+does not issue a wildcard certificate. The old string form `tls: acme` is still accepted.
 
 DNS-ownership verification is a runtime action, not a declarable field: a freshly applied domain
 starts unverified, and you verify it after apply. Domains carry no ownership label, so a

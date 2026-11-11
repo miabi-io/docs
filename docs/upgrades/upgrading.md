@@ -16,9 +16,9 @@ before an upgrade. A rolled-back image does not undo a migration, so a dump take
 way back. On a stack install, take one from the host:
 
 ```bash
-sudo miabi stack backup                      # writes /etc/miabi/backups/miabi-<version>-<time>.dump
-sudo miabi stack backup --dir /mnt/backups   # or somewhere else
-sudo miabi stack backups                     # list the dumps
+sudo miabi system backup                     # writes /etc/miabi/backups/miabi-<version>-<time>.dump
+sudo miabi system backup --dir /mnt/backups  # or somewhere else
+sudo miabi system backups                    # list the dumps
 ```
 
 This is a `pg_dump` of the control-plane database only: not volumes, certificates, tenant data or
@@ -30,10 +30,10 @@ what runs inside workspaces, see [Backups](/docs/storage/backups).
 ### Restoring a dump
 
 ```bash
-sudo miabi stack restore miabi-%MIABI_VERSION%-20261017T120000Z.dump
+sudo miabi system restore miabi-%MIABI_VERSION%-20261017T120000Z.dump
 ```
 
-Give a path, or a bare name from `stack backups`. Miabi stops the control plane, loads the dump into
+Give a path, or a bare name from `system backups`. Miabi stops the control plane, loads the dump into
 a scratch database, swaps it in only once it loaded cleanly, and starts the control plane again.
 Everything written since the dump is replaced.
 
@@ -176,7 +176,7 @@ A restart re-reads what is on disk — most usefully the gateway's `goma.yml`, w
 hot-reload (it watches its providers directory, not its base config):
 
 ```bash
-sudo miabi stack restart miabi-gateway   # or `miabi stack restart` for the whole stack
+sudo miabi system restart miabi-gateway  # or `miabi system restart` for the whole stack
 ```
 
 The config is validated before anything is stopped, so a broken edit cannot take the gateway down.
@@ -195,13 +195,13 @@ sudo miabi setup
 Environment variables need no hand-editing at all:
 
 ```bash
-sudo miabi stack env set MIABI_LOG_LEVEL=debug        # control plane
-sudo miabi stack env set GOMA_LOG_LEVEL=debug --gateway
-sudo miabi stack env unset MIABI_SMTP_HOST
-sudo miabi stack apply
+sudo miabi system env set MIABI_LOG_LEVEL=debug       # control plane
+sudo miabi system env set GOMA_LOG_LEVEL=debug --gateway
+sudo miabi system env unset MIABI_SMTP_HOST
+sudo miabi system apply
 ```
 
-Each edit shows the change and saves it; `stack apply` then recreates only the components whose
+Each edit shows the change and saves it; `system apply` then recreates only the components whose
 environment moved, once each however many edits you made. Pass `--apply` to an edit to do both in one
 step.
 

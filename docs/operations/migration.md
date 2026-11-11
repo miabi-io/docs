@@ -18,7 +18,7 @@ your own.
 Migration is **off** by default. The operator of each install turns it on:
 
 ```bash
-sudo miabi stack env set MIABI_MIGRATION_ENABLED=true --apply
+sudo miabi system env set MIABI_MIGRATION_ENABLED=true --apply
 ```
 
 Turning it on makes nothing exportable. A workspace can only be pulled while its owner has a

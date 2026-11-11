@@ -84,8 +84,8 @@ A few rules decide how they combine:
   recovery point a fresh host could not open. An explicit `false` overrides either.
 
 :::note
-Restart the control plane after changing these. On a stack install, `sudo miabi stack env set …`
-followed by `sudo miabi stack apply` does that, but a variable the manifest's `backup` section
+Restart the control plane after changing these. On a stack install, `sudo miabi system env set …`
+followed by `sudo miabi system apply` does that, but a variable the manifest's `backup` section
 already states is refused there: change the manifest and re-run `sudo miabi setup` instead.
 :::
 

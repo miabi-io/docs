@@ -112,7 +112,7 @@ protections for that route, written out but switched off so a fresh install stay
 
 | Install | File | Apply a change with |
 |---|---|---|
-| Stack (`miabi setup`) | `/etc/miabi/goma.yml` | `sudo miabi stack restart miabi-gateway` |
+| Stack (`miabi setup`) | `/etc/miabi/goma.yml` | `sudo miabi system restart miabi-gateway` |
 | Compose | `goma.yml` beside `compose.yaml` | `docker compose restart gateway` |
 
 Goma does not hot-reload this file, so a restart is required. On a stack install the config is
