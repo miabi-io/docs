@@ -298,7 +298,8 @@ spec:
       kind: Domain
       metadata: { name: posta.example.com }
       spec:
-        tls: acme                # acme | custom
+        tls:
+          mode: acme             # acme | custom
 
     # A gateway policy the route below runs. Declaring it here keeps the limit in
     # Git with everything else it protects.
