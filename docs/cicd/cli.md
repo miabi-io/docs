@@ -36,6 +36,28 @@ Homebrew 6 requires third-party taps to be trusted. The one-liner above handles 
 run `brew trust miabi-io/tap` before `brew install miabi`.
 :::
 
+**Windows** (PowerShell, no admin rights needed):
+
+```powershell
+irm https://raw.githubusercontent.com/miabi-io/cli/main/install.ps1 | iex
+```
+
+The script downloads the release for your architecture, checks it against the release's
+`checksums.txt`, installs `miabi.exe` to `%LOCALAPPDATA%\Programs\miabi` and adds that folder to your
+user `PATH`. Open a new terminal afterwards. Re-run it to upgrade.
+
+| Variable | Effect |
+|---|---|
+| `MIABI_CLI_VERSION` | Install this version (`0.23.0`) instead of the latest. |
+| `MIABI_INSTALL_DIR` | Install somewhere else, such as `C:\Tools\miabi`. |
+
+```powershell
+$env:MIABI_CLI_VERSION = "0.23.0"; irm https://raw.githubusercontent.com/miabi-io/cli/main/install.ps1 | iex
+```
+
+To uninstall, delete the folder and remove it from your user `PATH` (Settings → System → About →
+Advanced system settings → Environment Variables).
+
 **Go:**
 
 ```bash
