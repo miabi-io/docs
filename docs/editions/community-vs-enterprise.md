@@ -30,12 +30,12 @@ If you want a build with **zero enterprise code** (the deny-all stub), build it 
 | Capability | Community | Enterprise |
 |---|---|---|
 | Core PaaS (apps, domains, TLS, DBs, backups, monitoring, marketplace) | ✓ | ✓ |
-| Multi-node & cluster (Docker Swarm) | 3 nodes + the control plane | ✓ unlimited unless the license sets a cap |
+| Multi-node & cluster (Docker Swarm) | ✓ unlimited | ✓ unlimited |
 | Plan catalog | 3 plans | ✓ unlimited unless the license sets a cap |
 | Built-in container registry (local storage) | ✓ | ✓ |
 | Registry S3/MinIO storage | — | ✓ |
 | Volumes on the built-in `default` storage class | ✓ | ✓ |
-| [Storage classes](/docs/storage/storage-classes) — volumes on the disks you mount (bare metal, dedicated hosts) | 2 classes, `default` included | ✓ unlimited |
+| [Storage classes](/docs/storage/storage-classes) — volumes on the disks you mount (bare metal, dedicated hosts) | ✓ unlimited | ✓ unlimited |
 | [Organizations](/docs/workspaces/organizations) — tenant realms owning workspaces, users, their own SSO and their own locations | the built-in `default` one | ✓ create more |
 | [Passkey](/docs/security/passkeys) (WebAuthn) sign-in | ✓ | ✓ |
 | OAuth/OIDC SSO providers | one | multiple |
@@ -67,7 +67,8 @@ If you want a build with **zero enterprise code** (the deny-all stub), build it 
 | Platform image registry mirror | — | ✓ |
 | CLI + MCP server for AI agents (`miabi mcp`) | ✓ | ✓ |
 | Workspace-owned build runners | ✓ unlimited | ✓ unlimited |
-| Platform-shared runner pool | 2 runners | ✓ unlimited |
+| Platform-shared runner pool | ✓ unlimited | ✓ unlimited |
+| Offer only some shared runners to a plan | — | ✓ |
 | GPU workloads (NVIDIA passthrough) | ✓ | ✓ |
 | White-label [branding](/docs/administration/branding) (accent policy, logos, favicon, sign-in notice) | — | ✓ |
 | Restricted (force non-root) security profile | — | ✓ |
@@ -76,11 +77,11 @@ If you want a build with **zero enterprise code** (the deny-all stub), build it 
 | Support | Community (GitHub issues) | [Enterprise support](https://miabi.io/support) — commercial support and SLAs |
 
 :::tip
-The Community edition includes the entire core platform — deploying apps, custom domains, automatic TLS, managed databases, per-database backups, monitoring, the marketplace, and the built-in container registry (local storage) — plus **unlimited workspace-owned build runners**, up to three nodes besides the control plane, three plans, two storage classes, two platform-shared runners, one SSO provider, and seven days of workspace analytics. Audit events are recorded and pruned on schedule in every edition. Most individual developers, startups, and homelabs never need anything beyond it.
+The Community edition includes the entire core platform — deploying apps, custom domains, automatic TLS, managed databases, per-database backups, monitoring, the marketplace, and the built-in container registry (local storage) — plus **unlimited nodes, storage classes and build runners** (workspace-owned and platform-shared). The only caps are three plans, one SSO provider, and seven days of workspace analytics. Audit events are recorded and pruned on schedule in every edition. Most individual developers, startups, and homelabs never need anything beyond it.
 :::
 
 :::note
-Enterprise is about identity, governance, hardware, and scale: [organizations](/docs/workspaces/organizations) that turn one instance into several tenants, multiple and hidden SSO providers with group mapping, SAML, LDAP and SCIM, custom roles and per-resource policies, the audit log viewer with export and SIEM streaming, quota and per-user limit overrides, advanced multi-cluster placement and database sizes, announcements, platform backup, S3/MinIO storage for the container registry, a private template registry and image mirror, an unlimited shared runner pool, white-label branding, a restricted security profile, and [advanced canary control](/docs/applications/canary-deployments#manual-mode). It is also what puts tenant data on hardware you chose at scale: unlimited [storage classes](/docs/storage/storage-classes) for the disks you mount across a fleet, and [recovery points](/docs/storage/backups#recovery-points) that back up a whole database instance or a volume as one set. A commercial license also comes with [Enterprise support](https://miabi.io/support) — commercial support and SLAs, direct to the maintainers. A license can also set explicit node and plan caps; see [Licensing](/docs/editions/licensing#limits).
+Enterprise is about identity, governance and multi-tenancy, never about how much infrastructure you run: [organizations](/docs/workspaces/organizations) that turn one instance into several tenants, multiple and hidden SSO providers with group mapping, SAML, LDAP and SCIM, custom roles and per-resource policies, the audit log viewer with export and SIEM streaming, quota and per-user limit overrides, advanced multi-cluster placement and database sizes, announcements, platform backup, S3/MinIO storage for the container registry, a private template registry and image mirror, shared runners offered per plan, white-label branding, a restricted security profile, and [advanced canary control](/docs/applications/canary-deployments#manual-mode). It also adds [recovery points](/docs/storage/backups#recovery-points) that back up a whole database instance or a volume as one set. A commercial license also comes with [Enterprise support](https://miabi.io/support) — commercial support and SLAs, direct to the maintainers. A license can also set an explicit plan cap; see [Licensing](/docs/editions/licensing#limits).
 :::
 
 ## Where to go next
