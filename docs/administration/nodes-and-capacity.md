@@ -92,7 +92,7 @@ To actually move work off a swarm node — before a reboot, say — set its Swar
 **drain**, which reschedules its service tasks elsewhere. Swarm never rebalances on its own when the
 node comes back. See [Availability: draining a node](/docs/nodes/cluster-mode#availability-draining-a-node).
 
-A license may cap how many nodes can be registered; see [Licensing](/docs/editions/licensing#limits).
+There is no cap on how many nodes you register, in any edition.
 
 ## Where to go next
 

@@ -55,26 +55,23 @@ Removing the license from **Admin → License** returns the instance to Communit
 
 ## Limits
 
-Besides feature flags, a license can carry two caps. Where it sets neither, Enterprise is uncapped.
+Nodes, storage classes and platform-shared runners are unlimited in every edition, so no license
+caps them. Besides feature flags, a license can carry one cap:
 
 | Limit | Effect | Community |
 |---|---|---|
-| **Nodes** | Registering a node beyond the cap is refused. The control plane's own host is not counted. Nodes already registered keep working, and the License screen warns when usage is over the cap. | 3 + control plane |
 | **Plans** | Creating a plan beyond the cap is refused. | 3 |
 
-[Storage classes](/docs/storage/storage-classes) are capped the same way, but by edition rather than
-by a license value: Community holds two in total, the built-in `default` included, and any license
-granting the feature lifts the cap outright.
+Where a license sets no plan cap, Enterprise is uncapped. The commercial tiers set it as follows:
 
-The commercial tiers set them as follows:
+| Tier | Plans |
+|---|---|
+| Professional | 5 |
+| Business | 15 |
+| Enterprise | Unlimited |
 
-| Tier | Nodes | Plans |
-|---|---|---|
-| Professional | 10 + control plane | 5 |
-| Business | 25 + control plane | 15 |
-| Enterprise | Unlimited | Unlimited |
-
-The License screen shows current usage against both.
+The License screen shows current usage against it. A node cap carried by an older license is
+ignored.
 
 ## Where to go next
 

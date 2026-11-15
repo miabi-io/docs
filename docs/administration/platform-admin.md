@@ -79,7 +79,7 @@ dashboard. The sidebar is grouped as below, and this table is the map.
 |---|---|
 | **Clusters** | Standalone and swarm clusters, the locations workspaces deploy to. See [Cluster Mode](/docs/nodes/cluster-mode). |
 | **Nodes** | The fleet: status, health, pools, container inventory, housekeeping and Docker import. See [Nodes & Capacity](/docs/administration/nodes-and-capacity). |
-| **Storage classes** | The disks volumes may be created on, beyond Docker's own data root (Enterprise). See [Storage classes](/docs/storage/storage-classes). |
+| **Storage classes** | The disks volumes may be created on, beyond Docker's own data root. See [Storage classes](/docs/storage/storage-classes). |
 | **Kernel grants** | Every application holding an extra Linux capability or host device. See [Capabilities & devices](/docs/applications/capabilities-and-devices). |
 | **Shared Runners** | The platform-shared build machines pipelines execute on. See [Runners](/docs/cicd/runners). |
 | **Container Registry** | The built-in multi-tenant OCI registry. See [Registry administration](/docs/registry/administration). |

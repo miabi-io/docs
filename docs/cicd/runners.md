@@ -120,7 +120,7 @@ The upshot: a pipeline step can build and push with **zero configured credential
 
 Administrators can register **platform-shared** runners under **Admin → Shared Runners** — runners with no owning workspace that any eligible workspace's jobs can use. Admins manage the shared pool (create, edit, cordon, remove); workspace members can *use* a shared runner but not edit it.
 
-The Community edition allows up to **2** platform-shared runners; the Enterprise *platform runners* entitlement lifts that limit. Workspace-owned runners count against the workspace plan's **runner** limit instead, when plan enforcement is on. A workspace's access to the shared pool is governed by its plan's *platform runners* capability.
+The shared pool has no size limit in any edition. Workspace-owned runners count against the workspace plan's **runner** limit instead, when plan enforcement is on. A workspace's access to the shared pool is governed by its plan's *platform runners* capability.
 
 ### Offering only some runners to a plan
 
