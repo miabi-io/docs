@@ -77,7 +77,8 @@ replicated [cluster](/docs/nodes/cluster-mode) app can share it across nodes:
   requires a **privileged** workspace.
 
 :::tip
-For a replicated service, back it with a **shared (RWX)** volume or a cluster-wide host path — a
+For a replicated service, back it with a **shared (RWX)** volume, a volume on a
+[shared storage class](/docs/storage/storage-classes#shared-classes-and-failover), or a cluster-wide host path — a
 plain local volume can't follow a task that Swarm reschedules onto another node.
 :::
 

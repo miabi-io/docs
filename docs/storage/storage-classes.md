@@ -56,7 +56,7 @@ changes, and the storage-class field never appears in the volume form.
 | **Reclaim policy** | Whether deleting a volume also deletes its directory (see [below](#deleting-a-volume-and-the-reclaim-policy)). |
 | **Enabled** | Off blocks new volumes; existing ones keep working. |
 | **Default for this node** | The class used when a volume names none. |
-| **Shared across the cluster** | The same filesystem is mounted at this path on *every* node. |
+| **Shared across the cluster** | The same filesystem is mounted at this path on *every* node. Volumes on the class follow their service to any node (see [below](#shared-classes-and-failover)). Locked once the class holds volumes. |
 
 The path is **checked on the node before the class is saved**. If the disk is not mounted there, the
 registration fails then and there, naming the node — rather than a tenant's first deploy failing
@@ -65,6 +65,40 @@ weeks later.
 :::tip Three disks, three classes
 For a server with SSDs at `/mnt/ssd1`, `/mnt/ssd2` and `/mnt/ssd3`, register one class per disk
 (`ssd-fast`, `ssd-bulk`, …) and mark one as the node's default. Workspaces then choose by name.
+:::
+
+## Shared classes and failover
+
+A class is **shared** when a replicated filesystem — CephFS, GlusterFS, an NFS export, JuiceFS — is
+mounted at its path on every node of the cluster. Miabi does not replicate anything itself; the
+filesystem does.
+
+A volume created on a shared class is **shared (RWX)**, like an NFS volume:
+
+- a [service](/docs/nodes/cluster-mode#runtimes) that mounts it is **not pinned** to the node it was
+  created on, so Swarm can reschedule the task anywhere in the cluster when a node fails or is drained;
+- every node the task lands on binds the same directory under the class path, so the data is already
+  there;
+- a service mounting it may run more than one replica. Whether the app tolerates concurrent writers
+  is up to the app.
+
+Mark a class shared only when the filesystem really is the same everywhere. A class marked shared on a
+node-local disk gives each node its own empty copy of the volume.
+
+The setting is fixed at creation for each volume, so it cannot be changed while the class holds any.
+Register a new class to change it.
+
+:::caution Databases
+Network filesystems add latency to every `fsync`, and some do not implement the locking databases rely
+on. Keep managed databases on a fast local class and protect them with
+[backups](/docs/storage/backups).
+:::
+
+:::note Mount the filesystem before Docker needs it, but don't make Docker wait for it
+When the storage itself runs in Docker on the same nodes (cephadm, for example), a `docker.service`
+that requires the mount never starts at boot. Use a systemd automount (`x-systemd.automount` in
+`/etc/fstab`): the share mounts on first access, and a task reading it before then waits instead of
+writing to the node's own disk.
 :::
 
 ## Why the name and the path can never change
