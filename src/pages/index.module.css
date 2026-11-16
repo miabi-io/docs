@@ -379,6 +379,13 @@
   margin-bottom: 4rem;
 }
 
+.useCaseGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+}
+
 .pathCard {
   display: block;
   padding: 1.25rem 1.4rem;
@@ -430,7 +437,8 @@
     padding: 4.5rem 0 3rem;
   }
 
-  .pathGrid {
+  .pathGrid,
+  .useCaseGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -446,7 +454,8 @@
 
 @media screen and (max-width: 600px) {
   .featureGrid,
-  .pathGrid {
+  .pathGrid,
+  .useCaseGrid {
     grid-template-columns: 1fr;
   }
 

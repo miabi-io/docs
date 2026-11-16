@@ -323,8 +323,8 @@ const FEATURE_GROUPS: FeatureGroup[] = [
       },
       {
         title: 'Storage and backups',
-        description: 'Volumes, storage classes, and scheduled database and volume backups to S3-compatible storage.',
-        link: '/docs/storage/backups',
+        description: 'Volumes on the disks you choose, shared and replicated storage that follows a service across nodes, and scheduled backups to S3.',
+        link: '/docs/storage/volumes',
       },
       {
         title: 'Built-in registry',
@@ -370,6 +370,64 @@ const FEATURE_GROUPS: FeatureGroup[] = [
   },
 ];
 
+const TOPOLOGIES: FeatureItem[] = [
+  {title: 'One server', description: 'A VPS or a dedicated box. Where most installs start.', link: '/docs/use-cases/single-node'},
+  {title: 'Homelab', description: 'A mini PC or a Raspberry Pi, reachable from the internet or not.', link: '/docs/use-cases/homelab'},
+  {title: 'Swarm cluster', description: 'Replicas spread across nodes, rescheduled when one fails.', link: '/docs/use-cases/swarm-cluster'},
+  {title: 'Several regions', description: 'One control plane, a cluster per region or edge site.', link: '/docs/use-cases/multi-region'},
+  {title: 'Replicated storage', description: 'Apps with data move to a healthy node with their volumes.', link: '/docs/use-cases/replicated-storage'},
+];
+
+const AUDIENCES: FeatureItem[] = [
+  {title: 'Teams', description: 'A workspace per team or project, with roles and quotas.', link: '/docs/use-cases/teams'},
+  {title: 'Education', description: 'A workspace per student, sign-in with the university.', link: '/docs/use-cases/education'},
+  {title: 'Hosting providers', description: 'A workspace per client, sold as plans.', link: '/docs/use-cases/hosting-providers'},
+  {title: 'Several organizations', description: 'Separate companies or departments on one install.', link: '/docs/use-cases/multiple-organizations'},
+];
+
+function UseCases() {
+  return (
+    <section className={styles.section}>
+      <div className="container">
+        <div className={styles.sectionHeader}>
+          <p className={styles.eyebrow}>Use cases</p>
+          <Heading as="h2" className={styles.sectionTitle}>
+            From one server to many regions
+          </Heading>
+          <p className={styles.sectionLead}>
+            Start on one server and add nodes, clusters and workspaces as you grow. Nothing is
+            rebuilt or migrated along the way.
+          </p>
+        </div>
+
+        <Heading as="h3" className={styles.groupTitle}>Where it runs</Heading>
+        <div className={styles.useCaseGrid}>
+          {TOPOLOGIES.map((p) => (
+            <Link key={p.title} to={p.link} className={styles.pathCard}>
+              <span className={styles.cardTitle}>{p.title}</span>
+              <p className={styles.cardDescription}>{p.description}</p>
+            </Link>
+          ))}
+        </div>
+
+        <Heading as="h3" className={styles.groupTitle}>Who it serves</Heading>
+        <div className={styles.pathGrid}>
+          {AUDIENCES.map((p) => (
+            <Link key={p.title} to={p.link} className={styles.pathCard}>
+              <span className={styles.cardTitle}>{p.title}</span>
+              <p className={styles.cardDescription}>{p.description}</p>
+            </Link>
+          ))}
+        </div>
+
+        <div className={styles.codeCta}>
+          <Link to="/docs/use-cases/overview">Choosing a setup →</Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function Features() {
   return (
     <section className={clsx(styles.section, styles.sectionMuted)}>
@@ -402,14 +460,14 @@ function Features() {
 
 const START_HERE: FeatureItem[] = [
   {title: 'New to Miabi', description: 'What it is and how the pieces fit.', link: '/docs/getting-started/introduction'},
-  {title: 'Coming from Docker Compose', description: 'Import running containers or deploy a stack.', link: '/docs/nodes/docker-import'},
+  {title: 'Coming from Docker Compose', description: 'Import a docker-compose.yml as a stack, or adopt running containers.', link: '/docs/applications/stacks#importing-a-docker-compose-file'},
   {title: 'Automating', description: 'CLI, manifests, GitHub Actions, and Terraform.', link: '/docs/cicd/cli'},
   {title: 'Running the platform', description: 'Nodes, settings, backups, and upgrades.', link: '/docs/administration/platform-admin'},
 ];
 
 function StartHere() {
   return (
-    <section className={styles.section}>
+    <section className={clsx(styles.section, styles.sectionMuted)}>
       <div className="container">
         <div className={styles.sectionHeader}>
           <p className={styles.eyebrow}>Start here</p>
@@ -460,6 +518,7 @@ export default function Home(): ReactNode {
         <WaysToShip />
         <QuickStart />
         <Features />
+        <UseCases />
         <StartHere />
       </main>
     </Layout>
