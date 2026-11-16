@@ -299,7 +299,7 @@ The cluster table also shows each node's **capacity** (vCPU and memory) and **ta
 - **Self-healing placement.** If a node goes away, the orchestrator reschedules eligible services onto healthy nodes.
 
 :::note
-Cluster mode improves placement and networking; it does **not** automatically move persistent data. A replicated service can share storage across nodes only via a **shared (RWX) volume** (NFS/CIFS) or a host-path bind present on every node — see [Volumes](/docs/storage/volumes). An app backed by node-local storage stays a single, node-pinned container.
+Cluster mode improves placement and networking; it does **not** automatically move persistent data. A replicated service can share storage across nodes only via a **shared (RWX) volume** (NFS/CIFS, or a volume on a [shared storage class](/docs/storage/storage-classes#shared-classes-and-failover)) or a host-path bind present on every node — see [Volumes](/docs/storage/volumes). An app backed by node-local storage stays a single, node-pinned container.
 :::
 
 ## When to use it
