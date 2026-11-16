@@ -18,8 +18,8 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'Use Cases',
-      link: {type: 'doc', id: 'use-cases/overview'},
       items: [
+        'use-cases/overview',
         'use-cases/single-node',
         'use-cases/homelab',
         'use-cases/swarm-cluster',
