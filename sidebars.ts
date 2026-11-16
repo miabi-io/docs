@@ -17,6 +17,22 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
+      label: 'Use Cases',
+      link: {type: 'doc', id: 'use-cases/overview'},
+      items: [
+        'use-cases/single-node',
+        'use-cases/homelab',
+        'use-cases/swarm-cluster',
+        'use-cases/multi-region',
+        'use-cases/replicated-storage',
+        'use-cases/teams',
+        'use-cases/education',
+        'use-cases/hosting-providers',
+        'use-cases/multiple-organizations',
+      ],
+    },
+    {
+      type: 'category',
       label: 'Architecture',
       items: [
         'architecture/overview',

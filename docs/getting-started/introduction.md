@@ -42,6 +42,10 @@ on plain Docker, on one VPS today and multiple nodes when you need them.
 More broadly: anyone who wants the convenience of a managed platform without the recurring bill or
 the vendor lock-in.
 
+[Use cases](/docs/use-cases/overview) shows each of these setups end to end: one server, a cluster,
+several regions, replicated storage, a homelab, teams, universities, hosting providers and several
+organizations.
+
 ## Why Miabi
 
 - **No CLI required.** Deploy, scale, and manage everything from the web console.
