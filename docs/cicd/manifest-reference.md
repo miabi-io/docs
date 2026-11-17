@@ -141,7 +141,7 @@ spec:
     cpu: "0.5"                # cores; empty = unlimited
     gpu: 1                    # whole GPU devices
     gpuKind: nvidia           # narrow to a vendor/model
-    gpuCapabilities: [video]  # NVIDIA driver capabilities; empty = compute, utility
+    gpuCapabilities: [video]  # extra NVIDIA driver capabilities; compute + utility always on
   containerLabels:            # stamped on the container for label-reading tools
     traefik.enable: "true"
 ```

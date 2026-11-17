@@ -36,6 +36,18 @@ does, so if it succeeds the node can run GPU apps. A node where no card has ever
 runtime is registered refuses GPU deploys up front rather than failing cryptically at container
 start.
 
+Docker attaches GPUs through its `nvidia` device driver, which it enables when the toolkit's
+`nvidia-container-runtime-hook` or `nvidia-cdi-hook` binary is on the Docker daemon's `PATH`.
+Without either, a rescan reports Docker's own error: `could not select device driver "nvidia"`.
+
+:::note CDI-only hosts
+Miabi requests cards by UUID. When Docker uses the toolkit's CDI hook, the card must be named by
+UUID in the CDI spec. The default spec names cards by index, so generate one that names them both
+ways: `nvidia-ctk cdi generate --device-name-strategy=index --device-name-strategy=uuid
+--output=/etc/cdi/nvidia.yaml`. Hosts that also have `nvidia-container-runtime-hook`, the usual
+toolkit install, fall back to it and need nothing extra.
+:::
+
 ## How it works
 
 ```
@@ -96,10 +108,11 @@ In an app's **Settings → Resources**, set:
   the app's node and how many cards each has. **Any** uses whichever enabled card is least busy. If
   the node has no enabled cards yet, the field is free text: a vendor (`nvidia`) or a model
   substring (`A100`). The API and manifests accept the same values.
-- **GPU driver capabilities** — the NVIDIA driver features the container gets: `compute`,
-  `utility`, `video`, `graphics`, `display`, `compat32`. Leave all unchecked for the toolkit default
-  (`compute`, `utility`). Check **video** for NVENC/NVDEC hardware transcoding (Jellyfin, Plex,
-  ffmpeg), and **graphics** for OpenGL/Vulkan rendering.
+- **GPU driver capabilities** — extra NVIDIA driver features for the container: `video`,
+  `graphics`, `display`, `compat32`. `compute` and `utility` are always included. Check **video**
+  for NVENC/NVDEC hardware transcoding (Jellyfin, Plex, ffmpeg), and **graphics** for OpenGL/Vulkan
+  rendering. Miabi passes them as `NVIDIA_DRIVER_CAPABILITIES`. A host where Docker uses the CDI hook
+  takes the driver features from its CDI spec instead.
 
 The GPU controls are shown **only when the workspace's plan allows GPUs** — there is no dangling
 field that always errors. The request also rides the [declarative manifest](/docs/cicd/manifest-reference)
@@ -111,7 +124,7 @@ resources:
   memory: 16Gi
   gpu: 1
   gpuKind: nvidia
-  gpuCapabilities: [compute, utility, video]
+  gpuCapabilities: [video]           # compute and utility are always included
 ```
 
 **Jobs and CronJobs** run with the app's GPU request, like its CPU and memory limits. A job counts
@@ -197,6 +210,10 @@ When `MIABI_METRICS_ENABLED=true`, the Prometheus `/metrics` endpoint exposes:
 Utilization and memory are whole-card figures, sampled every `MIABI_GPU_SAMPLE_SECONDS` on nodes
 with at least one enabled card. A card that cannot report a reading has no series rather than `0`.
 The same figures appear in the admin GPU table.
+
+Every control-plane replica serves the same GPU series, refreshed from the database every 30
+seconds. With more than one replica, aggregate with `max by (…)` rather than `sum`, or every card
+is counted once per replica.
 
 ## Limitations
 
