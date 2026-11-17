@@ -40,9 +40,11 @@ Admin enables devices  →  Plan allows GPUs + sets a quota  →  App requests N
    (per node)                 (per workspace)                    (per app)
 ```
 
-Nothing is stored about *which* physical card an app got — devices are resolved fresh at each deploy
-from the node's currently-enabled GPUs, so replacing a card or moving the app to another node just
-works.
+Nothing is stored in the database about *which* physical card an app got. Devices are resolved
+fresh at each deploy from the node's currently-enabled GPUs, so replacing a card or moving the app to
+another node just works. Each GPU container carries an `io.miabi.gpus` label listing the cards it
+holds, and the scheduler reads those labels from the node's running containers when it picks cards
+for the next deploy.
 
 ## 1. Enable GPUs on a node (admin)
 
@@ -55,10 +57,16 @@ short probe over the Docker API and lists each one with its model, UUID, memory,
   Toggle **Enabled** to offer it to workloads.
 - Set each device's mode:
   - **Shared** — many apps may request the device concurrently (good for inference and dev).
-  - **Dedicated** — reserved for one app at a time (good for training).
+  - **Dedicated** — reserved for one app at a time (good for training). While another app's
+    container holds the card, no other app is given it. The holding app's own canary and redeploys
+    may still use it.
 
 If the node lacks the NVIDIA Container Toolkit, the page says so and lists no devices until you
 install it and rescan.
+
+When a successful scan no longer reports a card (it failed, or was removed), the card is marked
+**missing** and is no longer given to deploys. It keeps its Enabled and mode settings, so it is
+offered again as soon as a later scan sees it. A failed probe never marks cards missing.
 
 ## 2. Allow GPUs on a plan (admin)
 
@@ -95,6 +103,14 @@ resources:
 At deploy, Miabi resolves the request to concrete enabled devices on the app's node and attaches
 them. Inside the container `nvidia-smi` lists exactly the granted device(s).
 
+Miabi spreads apps across cards: it picks the cards held by the fewest other apps, so on a node with
+four GPUs, four 1-GPU apps each get their own card. Among equally loaded cards it prefers the ones
+the app already holds, so a canary or redeploy stays on the same card.
+
+Starting a stopped GPU app redeploys its current release instead of restarting the old container,
+so its cards are picked again and a dedicated card handed to another app in the meantime is not
+reused.
+
 ## Constraints & enforcement
 
 GPU access means raw device passthrough, which is privileged, so it is gated hard and refused where
@@ -110,8 +126,9 @@ it would be unsafe:
   refused rather than silently downgraded.
 - **Single container only (v1).** A GPU app must run as a single container, not a replicated
   (cluster/Swarm) service. Set the app's runtime to *container*.
-- **Node must be GPU-capable.** If no enabled device matches the requested kind, or the node lacks
-  the toolkit, the deploy fails with a message naming the node and the requested kind.
+- **Node must be GPU-capable.** If too few enabled, present devices match the requested kind, or the
+  node lacks the toolkit, the deploy fails with a message naming the node and the requested kind,
+  and how many matching dedicated cards are held by other apps.
 
 With `MIABI_PLAN_ENFORCEMENT=false` (single-tenant/homelab), the capability and quota checks are
 no-ops, but device attachment still works — so a homelab can use GPUs freely.
@@ -130,7 +147,7 @@ no-ops, but device attachment still works — so a homelab can use GPUs freely.
 When `MIABI_METRICS_ENABLED=true`, the Prometheus `/metrics` endpoint exposes:
 
 - `miabi_gpu_devices_total` — physical GPU devices discovered across all nodes.
-- `miabi_gpu_devices_enabled` — devices enabled (offered to workloads).
+- `miabi_gpu_devices_enabled` — devices enabled and present (offered to workloads).
 - `miabi_gpu_allocated` — GPU units currently held by running apps.
 
 ## Limitations
@@ -141,8 +158,11 @@ Version 1 is deliberately scoped to the common case:
 - **No VRAM quota** — the limit counts whole devices, not GPU memory.
 - **NVIDIA only** — AMD ROCm is not supported.
 - **Single-node placement** — an app's GPUs are chosen on the node it's already pinned to;
-  GPU-aware node selection across a fleet, dedicated-device exclusivity enforcement across the
-  fleet, and clustered (Swarm) GPU services are planned for later phases.
+  GPU-aware node selection across a fleet and clustered (Swarm) GPU services are planned for later
+  phases.
+- **Containers started outside Miabi are not counted.** A container given a GPU with
+  `docker run --gpus`, or a GPU app deployed before Miabi recorded the `io.miabi.gpus` label, does not
+  hold its card for scheduling until it is redeployed.
 
 ## Related
 
