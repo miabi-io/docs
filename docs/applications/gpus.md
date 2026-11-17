@@ -87,6 +87,10 @@ In an app's **Settings → Resources**, set:
 - **GPUs** — the number of whole devices to attach (`0` = none).
 - **GPU kind** — optionally narrow the request to a vendor or model (e.g. `nvidia`, or a model
   substring like `A100`). Leave empty to use any enabled GPU on the app's node.
+- **GPU driver capabilities** — the NVIDIA driver features the container gets: `compute`,
+  `utility`, `video`, `graphics`, `display`, `compat32`. Leave all unchecked for the toolkit default
+  (`compute`, `utility`). Check **video** for NVENC/NVDEC hardware transcoding (Jellyfin, Plex,
+  ffmpeg), and **graphics** for OpenGL/Vulkan rendering.
 
 The GPU controls are shown **only when the workspace's plan allows GPUs** — there is no dangling
 field that always errors. The request also rides the [declarative manifest](/docs/cicd/manifest-reference)
@@ -98,7 +102,15 @@ resources:
   memory: 16Gi
   gpu: 1
   gpuKind: nvidia
+  gpuCapabilities: [compute, utility, video]
 ```
+
+**Jobs and CronJobs** run with the app's GPU request, like its CPU and memory limits. A job counts
+as the same app, so on a dedicated card it shares the card the app holds.
+
+**Importing a Docker Compose file** keeps GPU reservations
+(`deploy.resources.reservations.devices` with `driver: nvidia`, or `gpus:`). See
+[Stacks](/docs/applications/stacks#importing-a-docker-compose-file).
 
 At deploy, Miabi resolves the request to concrete enabled devices on the app's node and attaches
 them. Inside the container `nvidia-smi` lists exactly the granted device(s).
@@ -106,6 +118,12 @@ them. Inside the container `nvidia-smi` lists exactly the granted device(s).
 Miabi spreads apps across cards: it picks the cards held by the fewest other apps, so on a node with
 four GPUs, four 1-GPU apps each get their own card. Among equally loaded cards it prefers the ones
 the app already holds, so a canary or redeploy stays on the same card.
+
+**Choosing a node.** In a multi-node Swarm location, a new GPU app is placed only on nodes that have
+at least that many enabled cards of the requested kind, picking the least loaded among them. If no
+node qualifies, creating the app fails with `409`. This checks capacity only. Whether a dedicated card
+is free is decided at deploy. The node is chosen when the app is created; raising the GPU count later
+does not move the app.
 
 Starting a stopped GPU app redeploys its current release instead of restarting the old container,
 so its cards are picked again and a dedicated card handed to another app in the meantime is not
@@ -122,8 +140,9 @@ it would be unsafe:
   running apps. Deploying an app that would exceed the limit is rejected with the quota reason;
   stopping another GPU app frees units.
 - **Not with the restricted security profile.** A workload with raw device access is not
-  "restricted", so a GPU app under the [restricted profile](/docs/workspaces/plans-and-quotas) is
-  refused rather than silently downgraded.
+  "restricted", so a workspace under the [restricted profile](/docs/workspaces/plans-and-quotas)
+  cannot save an app that requests a GPU (`403`), and a GPU app whose workspace became restricted
+  later is refused at deploy rather than silently downgraded.
 - **Single container only (v1).** A GPU app must run as a single container, not a replicated
   (cluster/Swarm) service. Set the app's runtime to *container*.
 - **Node must be GPU-capable.** If too few enabled, present devices match the requested kind, or the
@@ -157,9 +176,9 @@ Version 1 is deliberately scoped to the common case:
 - **Whole devices only** — no fractional GPUs (MIG, time-slicing, MPS).
 - **No VRAM quota** — the limit counts whole devices, not GPU memory.
 - **NVIDIA only** — AMD ROCm is not supported.
-- **Single-node placement** — an app's GPUs are chosen on the node it's already pinned to;
-  GPU-aware node selection across a fleet and clustered (Swarm) GPU services are planned for later
-  phases.
+- **Node chosen at create** — GPU-aware node selection happens when the app is created. Changing
+  the GPU request later does not move the app, and clustered (Swarm service) GPU apps are not
+  supported yet.
 - **Containers started outside Miabi are not counted.** A container given a GPU with
   `docker run --gpus`, or a GPU app deployed before Miabi recorded the `io.miabi.gpus` label, does not
   hold its card for scheduling until it is redeployed.

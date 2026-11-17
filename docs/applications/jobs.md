@@ -14,6 +14,8 @@ A **job** runs a one-off command inside your application's runtime context — t
 
 When you start a job, Miabi launches a container from your app's current [release](/docs/applications/releases-and-rollbacks) and runs the command you specify. Because it shares the app's [environment variables and secrets](/docs/applications/environment-variables), the command can reach your database, object storage, and other dependencies exactly as the app does — without you handing it any credentials by hand.
 
+A job also gets the app's CPU and memory limits and its [GPU request](/docs/applications/gpus), so a training or transcoding job runs with the same GPUs the app asks for.
+
 ## Common use cases
 
 | Task | Example |
