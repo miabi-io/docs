@@ -26,12 +26,15 @@ fleet-wide GPU-aware scheduling are not yet supported. See [Limitations](#limita
 A node can host GPU workloads when it has:
 
 1. **NVIDIA drivers** installed on the host.
-2. The **[NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)** installed and registered with Docker (this adds the `nvidia` container runtime).
+2. The **[NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)** installed. Registering its runtime with Docker (`nvidia-ctk runtime configure --runtime=docker`) is recommended, but not required.
 3. Miabi started with **`MIABI_GPU_ENABLED=true`** (see [Configuration](#configuration)).
 
-Miabi detects the toolkit automatically from the node's Docker runtimes — no node-agent change is
-needed. A node without the toolkit is shown as such, and GPU deploys to it are refused up front
-rather than failing cryptically at container start.
+No node-agent change is needed. The periodic scan probes every node that has Docker's `nvidia`
+runtime registered, or where cards have been found before. A node with the toolkit installed but no
+runtime registered is found by an admin **Rescan GPUs**: the probe attaches GPUs exactly as a deploy
+does, so if it succeeds the node can run GPU apps. A node where no card has ever been found and no
+runtime is registered refuses GPU deploys up front rather than failing cryptically at container
+start.
 
 ## How it works
 
@@ -49,10 +52,14 @@ for the next deploy.
 ## 1. Enable GPUs on a node (admin)
 
 Open **Admin → Nodes → \<node\> → GPUs**. Miabi inventories the node's physical cards by running a
-short probe over the Docker API and lists each one with its model, UUID, memory, and index.
+short probe over the Docker API and lists each one with its model, index, UUID, memory in use,
+utilization, and the apps currently using it. **Used by** links each app to its workspace and marks
+[job](/docs/applications/jobs) containers.
 
 - **Rescan GPUs** re-runs the inventory on demand (it also runs periodically). New cards are
-  discovered automatically.
+  discovered automatically. A rescan always probes the node, even with no `nvidia` runtime
+  registered, and when the probe fails it shows the reason (for example a driver/library version
+  mismatch).
 - A newly discovered device arrives **disabled** — discovering a card never exposes it to tenants.
   Toggle **Enabled** to offer it to workloads.
 - Set each device's mode:
@@ -61,8 +68,8 @@ short probe over the Docker API and lists each one with its model, UUID, memory,
     container holds the card, no other app is given it. The holding app's own canary and redeploys
     may still use it.
 
-If the node lacks the NVIDIA Container Toolkit, the page says so and lists no devices until you
-install it and rescan.
+If no card has been found on the node and Docker has no `nvidia` runtime, the page says so. Install
+the toolkit and rescan.
 
 When a successful scan no longer reports a card (it failed, or was removed), the card is marked
 **missing** and is no longer given to deploys. It keeps its Enabled and mode settings, so it is
@@ -85,8 +92,10 @@ You can also override both per workspace under **Admin → Workspaces → \<work
 In an app's **Settings → Resources**, set:
 
 - **GPUs** — the number of whole devices to attach (`0` = none).
-- **GPU kind** — optionally narrow the request to a vendor or model (e.g. `nvidia`, or a model
-  substring like `A100`). Leave empty to use any enabled GPU on the app's node.
+- **GPU kind** — optionally narrow the request to one model. The list shows the models enabled on
+  the app's node and how many cards each has. **Any** uses whichever enabled card is least busy. If
+  the node has no enabled cards yet, the field is free text: a vendor (`nvidia`) or a model
+  substring (`A100`). The API and manifests accept the same values.
 - **GPU driver capabilities** — the NVIDIA driver features the container gets: `compute`,
   `utility`, `video`, `graphics`, `display`, `compat32`. Leave all unchecked for the toolkit default
   (`compute`, `utility`). Check **video** for NVENC/NVDEC hardware transcoding (Jellyfin, Plex,
@@ -157,17 +166,25 @@ no-ops, but device attachment still works — so a homelab can use GPUs freely.
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `MIABI_GPU_ENABLED` | `false` | Master switch. When off, the control plane never probes nodes for GPUs and the UI hides all GPU controls (a no-GPU fleet pays nothing) |
-| `MIABI_NVIDIA_RUNTIME` | `nvidia` | The container runtime name that signals the NVIDIA Container Toolkit is installed |
-| `MIABI_GPU_PROBE_IMAGE` | `nvidia/cuda:12.4.1-base-ubuntu22.04` | The one-shot image the inventory probe runs `nvidia-smi` in. Point at a mirror for air-gapped/registry-pinned fleets |
+| `MIABI_NVIDIA_RUNTIME` | `nvidia` | The Docker runtime name that marks a node for the periodic GPU scan. Nodes without it are found with an admin rescan |
+| `MIABI_GPU_PROBE_IMAGE` | `nvidia/cuda:12.4.1-base-ubuntu22.04` | The one-shot image the inventory probe runs `nvidia-smi` in. Pulled only when the node does not have it. Point at a mirror for air-gapped/registry-pinned fleets |
 | `MIABI_GPU_INVENTORY_MINUTES` | `30` | How often nodes are re-inventoried for GPUs |
+| `MIABI_GPU_SAMPLE_SECONDS` | `60` | How often utilization and memory use are sampled (minimum 15). Each sample runs one short probe container per node with enabled cards. `0` turns sampling off |
 
 ## Metrics
 
 When `MIABI_METRICS_ENABLED=true`, the Prometheus `/metrics` endpoint exposes:
 
-- `miabi_gpu_devices_total` — physical GPU devices discovered across all nodes.
-- `miabi_gpu_devices_enabled` — devices enabled and present (offered to workloads).
-- `miabi_gpu_allocated` — GPU units currently held by running apps.
+- `miabi_gpu_devices_total{server,vendor}` — physical GPU devices discovered.
+- `miabi_gpu_devices_enabled{server,vendor}` — devices enabled and present (offered to workloads).
+- `miabi_gpu_allocated{workspace}` — GPU units held by running apps, per workspace id.
+- `miabi_gpu_utilization_percent{server,uuid,model}` — card utilization at the last sample.
+- `miabi_gpu_memory_used_bytes{server,uuid,model}` / `miabi_gpu_memory_total_bytes{…}` — card
+  memory in use and in total.
+
+Utilization and memory are whole-card figures, sampled every `MIABI_GPU_SAMPLE_SECONDS` on nodes
+with at least one enabled card. A card that cannot report a reading has no series rather than `0`.
+The same figures appear in the admin GPU table.
 
 ## Limitations
 

@@ -106,9 +106,10 @@ Off by default. See [GPUs](/docs/applications/gpus) for the full workflow.
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `MIABI_GPU_ENABLED` | `false` | Master switch for GPU support. When off, nodes are never probed and the GPU UI is hidden |
-| `MIABI_NVIDIA_RUNTIME` | `nvidia` | The container runtime name that signals the NVIDIA Container Toolkit is installed |
+| `MIABI_NVIDIA_RUNTIME` | `nvidia` | The Docker runtime name that marks a node for the periodic GPU scan. Nodes without it are found with an admin rescan |
 | `MIABI_GPU_PROBE_IMAGE` | `nvidia/cuda:12.4.1-base-ubuntu22.04` | One-shot image the device-inventory probe runs `nvidia-smi` in. Point at a mirror for air-gapped fleets |
 | `MIABI_GPU_INVENTORY_MINUTES` | `30` | How often nodes are re-inventoried for GPUs |
+| `MIABI_GPU_SAMPLE_SECONDS` | `60` | How often GPU utilization and memory use are sampled (minimum 15); `0` turns sampling off |
 
 ## Database & cache
 

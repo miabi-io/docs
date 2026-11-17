@@ -76,7 +76,7 @@ aggregation, or alerting that ties into your existing on-call tooling. Miabi exp
 | `miabi_build_info{version,commit}` | Running build; always `1` |
 | `miabi_leader{lease}` | `1` while this process holds the control-plane lease, `0` on a standby — see [leader election](/docs/operations/reconciliation#leader-election) |
 | `miabi_network_subnet_pool_used` / `miabi_network_subnet_pool_total` | Subnet-pool utilization, so you can alert before exhaustion — see [Networks & Subnets](/docs/networking/networks-and-subnets) |
-| `miabi_gpu_devices_total` / `miabi_gpu_devices_enabled` / `miabi_gpu_allocated` | GPU inventory and allocation — see [GPUs](/docs/applications/gpus) |
+| `miabi_gpu_devices_total` / `miabi_gpu_devices_enabled` / `miabi_gpu_allocated` / `miabi_gpu_utilization_percent` / `miabi_gpu_memory_used_bytes` / `miabi_gpu_memory_total_bytes` | GPU inventory, allocation per workspace, and per-card usage — see [GPUs](/docs/applications/gpus#metrics) |
 | `miabi_analytics_ingested_events_total{node}` / `miabi_analytics_rejected_events_total{node}` | Gateway request events accepted from edge nodes, and events dropped because the node does not serve the route they claim |
 | `miabi_control_manager_sweep_duration_seconds` | Duration of a reconciliation sweep |
 | `miabi_control_manager_drift_items{class,kind}` | Workloads and volumes the last sweep confirmed missing or replaced |
