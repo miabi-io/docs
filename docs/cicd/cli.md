@@ -181,7 +181,7 @@ argument**, or use the app bound with `miabi use`.
 | `miabi workspace migration start \| status \| cancel` · `workspace import` · `workspace migrate` · `workspace unfreeze` | Move a workspace to another Miabi install — see [Migration](/docs/operations/migration). |
 | `miabi use [app] \| --clear` | Bind (or show/clear) the default app. |
 | `miabi apps ls` | List the workspace's applications (marks the bound app). |
-| `miabi apps create <name> (--image <img> [--tag] \| --git-repo <url> [--git-ref] [--build-method]) [--port] [--node <id>] [--use]` | Create an app from an image or Git source. `--build-method` is `auto`, `dockerfile`, or `buildpack`. |
+| `miabi apps create <name> (--image <img> [--tag] \| --git-repo <url> [--git-ref] [--build-method]) [--port] [--node <id>] [--gpus N] [--gpu-kind] [--gpu-capabilities] [--use]` | Create an app from an image or Git source. `--build-method` is `auto`, `dockerfile`, or `buildpack`. `--gpus` requests whole [GPUs](/docs/applications/gpus), and needs a plan that allows them. |
 | `miabi apps deploy [app] [--tag <tag>] [--strategy <s>] [--no-cache] [--wait] [--timeout 10m]` | Deploy; `--wait` blocks and exits non-zero on failure. `--no-cache` rebuilds every layer (Git-source apps). |
 | `miabi apps start \| stop \| restart [app]` | Control the app's container. |
 | `miabi apps rollback [app] (--to <version> \| --to-previous) [--yes] [--wait] [--timeout 10m]` | Roll back to a previous release; `--wait` blocks until the rollback deployment finishes and exits non-zero on failure. |

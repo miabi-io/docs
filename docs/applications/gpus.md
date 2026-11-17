@@ -134,6 +134,18 @@ node qualifies, creating the app fails with `409`. This checks capacity only. Wh
 is free is decided at deploy. The node is chosen when the app is created; raising the GPU count later
 does not move the app.
 
+**Not enough GPUs on the app's node.** Saving a GPU request the app's node cannot hold still
+succeeds, but the response carries a `warnings` entry (also shown in app settings, by `miabi apps
+create`, and as a Terraform warning). The warning names the nodes in the same location that have
+enough matching cards, or says none do. Settings also flag it before you save. To act on it, a
+platform admin moves the app, or you create it again in that location so placement picks a node with
+enough cards.
+
+The reverse also holds: a new app, database or volume that needs no GPU goes to a node without
+enabled cards when the location has one, and lands on a GPU node only when no other node can take it.
+This keeps GPU nodes free for GPU apps. Replicated (Swarm service) apps are placed by Swarm and are not
+steered this way.
+
 Starting a stopped GPU app redeploys its current release instead of restarting the old container,
 so its cards are picked again and a dedicated card handed to another app in the meantime is not
 reused.
