@@ -58,13 +58,14 @@ Miabi creates one application per service, inside the new stack:
 | `ports` | Declared container ports. A published host port (`"8443:443"`) becomes a [host-port request](/docs/security/security-center#host-ports) an admin approves, unless the workspace is privileged. One already in use is still filed, and the import names what holds it. |
 | `environment` | The app's environment variables, in map or list form. They are imported as plain variables: mark passwords and tokens as secrets afterwards. |
 | `command` | The app's command, in string or list form. |
+| `deploy.resources.reservations.devices`, `gpus` | An NVIDIA GPU reservation becomes the app's [GPU request](/docs/applications/gpus): `count` sets how many GPUs, and `capabilities` other than `gpu` become its driver capabilities. `count: all` and `gpus: all` import as 1 GPU, and `device_ids` import as that many GPUs without the specific IDs. If the workspace's plan does not allow GPUs, the app is created without them and the import says why. |
 | `volumes` | A named volume becomes a Miabi [volume](/docs/storage/volumes) called `<stack>-<volume>`, shared by every service that mounts it. An anonymous volume (`/data`) gets one of its own. A bind mount (`./config:/etc/app`) is skipped. |
 
 Services reach each other by service name on the stack's network, as they did under Compose, so
 `redis://cache:6379` keeps working. Every app and volume lands on the same node.
 
 Everything else in the file is ignored: `depends_on`, `healthcheck`, `restart`, `networks`,
-`env_file`, `secrets`, `deploy`, `labels`, and `${VAR}` interpolation, which is not expanded. A port
+`env_file`, `secrets`, `deploy` (except GPU reservations), `labels`, and `${VAR}` interpolation, which is not expanded. A port
 range is skipped. Write `ports` and `volumes` in their short form (`"8080:80"`, `data:/data`): the
 long form (`target:` / `published:`) is refused as invalid Compose. The import reports what it created
 and what it skipped.

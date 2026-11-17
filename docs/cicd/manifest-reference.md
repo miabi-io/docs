@@ -141,6 +141,7 @@ spec:
     cpu: "0.5"                # cores; empty = unlimited
     gpu: 1                    # whole GPU devices
     gpuKind: nvidia           # narrow to a vendor/model
+    gpuCapabilities: [video]  # NVIDIA driver capabilities; empty = compute, utility
   containerLabels:            # stamped on the container for label-reading tools
     traefik.enable: "true"
 ```
@@ -1129,7 +1130,8 @@ Beyond the per-field rules above, a bundle is refused when it is parsed if:
   would shadow it;
 - a file `mode`, on a `Config` or a mount, is not 3 or 4 octal digits, or sets the setuid, setgid or
   sticky bit;
-- `resources.gpu` is outside `0`–`64`;
+- `resources.gpu` is outside `0`–`64`, or `resources.gpuCapabilities` names something other than
+  `compute`, `utility`, `video`, `graphics`, `display` or `compat32`;
 - a route's `methods` names something that is not an HTTP method, or its `middlewares` lists one name
   twice.
 
