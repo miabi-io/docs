@@ -47,7 +47,13 @@ shows an **encrypted** badge.
 
 1. In the **Backups** card, pick the logical database from the **Database** list.
 2. Optionally type a **Note**, for example *before the v1.3.0 rollout*.
-3. Select **Run backup**. The backup runs immediately, and its status appears in the list.
+3. Select **Run backup**. The backup starts at once and shows as **running** in the list.
+
+A backup runs in the background, so a large database is not cut short by a browser or API timeout,
+and you can leave the page. When it finishes, you get a notification in the bell (**Backup
+completed** or **Backup failed**, with the reason). Only one manual backup of a database runs at a
+time; starting a second is refused until the first finishes. A run the server abandons, for example
+because Miabi restarted during it, is marked failed within a few minutes.
 
 Backups are numbered per database (`#1`, `#2`, …) and show their trigger (`manual`, `scheduled`, or
 `upgrade` for the safety dump a [version upgrade](/docs/databases/version-upgrades) takes), the
@@ -107,8 +113,9 @@ backups above are free.
 
 ### Taking a recovery point
 
-Select **Back up all databases**. Miabi dumps each database in turn and records them as one
-recovery point, with a reference such as `mbdb_<instance>_20260916T020000Z`. Expand the
+Select **Back up all databases**. The recovery point runs in the background, like a single backup,
+and you get a notification when it completes or fails. Miabi dumps each database in turn and records
+them as one recovery point, with a reference such as `mbdb_<instance>_20260916T020000Z`. Expand the
 **Databases** count to see each database's artifact, backup number, and size. When a recovery point completes, Miabi checks
 it against the bucket straight away.
 
