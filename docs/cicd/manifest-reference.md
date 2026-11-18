@@ -49,6 +49,7 @@ deploys to staging and production unchanged.
 | [`Application`](#application) | A long-running container workload | 3rd |
 | [`Stack`](#stack) | Groups applications into one unit and network | 2nd |
 | [`Database`](#database) | A managed PostgreSQL, MySQL, MariaDB, Redis, MongoDB or libSQL database | 2nd |
+| [`DatabaseInstance`](#databaseinstance) | A database server that several `Database` manifests share | 1st |
 | [`Volume`](#volume) | Persistent storage | 1st |
 | [`Secret`](#secret) | A named encrypted value | 1st |
 | [`SealedSecret`](#sealedsecret) | A secret value sealed to the workspace's key, safe to commit | 1st |
@@ -362,13 +363,16 @@ metadata:
 spec:
   engine: postgres      # postgres | mysql | mariadb | redis | mongodb | libsql
   version: "17-alpine"
-  instance: auto        # auto | dedicated | shared
+  instance: auto        # auto | dedicated | shared, or { type, name }
   placement:
     location: eu-central # optional; the workspace default when omitted
   resources:            # optional; gives the database an instance of its own
     memory: 1Gi
     cpu: "0.5"
   readOnlyUser: true    # optional, PostgreSQL only
+  backup:               # optional; scheduled backups of this database
+    schedule: daily     # hourly | daily | weekly | a cron expression
+    retention: { keep: 7, days: 30 }
 ```
 
 | `instance` | Behaviour |
@@ -383,6 +387,60 @@ re-create it on an instance of the new one.
 
 `instance` used to be spelled `placement: auto`, before `placement` became a block. That spelling
 still parses; setting it together with `instance` is an error.
+
+### Targeting a named instance
+
+`instance` also takes a block that names the instance, so several stacks can share one PostgreSQL on
+purpose instead of whichever compatible one Miabi finds first:
+
+```yaml
+spec:
+  engine: postgres
+  instance:
+    type: shared        # auto | dedicated | shared; default auto
+    name: pg-eu2        # an existing instance, or a DatabaseInstance in the same apply
+```
+
+| `type` | With `name` |
+|---|---|
+| `auto` | Use the named instance; provision it under that name when it doesn't exist. |
+| `dedicated` | Provision a new instance under that name; refused when the name is taken. |
+| `shared` | The named instance must exist, or be declared as a [`DatabaseInstance`](#databaseinstance) in the same apply. |
+
+The named instance's engine must match, and so must `version` and `placement.location` when you state
+them; `resources` are refused, since the instance is sized on its own. The logical database is named
+exactly after `metadata.name` (sanitized for the engine: `posta-mail-db` becomes `posta_mail_db`).
+Where a database of that name already exists on the instance and this manifest didn't create it, the
+apply fails with `DATABASE_NAME_TAKEN` instead of picking another name. `instance.name` is fixed once
+the database exists: moving a database to another instance would move its data.
+
+### Redis and libSQL
+
+Redis has no logical databases, and libSQL hosts exactly one, so for both the instance *is* the
+database: declare them as a `Database` only, never as a `DatabaseInstance`. `instance.name` is refused
+for them, since `metadata.name` already names the instance, and `instance: shared` stays refused.
+
+### `backup`
+
+`backup` keeps a backup schedule for the database. Backups are written to the workspace backup
+target, encrypted and verified according to the
+[workspace backup settings](/docs/storage/backup-targets); the manifest carries no passphrase or key.
+
+| Field | Meaning |
+|---|---|
+| `schedule` | `hourly`, `daily` (default), `weekly`, or a five-field cron expression |
+| `retention.keep` | Keep at most this many backups; `0` keeps all |
+| `retention.days` | Delete backups older than this; `0` keeps them |
+| `enabled` | `false` removes the schedule this manifest declared |
+
+`hourly`, `daily` and `weekly` each resolve to a fixed minute, and for `daily` and `weekly` an hour
+between 01:00 and 05:00 UTC, derived from the database's name. Many databases on one instance therefore
+don't all dump at the same moment. A cron expression is used as written.
+
+Omitted, the database keeps whatever schedules it has, so a first GitOps apply never deletes the
+ones created in the console. A declared schedule shows as **manifest** in the console and can't be
+deleted there; schedules created by hand on the same database are left alone. `backup` is refused on
+Redis, whose data is covered by a [volume backup](/docs/storage/backups#volume-archives).
 
 `resources` limits the database's instance: `memory` (with `Ki`, `Mi` or `Gi`) and `cpu` in cores, the
 engine tuned to the memory — see [resource sizing](/docs/databases/provisioning#resource-sizing).
@@ -413,6 +471,100 @@ Engine and version changes are **not** converged in place — that would recreat
 change fails the apply rather than destroying the database; migrate with a
 [version upgrade](/docs/databases/version-upgrades) instead.
 :::
+
+---
+
+## DatabaseInstance
+
+Declares a database server on its own, so that several [`Database`](#database) manifests can place
+their logical databases on it by name. Use it when one PostgreSQL per location holds the databases
+of several stacks; a single-app stack doesn't need it.
+
+```yaml
+apiVersion: miabi.io/v1
+kind: DatabaseInstance
+metadata:
+  name: pg-eu2
+spec:
+  engine: postgres          # postgres | mysql | mariadb | mongodb
+  version: "17-alpine"
+  resources: { memory: 2Gi, cpu: "1" }   # or size: <named size> (Enterprise)
+  placement:
+    location: eu2
+  storageClass: ssd         # optional; fixed once created
+  recoveryPoints:           # optional, Enterprise
+    schedule: daily
+    retention: { keep: 14, days: 30 }
+---
+apiVersion: miabi.io/v1
+kind: Database
+metadata:
+  name: posta-mail-db
+spec:
+  engine: postgres
+  instance: { type: shared, name: pg-eu2 }
+```
+
+Instances are applied before the databases on them and removed after them. Redis and libSQL are
+refused: [declare them as a `Database`](#redis-and-libsql).
+
+| Change | What happens |
+|---|---|
+| `version` | The instance is [upgraded](/docs/databases/version-upgrades) in place or by dump and restore; a downgrade is refused. Omitted, the instance keeps its version. |
+| `resources` | Converged in place, restarting the instance. Omitted, the instance keeps its limits. |
+| `engine`, `placement.location`, `storageClass` | Refused: delete the instance and apply again. |
+
+### Adopting an existing instance
+
+An instance that already exists, for example one created in the console, is only taken over when the
+manifest says so:
+
+```yaml
+kind: DatabaseInstance
+metadata:
+  name: production-postgres
+spec:
+  engine: postgres
+  version: "17-alpine"
+  adopt: true
+```
+
+- Without `adopt: true`, a `DatabaseInstance` whose name is taken by an existing instance is refused
+  with `INSTANCE_EXISTS`, so a typo can't take over someone else's instance.
+- The engine must match, and so must `version`, `placement.location` and `storageClass` when you state
+  them. To adopt an instance and upgrade it, adopt it at its current version first. The plan shows the
+  action as `adopt existing instance`.
+- An instance created by a GitOps project, a one-shot apply or a marketplace install is refused even
+  with `adopt: true`. Once the manifest owns the instance, `adopt` has no further effect.
+- **Removing the manifest releases an adopted instance; it never deletes it.** The instance and its
+  data stay, and it returns to being managed in the console.
+
+### Deleting
+
+Removing a `DatabaseInstance` that the manifest created is refused while databases remain on it, and
+the error lists them. Once it is empty, the instance and its recovery-point schedule are removed.
+Recovery points already in the bucket are kept.
+
+### `recoveryPoints`
+
+A [recovery point](/docs/storage/backups#recovery-points) backs up every database on the instance as one sealed,
+verified set, including databases that other manifests declare. It is an Enterprise feature
+(`recovery_points`) and needs the workspace S3 backup target. A manifest that declares it on Community
+Edition, or without the S3 target, fails at plan time instead of skipping the block.
+
+| Field | Meaning |
+|---|---|
+| `schedule` | `hourly`, `daily` (default), `weekly`, or a five-field cron expression, spread out like a [database backup](#backup) |
+| `retention.keep` | Keep at most this many recovery points; `0` keeps all |
+| `retention.days` | Delete recovery points older than this; `0` keeps them |
+| `concurrency` | How many databases are dumped at once; `0` is the default |
+| `requireEncryption` | Refuse the apply, and fail each run, while the workspace has no backup encryption |
+| `enabled` | `false` removes the schedule this manifest declared |
+
+These are sets of logical dumps, not point-in-time recovery from a write-ahead log. Restoring,
+pinning and adopting recovery points are actions in the console or CLI, not manifest fields. A
+database with its own `backup` on an instance with `recoveryPoints` is dumped twice; that is allowed,
+and the plan prints a warning.
 
 ---
 
@@ -1208,6 +1360,9 @@ Prune only ever deletes resources this engine created (labelled `miabi.io/manage
 `apply`), so a hand-created app or a database provisioned in the console can never be removed by a
 manifest. Under GitOps it is scoped further, to the project that owns the resource — two sources backed
 by the same repository don't see each other's apps as orphans.
+
+An adopted [`DatabaseInstance`](#adopting-an-existing-instance) is released, not deleted, when it is
+pruned.
 
 `Secret`, `Config`, `Middleware` and `Domain` resources carry no ownership label, so neither prune nor
 deleting a Git source with cascade ever removes them. Delete them explicitly — `miabi delete` or the

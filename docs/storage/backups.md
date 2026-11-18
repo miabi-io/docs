@@ -80,6 +80,11 @@ The **Backup schedules** card automates backups of the selected database:
 
 A schedule writes to the workspace target, like a manual backup.
 
+A schedule can also be declared in a manifest, with a database's
+[`backup`](/docs/cicd/manifest-reference#backup) block or an instance's
+[`recoveryPoints`](/docs/cicd/manifest-reference#recoverypoints). Such a schedule is labelled
+**manifest** and can't be deleted here; change or remove it in the manifest.
+
 :::tip
 Stagger schedules (for example databases at 02:00, volume archives at 03:00) so heavy jobs don't
 contend for CPU and I/O at the same moment.
