@@ -36,11 +36,14 @@ On **Stacks**, choose **Import Compose**, give the stack a name, pick a location
 ```yaml title="docker-compose.yml"
 services:
   web:
-    image: miabi/guestbook:3.2.0
+    image: miabi/guestbook:3.3.0
     ports:
       - "8080"
+      - "9090"
     environment:
       REDIS_URL: redis://cache:6379
+      ADMIN_TOKEN: change-me
+      METRICS_ENABLED: "true"
   cache:
     image: redis:8-alpine
     command: redis-server --appendonly yes
