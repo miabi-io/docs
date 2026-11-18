@@ -341,6 +341,7 @@ tab. See [Registry](/docs/registry/administration).
 | `MIABI_FORWARD_RELAY_IMAGE` | `alpine/socat:latest` | Image used for the forward relay container |
 | `MIABI_METADATA_GUARD` | `false` | `true` blocks containers on every node from reaching cloud metadata services (`169.254.0.0/16`, Azure's `168.63.129.16`, Alibaba's `100.100.100.200`, AWS's `fd00:ec2::254`) with an nftables table, via an `mb-metadata-guard` container per node. DNS to those addresses stays open. Turning it back off removes the guard and its table. Needs `nft` on the host |
 | `MIABI_HOST_PROC` | `/host/proc` | procfs path for real host CPU/memory. The compose binds `/proc:/host/proc:ro` |
+| `MIABI_NODE_PINNING` | `true` | Workspace members (Developer and above) may pin volumes, apps and databases to a node of their location. `false` leaves node choice to platform admins. A plan can override it; see [node placement](/docs/nodes/node-placement#who-can-choose-a-node) |
 | `MIABI_NODE_STATS_AGENT` | `true` | Remote nodes' agents push their host CPU/memory readings. `false` measures each remote node with a short-lived helper container instead |
 
 ## Container security profile

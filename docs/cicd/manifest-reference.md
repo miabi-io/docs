@@ -157,6 +157,7 @@ spec:
 | `stack` | Must name a [`Stack`](#stack) **in the same bundle**. Members share a network and resolve each other by name. Joins the app to the stack on create, and moves it when changed; omit it to keep a membership set in the console. A single-app export leaves it out, since it carries no Stack. |
 | `placement.location` | The [location](/docs/nodes/cluster-mode#locations) the app is created in, by name. Omit it to use its stack's location; else, when every database it references sits in one location, that location; else the workspace default. An app that mounts a volume is created on that volume's node. Fixed once created — see [locations](#locations). |
 | `placement.constraints` | Service only. Swarm placement constraints, such as `node.labels.disk==ssd` or `node.role!=manager`, narrowing the nodes of the app's location it runs on. An empty list clears them; omitting the field keeps them. A plan's [node pool](/docs/nodes/cluster-mode#node-pools) still applies on top. |
+| `placement.node` | A node of the app's location, by its [node name](/docs/nodes/node-placement#node-names). A container runs there; a service gets it as a constraint at each deploy. Omitting it keeps the current pin. See [pinning to a node](#pinning-to-a-node). |
 | `deployment.runtime` | `container` (default) runs one Docker container; `service` runs a replicated Swarm service, which needs a location that runs a swarm — see [cluster mode](/docs/nodes/cluster-mode). Omitted, a new app is a container and an existing app keeps its runtime; stated, a change converges. |
 | `deployment.replicas` | Service only, 1–100. Omit it to keep the count the app runs at, so a scale made in the console is not undone. |
 | `deployment.strategy` | How a new release replaces the running one: `recreate`, `rolling` (default) or `canary`. **Omit it** to leave whatever the app is configured with in the console. A canary needs a running release to shift traffic against, so the first deploy of an app is always a straight rollout. Canary weights and interval stay console-side — they tune a rollout in flight rather than describing desired state. |
@@ -189,24 +190,38 @@ export always writes the new ones.
 
 ### Pinning to a node
 
-A service runs wherever the Swarm scheduler puts it, within its location. To run it on one node,
-name that node in `placement.constraints`:
+`placement.node` names the node an app runs on, inside its location:
 
 ```yaml
 spec:
   placement:
     location: eu-central
-    constraints:
-      - node.hostname==worker-2   # this node only
+    node: worker-2      # the node's name, not its display name
   deployment:
     runtime: service
     replicas: 1
 ```
 
+- **Container apps** run on that node. The pin can change only before the app's first deploy: a
+  deployed container app cannot move nodes yet, and changing `node` on one is refused.
+- **Services** get the pin as a placement constraint, resolved at every deploy, so it survives the
+  node rejoining the swarm. A changed pin takes effect at the next deploy. With `replicas` above 1,
+  every replica runs on that one node.
+- **A node-local volume wins.** An app already follows the node of a node-local volume it mounts; a
+  `node` that points elsewhere is refused with `NODE_VOLUME_CONFLICT`, naming the volume and both nodes.
+- Omitting `node` keeps the current pin. To remove a pin, clear it in the console (**Settings → Node**)
+  or send `"node": ""` to the API.
+- `node` is refused together with a `node.id==` or `node.hostname==` constraint, since both would
+  choose the node. Label and role constraints combine with it.
+- Whether workspace members may pin at all is set by the platform and the plan; see
+  [who can choose a node](/docs/nodes/node-placement#who-can-choose-a-node).
+
+For anything finer than one named node, use `placement.constraints` on a service:
+
 | Constraint | Matches |
 |---|---|
 | `node.hostname==worker-2` | The node whose Docker hostname is `worker-2`. This is the node's hostname, not its display name in Miabi. |
-| `node.id==<swarm node id>` | One Swarm node by ID. This is what **Placement → Pin to `<node>`** in the console writes, and what an export of a pinned app contains. |
+| `node.id==<swarm node id>` | One Swarm node by ID. Prefer `placement.node`, which names the node the way Miabi does. |
 | `node.labels.disk==ssd` | Any node with that label. Use this when a node may be replaced or renamed. |
 | `node.hostname!=worker-3` | Any node except `worker-3`. Use `!=` to keep an app off a node. |
 | `node.role==worker` | Worker nodes only; `node.role!=manager` does the same. |
@@ -216,8 +231,7 @@ at once. The node must belong to the app's location, and to the plan's
 [node pool](/docs/nodes/cluster-mode#node-pools) if there is one. A pin no node satisfies is
 accepted, but the service never starts: Swarm leaves its tasks pending.
 
-Container apps (the default runtime) cannot be pinned from a manifest. They take only a
-`placement.location`, and a platform admin can still pin one to a node in the console.
+Constraints apply to services only; a container app is pinned with `placement.node`.
 
 ### Health checks
 
@@ -367,6 +381,7 @@ spec:
   instance: auto        # auto | dedicated | shared, or { type, name }
   placement:
     location: eu-central # optional; the workspace default when omitted
+    node: worker-2       # optional; the node of the instance it lands on
   resources:            # optional; gives the database an instance of its own
     memory: 1Gi
     cpu: "0.5"
@@ -381,6 +396,11 @@ spec:
 | `auto` (default) | Reuse a running instance of the same engine and `version`; provision a dedicated one if none exists. |
 | `dedicated` | Always provision a fresh instance. Forced for Redis, which has no logical databases. |
 | `shared` | Share a running instance of the same engine and `version`. When the engine runs only at other versions, a dedicated instance is provisioned instead; with no instance of the engine at all, the apply fails. Rejected for engines without logical databases. |
+
+With `placement.node`, the database lands only on an instance on that node: `auto` and `shared` reuse
+a compatible instance there, and `auto` provisions one there when none fits — never one on another
+node of the location. The node is fixed once the database exists, and refused on a
+[shared storage class](/docs/storage/storage-classes), whose failover a pin would undo.
 
 An empty `version` matches an instance at any version. Changing `version` on an existing database is
 refused — its data is not migrated automatically: keep the old version, or delete the database to
@@ -408,8 +428,8 @@ spec:
 | `dedicated` | Provision a new instance under that name; refused when the name is taken. |
 | `shared` | The named instance must exist, or be declared as a [`DatabaseInstance`](#databaseinstance) in the same apply. |
 
-The named instance's engine must match, and so must `version` and `placement.location` when you state
-them; `resources` are refused, since the instance is sized on its own. The logical database is named
+The named instance's engine must match, and so must `version`, `placement.location` and
+`placement.node` when you state them; `resources` are refused, since the instance is sized on its own. The logical database is named
 exactly after `metadata.name` (sanitized for the engine: `posta-mail-db` becomes `posta_mail_db`).
 Where a database of that name already exists on the instance and this manifest didn't create it, the
 apply fails with `DATABASE_NAME_TAKEN` instead of picking another name. `instance.name` is fixed once
@@ -492,6 +512,7 @@ spec:
   resources: { memory: 2Gi, cpu: "1" }   # or size: <named size> (Enterprise)
   placement:
     location: eu2
+    node: worker-2          # optional; fixed once created
   storageClass: ssd         # optional; fixed once created
   recoveryPoints:           # optional, Enterprise
     schedule: daily
@@ -513,7 +534,7 @@ refused: [declare them as a `Database`](#redis-and-libsql).
 |---|---|
 | `version` | The instance is [upgraded](/docs/databases/version-upgrades) in place or by dump and restore; a downgrade is refused. Omitted, the instance keeps its version. |
 | `resources` | Converged in place, restarting the instance. Omitted, the instance keeps its limits. |
-| `engine`, `placement.location`, `storageClass` | Refused: delete the instance and apply again. |
+| `engine`, `placement.location`, `placement.node`, `storageClass` | Refused: delete the instance and apply again. |
 
 ### Adopting an existing instance
 
@@ -532,8 +553,8 @@ spec:
 
 - Without `adopt: true`, a `DatabaseInstance` whose name is taken by an existing instance is refused
   with `INSTANCE_EXISTS`, so a typo can't take over someone else's instance.
-- The engine must match, and so must `version`, `placement.location` and `storageClass` when you state
-  them. To adopt an instance and upgrade it, adopt it at its current version first. The plan shows the
+- The engine must match, and so must `version`, `placement.location`, `placement.node` and
+  `storageClass` when you state them. To adopt an instance and upgrade it, adopt it at its current version first. The plan shows the
   action as `adopt existing instance`.
 - An instance created by a GitOps project, a one-shot apply or a marketplace install is refused even
   with `adopt: true`. Once the manifest owns the instance, `adopt` has no further effect.
@@ -583,6 +604,7 @@ spec:
   storageClass: ssd-fast # optional; see below
   placement:
     location: eu-central # optional; the workspace default when omitted
+    node: worker-2       # optional; fixed once created
 ```
 
 | Field | Converges? | Notes |
@@ -590,6 +612,7 @@ spec:
 | `size` | **Grow only** | A declared number for quota accounting, so changing it moves no data. A larger size is applied; a smaller one is refused, including one below a capacity expanded in the console, until the manifest catches up. Omitted, the volume keeps its capacity. |
 | `storageClass` | **No — refused** | The data physically lives there. |
 | `placement.location` | **No — refused** | Same reason. |
+| `placement.node` | **No — refused** | The node the data lives on. Omitted, Miabi picks one and the volume never drifts against it. Refused on a shared storage class, whose data is on every node. |
 
 ### `storageClass`
 
@@ -610,8 +633,8 @@ Delete it and apply again, or migrate it
 Converging that would mean deleting and recreating the volume, destroying its data from a
 `git push`. Delete the volume deliberately and re-apply if that is what you want.
 
-Shared (NFS/CIFS) and host-path volumes, and placement on a specific node, are not
-manifest-expressible — create those through the API or console.
+Shared (NFS/CIFS) and host-path volumes are not manifest-expressible — create those through the API
+or console.
 
 ---
 
@@ -1045,6 +1068,8 @@ spec:
   suspend: false               # optional, see below
   security:
     runAsUser: "1000"          # optional: omitted inherits the app's user
+  placement:
+    node: worker-2             # optional; see below
 ```
 
 | Field | Notes |
@@ -1054,6 +1079,7 @@ spec:
 | `command` | **Required.** A list of arguments, not a shell line. |
 | `concurrencyPolicy` | What a fire does while the previous run is active: start another, skip this fire, or cancel the running one. |
 | `suspend` | Only compared when stated. Leave it out and a pause made in the console survives the next sync. |
+| `placement.node` | The node every run lands on, inside the app's location. Omitted, a run follows the app: its pin, else the node of its node-local volumes, else its node. A node away from a node-local volume the app mounts is refused, since the run would see an empty volume. There is no `placement.location`: a run always lands in its app's location. Job placement is manifest-only; the console and the job API have no node field, and a console edit keeps a manifest's pin. |
 
 A CronJob a GitOps source owns is read-only in the console: **Run now**, pause and resume still work
 there, but any other edit is refused with a pointer to the manifest. One created by a one-shot
@@ -1083,7 +1109,8 @@ spec:
     runAsUser: "1000"
 ```
 
-`entrypoint`, `image` and `registry` work as on a [CronJob](#cronjob).
+`entrypoint`, `image`, `registry` and `placement.node` work as on a [CronJob](#cronjob). Changing a
+Job's `placement.node` moves its next runs without running it again.
 
 | `runPolicy` | Runs when | Use it for |
 |---|---|---|
@@ -1301,7 +1328,7 @@ resource never shows phantom drift:
 container labels, the `security` block, and per-port exposure (`externalAccess` / `publish` as present-or-not).
 
 **Diffed only when stated** — `deployment` (runtime, replicas, strategy, update), `placement`
-(location, constraints), each `healthcheck` field, `stack`, `ports` (each port's number, protocol and
+(location, node, constraints), each `healthcheck` field, `stack`, `ports` (each port's number, protocol and
 scheme, in any order) and each port's `name`. A manifest silent about them leaves what the console set
 alone, so removing `stack` from a manifest does not take the app out of its stack, and a manifest with
 no `ports` keeps the app's ports. When `ports` is stated, the app's ports become exactly that list; a
@@ -1332,6 +1359,12 @@ manifest state — they are compared by presence, so they are never churned.
 `placement.location` on an `Application`, `Stack`, `Database` or `Volume` is compared only when the manifest
 states it, so a manifest without one never drifts. A resource is never moved: a different location
 fails the apply — delete the resource and apply again.
+
+`placement.node` works the same way on a `Volume`, `DatabaseInstance` or `Database`: compared only
+when stated, and a different node fails the apply, since their data does not move. On an
+`Application`, a stated `node` converges, within the limits in
+[pinning to a node](#pinning-to-a-node). An export never carries a node: node names are specific to
+one install.
 
 A new application that names no location follows what it depends on: its stack's location, else the
 node of a volume it mounts, else the location every database it references sits in, else the
