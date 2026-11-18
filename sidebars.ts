@@ -167,6 +167,7 @@ const sidebars: SidebarsConfig = {
         'nodes/adding-a-node',
         'nodes/agent',
         'nodes/cluster-mode',
+        'nodes/node-placement',
         'nodes/housekeeping',
         'nodes/docker-import',
       ],
