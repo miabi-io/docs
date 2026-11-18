@@ -31,15 +31,25 @@ spec:
   version: "8-alpine"
 ---
 apiVersion: miabi.io/v1
+kind: Secret
+metadata: { name: guestbook-admin-token }
+spec:
+  generate: true
+  length: 48
+---
+apiVersion: miabi.io/v1
 kind: Application
 metadata: { name: guestbook }
 spec:
-  image: miabi/guestbook:3.2.0
+  image: miabi/guestbook:3.3.0
   ports:
     - { name: http, container: 8080 }
+    - { name: metrics, container: 9090 }
   env:
     DATABASE_URL: "{{ .databases.guestbook-db.url }}"
     REDIS_URL: "{{ .databases.guestbook-cache.url }}"
+    ADMIN_TOKEN: "{{ .secrets.guestbook-admin-token }}"
+    METRICS_ENABLED: "true"
   healthcheck:
     type: http
     path: /healthz

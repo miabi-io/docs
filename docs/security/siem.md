@@ -34,7 +34,8 @@ top of that:
 - **Detection and alerting** — feed administrative actions into the same correlation and alerting
   rules you already run for the rest of your estate.
 - **Compliance evidence** — frameworks such as SOC 2 and ISO 27001 expect a tamper-evident, exported
-  record of administrative activity; a live stream to an immutable sink satisfies that.
+  record of administrative activity; streaming to an immutable sink helps you provide that
+  evidence. Whether a control is met is decided in your own audit, not by the tooling.
 
 Streaming is purely additive: the in-app audit log is unchanged. Note that viewing the in-app log is
 itself an Enterprise entitlement (`audit_log`), separate from `siem_stream` — see

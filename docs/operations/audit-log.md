@@ -69,8 +69,9 @@ An append-only audit trail is a cornerstone of operational and compliance practi
 - **Accountability** — every change ties back to a specific member.
 - **Incident response** — when something breaks, the log shows exactly what changed and when, so
   you can correlate a failure with the action that caused it.
-- **Compliance** — many frameworks (SOC 2, ISO 27001, and similar) require a tamper-evident record
-  of administrative actions; an append-only log satisfies that requirement.
+- **Compliance** — many frameworks (SOC 2, ISO 27001, and similar) expect a record of
+  administrative actions. The append-only log is that record; to make it tamper-evident, stream it
+  to an immutable store with [SIEM streaming](/docs/security/siem).
 
 :::tip
 Pair the audit log with [monitoring](/docs/operations/monitoring) when investigating an incident:
