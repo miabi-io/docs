@@ -42,16 +42,37 @@ Run migrations as a job right after a deploy, or wire them into your [pipeline](
      credential for a private image. Useful for a one-off tool the app's image does not ship.
    - **Run as user** — the account the command runs as, like `docker run --user`. Blank inherits
      the app's.
+   - **Environment variables** — the job's own variables, on top of the app's. See
+     [the job's environment](#the-jobs-environment).
    - **Timeout** — how long the job may run.
 4. **Run** — Miabi spins up a container from the app's active release (or the image you named).
 
 A Git-source app needs at least one successful deploy before it can run a job. The job runs to
 completion and then the container is cleaned up. It does not affect your serving containers.
 
+## The job's environment
+
+A job runs with the app's [environment variables and secrets](/docs/applications/environment-variables),
+its stack's shared variables, and the [`MIABI_*` variables](/docs/applications/environment-variables#variables-miabi-sets)
+Miabi sets (`MIABI_KIND` is `job` or `cronjob`). On top of those it can have **its own variables**:
+
+- A job variable with the same name as the app's **replaces** it, for that job only — for example
+  `LOG_LEVEL=debug` for one nightly run.
+- A value can reference a workspace secret, `${{ secrets.NAME }}`, resolved when the run starts.
+  Tick **Secret** for a literal sensitive value: it is stored encrypted and never shown again; leave
+  it untouched when editing to keep it.
+- Each run keeps the variables it was started with, references unresolved, so its history never
+  holds a resolved secret.
+
+**Inherit the app's variables** is on by default. Turn it off and the job gets only its own variables
+and the `MIABI_*` set — not the app's or the stack's. Use it when a job runs a **third-party image**,
+such as a cloud CLI or a backup tool, that should not see the app's database password or API keys.
+Volumes, networks and the run-as user are unchanged: only the environment is narrowed.
+
 ## Scheduled jobs
 
 The **Scheduled** tab turns a job into a **cronjob**: **New cronjob** takes the same application,
-command, image and user as a run, plus:
+command, image, user and [environment](#the-jobs-environment) as a run, plus:
 
 | Field | What it means |
 |---|---|
