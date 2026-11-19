@@ -306,7 +306,8 @@ outside the build context.
 
 ### Provided by the runner
 
-The runner exports run context to every step as environment variables:
+The runner exports run context to every step as environment variables. A deployed app gets a
+different set, described in [Variables Miabi sets](/docs/applications/environment-variables#variables-miabi-sets).
 
 | Variable | Meaning |
 |----------|---------|

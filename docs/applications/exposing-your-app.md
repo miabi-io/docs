@@ -33,7 +33,8 @@ Node app, `8080` for many Java services, `80` for nginx.
 :::tip
 If your app reads a `PORT` environment variable, set it in
 [Environment variables](/docs/applications/environment-variables) and declare the same
-number here. The two must agree.
+number here. The two must agree. Miabi also passes the main port to the container as
+[`MIABI_PORT`](/docs/applications/environment-variables#variables-miabi-sets).
 :::
 
 ## Choosing how to expose it
@@ -69,6 +70,14 @@ The generated hostname is `<label>.<base-domain>`, where the label defaults to
 `<app-handle>-<token>`. It is **generated once and then pinned to the app**, so the URL
 survives renames and redeploys — a link you shared last month keeps working after you
 rename the app.
+
+### Reading the URL from inside the app
+
+An app that needs its own public URL, for OAuth callbacks or links in emails, finds it in
+[`MIABI_PUBLIC_URL`](/docs/applications/environment-variables#variables-miabi-sets), set at each
+deploy. To pass it under a name of your choice, or to give one app another's URL, use
+[`${{ applications.<name>.public_url }}`](/docs/applications/environment-variables#an-applications-public-address).
+Turning external access on or off marks those apps **redeploy required**.
 
 ### If the card says it is unavailable
 

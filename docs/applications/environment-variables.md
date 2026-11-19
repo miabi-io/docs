@@ -96,6 +96,59 @@ URL: turn on external access or add a route on its port*, rather than starting w
 Deleting an app that others reference warns you first, naming them.
 :::
 
+## Variables Miabi sets
+
+Every app container and job run also gets a set of `MIABI_*` variables, filled in at each deploy, so
+an app can tag errors with its release, build its own links or tell its replicas apart without
+copying values by hand.
+
+| Variable | Value |
+|---|---|
+| `MIABI_APP_NAME` / `MIABI_APP_ID` | The application |
+| `MIABI_WORKSPACE_NAME` / `MIABI_WORKSPACE_ID` | Its workspace |
+| `MIABI_STACK` | Its [stack](/docs/applications/stacks), when it is in one |
+| `MIABI_KIND` | `app`, `job` or `cronjob` |
+| `MIABI_JOB_NAME` / `MIABI_JOB_RUN_ID` | The job and this run; jobs and cron jobs only |
+| `MIABI_DEPLOYMENT_ID` | The deployment that started the container |
+| `MIABI_RELEASE` | The [release](/docs/applications/releases-and-rollbacks) number, e.g. `12` |
+| `MIABI_VERSION` / `MIABI_IMAGE_TAG` | The [version](/docs/cicd/versioning) (`1.4.2`) and its tag (`v1.4.2`), when a version policy produced the image |
+| `MIABI_COMMIT` / `MIABI_BRANCH` | Source commit and branch, for apps built from Git |
+| `MIABI_IMAGE` / `MIABI_IMAGE_DIGEST` | The image reference and its `sha256:…` digest |
+| `MIABI_PORT` | The app's main container port |
+| `MIABI_INTERNAL_URL` | `http://<app>:<port>`, how other apps in the workspace reach it |
+| `MIABI_PUBLIC_URL` / `MIABI_PUBLIC_HOST` | The app's [public address](#an-applications-public-address) |
+| `MIABI_LOCATION` | The [location](/docs/nodes/cluster-mode#locations) it runs in |
+| `MIABI_NODE` | The [node](/docs/nodes/node-placement#node-names) it runs on |
+| `MIABI_NODE_ID` | Swarm services only: the Swarm node ID of the task |
+| `MIABI_REPLICA` | Replica slot, `1` to `n`; always `1` for a container |
+| `MIABI_CPU_LIMIT` | CPU limit in cores, e.g. `1.5` |
+| `MIABI_MEMORY_LIMIT_MB` | Memory limit in MiB |
+
+A variable without a value is left out, never set empty: an app with no route has no
+`MIABI_PUBLIC_URL`, and an app without limits has no `MIABI_CPU_LIMIT`. These names are a stable
+contract: new ones may be added, none are renamed or removed.
+
+A [Swarm service](/docs/nodes/cluster-mode) shares one environment across its tasks, so
+`MIABI_REPLICA` and `MIABI_NODE_ID` are expanded by Docker in each task. A service gets `MIABI_NODE`
+only when it is [pinned to a node](/docs/nodes/node-placement); otherwise read `MIABI_NODE_ID`.
+
+**Your variables win.** A variable of the same name set on the app or its stack replaces Miabi's, and
+the **Environment** tab marks it *Replaces a Miabi variable*. The tab also lists, under **Set by
+Miabi**, the values the next deploy sets.
+
+**Turning them off.** Clear **Set MIABI_\* variables** in the **Environment** tab, or set
+`miabiEnv: false` in the app's [manifest](/docs/cicd/manifest-reference#application). Jobs follow
+their app. The change applies at the next deploy.
+
+Values change only at a deploy. When the app's public address changes or its workspace is renamed, the
+app is marked **redeploy required** instead of being restarted.
+
+:::note Not the pipeline set
+[Pipeline steps](/docs/cicd/pipelines#provided-by-the-runner) get their own `MIABI_*` variables. Some
+names are shared, but the sets differ: a running app gets no registry credentials and no
+`MIABI_ENV` file, and its `MIABI_IMAGE_DIGEST` is the bare `sha256:…` digest.
+:::
+
 ## Redeploy on change
 
 Environment variables and secrets are baked into the running container, so **changes take effect on the next deploy**. After editing a variable:

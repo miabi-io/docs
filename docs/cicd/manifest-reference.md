@@ -137,6 +137,7 @@ spec:
       path: /etc/nginx/nginx.conf
       mode: "0444"
   reloadPolicy: restart       # restart (default) | none — on a mounted config's change
+  miabiEnv: true              # false: Miabi sets no MIABI_* variables; omit to keep the current choice
   resources:
     memory: 512Mi             # Ki/Mi/Gi; empty = unlimited
     cpu: "0.5"                # cores; empty = unlimited
@@ -167,6 +168,7 @@ spec:
 | `env` / `secretEnv` | Every `secretEnv` key must also appear in `env`. Values support [interpolation](#interpolation). A key that reads a secret or a database credential (`{{ .secrets.* }}`, `{{ .databases.<name>.password }}`, `.uri`) needs no `secretEnv`: it is stored as a vault reference and resolved at deploy, and a credential that has to be stored as its value is encrypted automatically — see [secrets in env](#secrets-in-env). List a key under `secretEnv` when you write a sensitive value into the manifest literally. |
 | `mounts` | Exactly one of `volume` or `config`, and both must be declared in the same bundle. `key` and `mode` are valid only with a `config` — setting them on a volume mount is an error, not a silent no-op. A config mount is always read-only. Privileged host binds are **not** manifest-expressible. |
 | `reloadPolicy` | `restart` (default) redeploys the app when a mounted [`Config`](#config)'s content changes; `none` leaves it running, for apps that watch their own config file. |
+| `miabiEnv` | `false` stops Miabi setting its [`MIABI_*` variables](/docs/applications/environment-variables#variables-miabi-sets) in the app and its jobs. Omit it to keep the choice made in the console; stated, a change converges at the next deploy. |
 | `security.runAsUser` | The account the container runs as — `uid`, `uid:gid`, `name` or `name:group` — like `docker run --user`. Omit to keep the image's own user. A workspace under the [restricted security profile](/docs/security/container-security-profile) must give a non-root **numeric** uid; a name is refused there, since the image decides what it maps to. Attached volumes are chowned to it on deploy. |
 | `security.readOnlyRootFilesystem` | Mounts the container's root filesystem read-only. Volumes stay writable, so an image that writes elsewhere, such as `/tmp`, needs a volume there or it fails to start. One-off jobs keep a writable filesystem. |
 | `security.noNewPrivileges` | Stops a process gaining privileges through setuid binaries. The restricted security profile always sets it, so `false` is refused there rather than silently overridden. |
