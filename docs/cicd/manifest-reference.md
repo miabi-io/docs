@@ -1251,6 +1251,41 @@ aliases are set when a container is created. Redeploy the target once and it doe
 Apps in the same [`Stack`](#stack) additionally resolve each other by name on the stack network,
 which is unchanged.
 
+#### Public address
+
+Three more fields give an application's **public** address. They are filled in when the app that
+uses them deploys, not when the manifest is applied, so they only work in `env` (an `Application`'s
+or a `Stack`'s):
+
+```yaml
+kind: Application
+metadata: { name: web }
+spec:
+  image: ghcr.io/acme/web
+  ports: [{ container: 8080, externalAccess: true }]
+  env:
+    PUBLIC_URL: "{{ .applications.web.public_url }}"                    # https://shop.example.com
+    OAUTH_CALLBACK: "{{ .applications.web.public_url }}/auth/callback"
+    HOST: "{{ .apps.web.public_host }}"                                 # shop.example.com
+```
+
+| Field | Value |
+|---|---|
+| `public_url` | The app's custom domain (its oldest enabled `Route` on its port with path `/`), else its external-access URL |
+| `public_host` | The same, host only |
+| `external_url` | The external-access URL only |
+
+`.apps` is an alias of `.applications` for every field. The stored value is
+`${{ applications.web.public_url }}`, so `miabi apply --diff` shows no change when the base domain
+changes, and the next deploy picks up the new address. A `Route` declared in the same bundle is
+created after the application: if the app had already deployed with the external-access URL, apply
+redeploys it once at the end so it starts on the custom domain.
+
+The reference must stand alone inside its braces. Text around it is fine; a pipe such as
+`{{ .applications.web.public_url | upper }}` is refused, because it would transform the placeholder
+rather than the address. Using these fields outside `env`, in a `Config` file for example, is refused
+too.
+
 A [`Config`](#config) whose own file format uses `{{ }}` sets `delimiters` to render on different
 markers, so only the references you meant are substituted.
 

@@ -64,6 +64,38 @@ workspace network is node-local otherwise. Apps deployed before Miabi 1.10 answe
 after their next deploy.
 :::
 
+## An application's public address
+
+Some apps need their own public URL at startup: OAuth callbacks, links in emails, a "public mode"
+that refuses to start without it. Reference it instead of copying the hostname:
+
+| Variable | Value |
+|---|---|
+| `PUBLIC_URL` | `${{ applications.web.public_url }}` |
+| `OAUTH_CALLBACK` | `${{ applications.web.public_url }}/auth/callback` |
+
+`apps.` works as a short alias of `applications.`. An app can reference itself or any other app in the
+workspace, and the reference can sit inside longer text.
+
+| Field | Resolves to |
+|---|---|
+| `public_url` | The app's custom domain if it has one, else its [external-access](/docs/applications/exposing-your-app) URL, e.g. `https://shop.example.com` |
+| `public_host` | The same, without `https://` |
+| `external_url` | The generated external-access URL only, ignoring custom domains |
+
+The custom domain is the oldest enabled route on the app's port with path `/`. Routes on other ports,
+or on a sub-path, never count.
+
+Miabi fills the value in **each time the referencing app deploys**, so it follows a base-domain change
+or a move to another location without editing anything. When the address changes, apps that use it
+are marked **redeploy required**; they are not restarted on their own.
+
+:::note A missing address fails the deploy
+If the app has neither a route nor external access, the deploy fails with *app "web" has no public
+URL: turn on external access or add a route on its port*, rather than starting with an empty value.
+Deleting an app that others reference warns you first, naming them.
+:::
+
 ## Redeploy on change
 
 Environment variables and secrets are baked into the running container, so **changes take effect on the next deploy**. After editing a variable:
