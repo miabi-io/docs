@@ -217,6 +217,15 @@ schedules can be paused or deleted, but new points and schedule changes need a v
 
 A restore always goes back into **the same database or volume** the backup was taken from.
 
+Restores from a backup, a recovery point or a volume archive run **in the background**, like backups,
+so a large one is not cut short by a timeout. While one runs, the database or volume page shows a
+**Restoring from …** banner, and you get a notification in the bell when it completes or fails. Apps
+using the database or volume can see partial data until then.
+
+Only one restore runs on a database or volume at a time, and backups wait for it: a backup taken
+mid-restore would hold half old, half new data. A restore also waits for a running backup of the same
+database. A restore interrupted by a Miabi restart is marked failed within a few minutes.
+
 ### A database backup
 
 Select **Restore** on a backup. The dialog shows the backup's note, the engine version it was taken
@@ -240,12 +249,13 @@ the instance first, or restore into one that runs a matching version. (The API a
 
 **Restore from file** loads a dump you have on disk into the selected database: a `.sql.gz`, `.sql`,
 or `.dump` produced by the matching engine. Drop the file in, choose **Normal** or **Force**, and
-select **Restore**. The upload is removed from the host afterwards.
+select **Restore**. The upload is removed from the host afterwards. Unlike the other restores, this
+one finishes before the dialog closes, since the file arrives with the request.
 
 ### A recovery point
 
 Select **Restore** on a completed recovery point to restore **every database in it**. Their current
-contents are overwritten. The result names any database that failed, so a partial restore is
+contents are overwritten. The notification names any database that failed, so a partial restore is
 visible.
 
 ### A volume archive

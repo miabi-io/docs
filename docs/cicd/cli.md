@@ -223,6 +223,7 @@ miabi db start | stop | restart shop
 miabi db logs shop [--follow] [--tail 200]
 miabi db credentials shop                     # reveal admin connection (admin)
 miabi db upgrade shop --to 17 [--stop-apps]
+miabi db backup shop [--database app_prod] [--comment "before v2"] [--wait] [--timeout 1h]
 miabi db rm shop [--yes]
 # logical databases on an instance:
 miabi db databases shop                              # list
@@ -274,7 +275,7 @@ backup command is refused. Backups are addressed by the numeric ID the listing s
 ```bash
 miabi volumes backups web-data                        # list
 miabi volumes backups run web-data [--wait] [--timeout 30m]
-miabi volumes backups restore web-data 42 [--yes]     # overwrites the volume's data
+miabi volumes backups restore web-data 42 [--yes] [--timeout 2h]   # overwrites the volume's data; waits for it
 miabi volumes backups logs web-data 42
 miabi volumes backups rm web-data 42 [--yes]
 miabi volumes backups verify web-data 42           # check the archive is still intact in the bucket
