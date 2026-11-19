@@ -75,6 +75,9 @@ import a whole `docker-compose.yml` as a [stack](/docs/applications/stacks).
 The [marketplace](/docs/marketplace/overview) installs common self-hosted apps in a click, with their
 databases and volumes: Nextcloud, Gitea, n8n, Umami, WordPress, Ghost and more.
 
+Side projects can each get a workspace, or share `dev`, `staging` and `production` workspaces; see
+[laying out workspaces](/docs/use-cases/single-node#laying-out-workspaces).
+
 ## Keeping it safe
 
 A homelab with a public address is a public server. The defaults help, and a few settings help more:
