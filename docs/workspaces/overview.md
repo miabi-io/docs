@@ -18,7 +18,7 @@ Think of a workspace as a self-contained tenant on your Miabi instance. When you
 
 Every workspace has two identifiers:
 
-- A unique **name** — a lowercase handle (`a-z`, `0-9`, `-`) that is the workspace's URL key and its [container-registry](/docs/registry/overview) namespace (`docker login -u <name>`). It can be renamed (URLs and the docker handle change with it, like renaming a GitHub org), except for the built-in system workspace.
+- A unique **name** — a lowercase handle (`a-z`, `0-9`, `-`) that is the workspace's URL key and its [container-registry](/docs/registry/overview) namespace (`docker login -u <name>`). It can be renamed (URLs and the docker handle change with it, like renaming a GitHub org), except for the built-in system workspace. A rename marks the workspace's deployed apps **redeploy required**, so their [`MIABI_WORKSPACE_NAME`](/docs/applications/environment-variables#variables-miabi-sets) catches up at their next deploy.
 - A free-text **display name** shown across the console.
 
 Internally the numeric ID and a stable UID remain the durable references, so a rename never breaks stored relationships, foreign keys, or exports.

@@ -137,6 +137,7 @@ spec:
       path: /etc/nginx/nginx.conf
       mode: "0444"
   reloadPolicy: restart       # restart (default) | none — on a mounted config's change
+  miabiEnv: true              # false: Miabi sets no MIABI_* variables; omit to keep the current choice
   resources:
     memory: 512Mi             # Ki/Mi/Gi; empty = unlimited
     cpu: "0.5"                # cores; empty = unlimited
@@ -167,6 +168,7 @@ spec:
 | `env` / `secretEnv` | Every `secretEnv` key must also appear in `env`. Values support [interpolation](#interpolation). A key that reads a secret or a database credential (`{{ .secrets.* }}`, `{{ .databases.<name>.password }}`, `.uri`) needs no `secretEnv`: it is stored as a vault reference and resolved at deploy, and a credential that has to be stored as its value is encrypted automatically — see [secrets in env](#secrets-in-env). List a key under `secretEnv` when you write a sensitive value into the manifest literally. |
 | `mounts` | Exactly one of `volume` or `config`, and both must be declared in the same bundle. `key` and `mode` are valid only with a `config` — setting them on a volume mount is an error, not a silent no-op. A config mount is always read-only. Privileged host binds are **not** manifest-expressible. |
 | `reloadPolicy` | `restart` (default) redeploys the app when a mounted [`Config`](#config)'s content changes; `none` leaves it running, for apps that watch their own config file. |
+| `miabiEnv` | `false` stops Miabi setting its [`MIABI_*` variables](/docs/applications/environment-variables#variables-miabi-sets) in the app and its jobs. Omit it to keep the choice made in the console; stated, a change converges at the next deploy. |
 | `security.runAsUser` | The account the container runs as — `uid`, `uid:gid`, `name` or `name:group` — like `docker run --user`. Omit to keep the image's own user. A workspace under the [restricted security profile](/docs/security/container-security-profile) must give a non-root **numeric** uid; a name is refused there, since the image decides what it maps to. Attached volumes are chowned to it on deploy. |
 | `security.readOnlyRootFilesystem` | Mounts the container's root filesystem read-only. Volumes stay writable, so an image that writes elsewhere, such as `/tmp`, needs a volume there or it fails to start. One-off jobs keep a writable filesystem. |
 | `security.noNewPrivileges` | Stops a process gaining privileges through setuid binaries. The restricted security profile always sets it, so `false` is refused there rather than silently overridden. |
@@ -1250,6 +1252,41 @@ aliases are set when a container is created. Redeploy the target once and it doe
 
 Apps in the same [`Stack`](#stack) additionally resolve each other by name on the stack network,
 which is unchanged.
+
+#### Public address
+
+Three more fields give an application's **public** address. They are filled in when the app that
+uses them deploys, not when the manifest is applied, so they only work in `env` (an `Application`'s
+or a `Stack`'s):
+
+```yaml
+kind: Application
+metadata: { name: web }
+spec:
+  image: ghcr.io/acme/web
+  ports: [{ container: 8080, externalAccess: true }]
+  env:
+    PUBLIC_URL: "{{ .applications.web.public_url }}"                    # https://shop.example.com
+    OAUTH_CALLBACK: "{{ .applications.web.public_url }}/auth/callback"
+    HOST: "{{ .apps.web.public_host }}"                                 # shop.example.com
+```
+
+| Field | Value |
+|---|---|
+| `public_url` | The app's custom domain (its oldest enabled `Route` on its port with path `/`), else its external-access URL |
+| `public_host` | The same, host only |
+| `external_url` | The external-access URL only |
+
+`.apps` is an alias of `.applications` for every field. The stored value is
+`${{ applications.web.public_url }}`, so `miabi apply --diff` shows no change when the base domain
+changes, and the next deploy picks up the new address. A `Route` declared in the same bundle is
+created after the application: if the app had already deployed with the external-access URL, apply
+redeploys it once at the end so it starts on the custom domain.
+
+The reference must stand alone inside its braces. Text around it is fine; a pipe such as
+`{{ .applications.web.public_url | upper }}` is refused, because it would transform the placeholder
+rather than the address. Using these fields outside `env`, in a `Config` file for example, is refused
+too.
 
 A [`Config`](#config) whose own file format uses `{{ }}` sets `delimiters` to render on different
 markers, so only the references you meant are substituted.

@@ -37,8 +37,9 @@ For a pre-packaged app such as WordPress, install a template from the
 
 ![Create application dialog](/img/screenshots/app-create.png)
 
-For this walkthrough, pick a **Docker image** such as `nginx:latest` — it requires no build and
-deploys instantly.
+For this walkthrough, pick a **Docker image** such as `nginx:latest` — it requires no build, so its
+first deploy is quick. Creating the app does not start it: you deploy it in the next step, once it is
+configured.
 
 ## 4. Configure and deploy
 
