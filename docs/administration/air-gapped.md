@@ -1,5 +1,5 @@
 ---
-sidebar_position: 6
+sidebar_position: 8
 title: Air-gapped installs
 description: Every outbound connection Miabi makes on its own, and how to turn each one off for an air-gapped or egress-restricted install.
 ---

@@ -15,6 +15,10 @@ one when they create an app, a database or a volume.
 bare metal with cloud, running production on different hardware from staging, and managing
 on-premises or edge sites from one console.
 
+**Typical users:** companies with offices, factories or stores to serve on site, SaaS products with
+customers in several countries, hosting providers selling more than one region, and groups of
+companies or universities with several campuses.
+
 ![A control plane drives three locations over outbound tunnels: a remote swarm in eu-central, a single node in af-central and an on-premises node behind NAT, each serving its own visitors](/img/diagrams/uc-multi-region.png)
 
 Dashed lines are agent tunnels. Two things make this work:

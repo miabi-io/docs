@@ -26,9 +26,23 @@ must differ.
 | **Environment** | Production must have fewer people with write access than staging | `shop-staging`, `shop-production` |
 | **Client** | You build and run apps for others; see [Hosting providers and agencies](/docs/use-cases/hosting-providers) | `client-jkantech` |
 
-Inside one workspace, [environments](/docs/applications/environments) give the same team a promotion
-path — dev, staging, production — with an approval gate before a release reaches the next stage. Use
-separate workspaces when the people or the secrets differ, and environments when they don't.
+[Environments](/docs/applications/environments) add approval gates to releases: a release needs a
+set number of approvals before it is promoted. Promotion redeploys the same application, so a stage
+with its own variables, secrets, domain or database still needs its own application, and usually its
+own workspace. See [laying out workspaces](/docs/use-cases/single-node#laying-out-workspaces) for the
+per-stage and per-project layouts.
+
+## Which setup?
+
+How many teams you have does not decide the hardware; how long an app may be down, and where its
+users are, does. Most companies start on one server and grow without reinstalling.
+
+| Your situation | Setup |
+|---|---|
+| Internal tools and staging that can wait while a server reboots | [One server](/docs/use-cases/single-node) |
+| Customer-facing apps that must stay up through a node failure | [One cluster, several servers](/docs/use-cases/swarm-cluster) |
+| Those apps also keep uploads or files on disk | [Replicated storage](/docs/use-cases/replicated-storage) on that cluster |
+| Offices, factories or customers in several places, or production on separate hardware | [Several clusters as regions](/docs/use-cases/multi-region) |
 
 ## Setting it up
 

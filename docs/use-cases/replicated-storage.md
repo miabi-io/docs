@@ -14,6 +14,9 @@ same path on every node. The data is everywhere, so the app can start anywhere.
 **Good for:** CMS uploads and media, user files, shared assets served by several replicas, and any
 app that must keep running, with its data, when a server dies.
 
+**Typical users:** companies whose production apps keep files on disk, agencies running client CMS
+sites, hosting providers selling a high-availability tier, and labs that already run Ceph.
+
 ![A swarm of three nodes over a replicated filesystem holding three copies; when node 3 fails its replica restarts on node 1 with the same data](/img/diagrams/uc-replicated-storage.png)
 
 Miabi does not replicate data itself. The filesystem does, and Miabi treats a storage class on it as
