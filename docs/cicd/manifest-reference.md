@@ -1072,6 +1072,11 @@ spec:
     runAsUser: "1000"          # optional: omitted inherits the app's user
   placement:
     node: worker-2             # optional; see below
+  env:                         # optional: the run's own variables, on top of the app's
+    REPORT_FORMAT: pdf
+    SMTP_PASSWORD: "{{ .secrets.smtp-password }}"
+  secretEnv: []                # env keys whose literal values are stored encrypted
+  inheritEnv: true             # false: runs get only env and MIABI_*, not the app's
 ```
 
 | Field | Notes |
@@ -1081,6 +1086,8 @@ spec:
 | `command` | **Required.** A list of arguments, not a shell line. |
 | `concurrencyPolicy` | What a fire does while the previous run is active: start another, skip this fire, or cancel the running one. |
 | `suspend` | Only compared when stated. Leave it out and a pause made in the console survives the next sync. |
+| `env` / `secretEnv` | The run's own variables, added on top of the app's and replacing any of the same name. Values support [interpolation](#interpolation) as an application's env does: a secret or database credential is kept as a vault reference and resolved when the run starts. List a key under `secretEnv` to store a literal value encrypted. Owned by the manifest: a key removed from `env` is removed from the schedule. |
+| `inheritEnv` | `true` (default) runs with the app's and its stack's variables. `false` runs with only `env` and the [`MIABI_*` variables](/docs/applications/environment-variables#variables-miabi-sets), for an `image` that shouldn't see the app's secrets. Volumes, networks and the user are unchanged. |
 | `placement.node` | The node every run lands on, inside the app's location. Omitted, a run follows the app: its pin, else the node of its node-local volumes, else its node. A node away from a node-local volume the app mounts is refused, since the run would see an empty volume. There is no `placement.location`: a run always lands in its app's location. Job placement is manifest-only; the console and the job API have no node field, and a console edit keeps a manifest's pin. |
 
 A CronJob a GitOps source owns is read-only in the console: **Run now**, pause and resume still work
@@ -1111,12 +1118,12 @@ spec:
     runAsUser: "1000"
 ```
 
-`entrypoint`, `image`, `registry` and `placement.node` work as on a [CronJob](#cronjob). Changing a
-Job's `placement.node` moves its next runs without running it again.
+`entrypoint`, `image`, `registry`, `env`, `secretEnv`, `inheritEnv` and `placement.node` work as on a
+[CronJob](#cronjob). Changing a Job's `placement.node` moves its next runs without running it again.
 
 | `runPolicy` | Runs when | Use it for |
 |---|---|---|
-| `onChange` | It is created, and whenever `command`, `entrypoint`, `image`, `registry`, `runAsUser` or `timeoutSeconds` change | A one-off data fix: edit the command to run it again |
+| `onChange` | It is created, and whenever `command`, `entrypoint`, `image`, `registry`, `runAsUser`, `timeoutSeconds`, `env` or `inheritEnv` change | A one-off data fix: edit the command to run it again |
 | `once` | It is created. Editing those fields afterwards is refused | Seeds and bootstrap: rename the Job to run a new one |
 | `onRelease` | A new release of the app becomes active — from a sync, the console, a pipeline or a rollback. A new Job also runs against the current release | Database migrations |
 
