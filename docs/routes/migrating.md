@@ -20,19 +20,39 @@ create the routes using this page.
 
 | Concept | Traefik | Caddy | nginx | Miabi |
 |---|---|---|---|---|
-| Which requests | router `rule` | site address + `handle` | `server_name` + `location` | route **hosts** + **path** |
-| Where they go | service + `loadbalancer.server.port` | `reverse_proxy app:3000` | `proxy_pass http://app:3000` | route **application** + **target port** |
-| Certificates | `certresolver` | automatic | certbot | route **TLS** `acme` |
+| Which requests | router `rule` | site address + `handle` | `server_name` + `location` | route **hosts** + **path** (+ **methods**) |
+| Where they go | service + `loadbalancer.server.port` | `reverse_proxy app:3000` | `proxy_pass http://app:3000` | route **application** + **port** |
+| Certificates | `certresolver` | automatic | certbot | route **TLS**: ACME by default |
 | Request policies | middlewares | directives | directives | route **middlewares**, in order |
 
 Three differences matter in every migration:
 
 - **You point at an application, not an address.** No container names, IPs or upstream blocks:
-  Miabi resolves the app's containers itself, across redeploys, replicas and canaries.
+  Miabi resolves the app's containers itself, across redeploys, replicas and canaries. The port is
+  a container port number, or the name of a port the app declares (`http`).
 - **HTTPS redirects are explicit.** Caddy redirects to HTTPS on its own; Miabi does not. Attach the
   workspace's **`force-https`** middleware, first in the chain.
 - **Hosts must be under a verified domain.** Register each domain under **Networking → Domains**
   and verify it before its routes go live. You can do this while the old proxy is still serving.
+
+### Middlewares your workspace already has
+
+A new workspace is seeded with ready-made middlewares for the policies most proxy configs repeat.
+They do nothing until a route lists them:
+
+| Name | Does |
+|---|---|
+| `force-https` | Redirects HTTP to HTTPS (301) |
+| `compression` | Compresses responses with zstd, Brotli or gzip, whichever the client accepts |
+| `redirect-to-www` / `redirect-to-apex` | Adds or removes `www.`, keeping the path and query |
+| `security-headers` | `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy` |
+| `hsts` | `Strict-Transport-Security` for a year |
+| `rate-limit` | 100 requests per minute per client |
+| `noindex` | `X-Robots-Tag: noindex, nofollow`, for staging hosts |
+
+Seeding happens once, when the workspace has no middlewares yet, so an older workspace may lack
+some of these. Create a missing one from the preset of the same name under
+**Networking → Middlewares → New**.
 
 ## From Traefik
 
@@ -49,21 +69,23 @@ services:
       - traefik.http.routers.guestbook.rule=Host(`guestbook.example.com`) || Host(`www.guestbook.example.com`)
       - traefik.http.routers.guestbook.entrypoints=websecure
       - traefik.http.routers.guestbook.tls.certresolver=letsencrypt
+      - traefik.http.routers.guestbook.middlewares=gzip
       - traefik.http.services.guestbook.loadbalancer.server.port=8080
       - traefik.http.routers.guestbook-http.rule=Host(`guestbook.example.com`) || Host(`www.guestbook.example.com`)
       - traefik.http.routers.guestbook-http.entrypoints=web
       - traefik.http.routers.guestbook-http.middlewares=to-https
       - traefik.http.middlewares.to-https.redirectscheme.scheme=https
+      - traefik.http.middlewares.gzip.compress=true
 ```
 
-The two routers, the redirect middleware and the cert resolver collapse into **one route**.
+The two routers, the two middlewares and the cert resolver collapse into **one route**.
 
 **In the console**
 
 1. Declare container port **8080** on the `guestbook` app (**Ports → Container ports → Add port**).
-2. **Networking → Routes → New route**: application `guestbook`, target port `8080`, hosts
+2. **Networking → Routes → New route**: application `guestbook`, port `8080`, hosts
    `guestbook.example.com` and `www.guestbook.example.com`, TLS *ACME (automatic)*.
-3. Attach the `force-https` middleware.
+3. Attach `force-https`, then `compression`.
 
 **In a manifest**
 
@@ -84,7 +106,7 @@ spec:
   hosts: [guestbook.example.com, www.guestbook.example.com]
   app: guestbook
   port: 8080
-  middlewares: [force-https]
+  middlewares: [force-https, compression]
 ```
 
 ### Rules
@@ -94,32 +116,39 @@ spec:
 | ``Host(`a.com`)`` | hosts: `a.com` |
 | ``Host(`a.com`) \|\| Host(`b.com`)``, ``Host(`a.com`, `b.com`)`` | hosts: `a.com`, `b.com` |
 | ``Host(`a.com`) && PathPrefix(`/api`)`` | hosts: `a.com`, path: `/api` |
-| ``Path(`/health`)`` (exact) | path `/health`, which is a **prefix** — it also matches `/health/x` |
+| ``Path(`/health`)`` (exact) | path `/health`, which is a **prefix**: it also matches `/health/x` |
 | ``Method(`POST`)`` | methods: `POST` |
-| ``HostRegexp(...)`` | no equivalent — list each host |
-| `Header`, `Query`, `ClientIP` matchers | no route equivalent; use an [IP access policy](/docs/middlewares/access-policy) for `ClientIP` |
-| router `priority` | not needed — the longest path wins |
-| TCP / UDP routers | not routes — publish a [host port](/docs/applications/exposing-your-app#method-3--a-published-host-port) or use [port forwarding](/docs/networking/port-forwarding) |
+| ``HostRegexp(...)`` | no equivalent; list each host |
+| `Header`, `Query` matchers | no route equivalent; a [canary](/docs/applications/canary-deployments) can split by header, cookie or query between two releases of one app |
+| `ClientIP` matcher | [IP access policy](/docs/middlewares/access-policy) |
+| router `priority` | not needed: the longest path wins |
+| TCP / UDP routers | not routes; publish a [host port](/docs/applications/exposing-your-app#method-3--a-published-host-port) or use [port forwarding](/docs/networking/port-forwarding) |
 
 ### Middlewares
 
 | Traefik middleware | Miabi |
 |---|---|
-| `redirectscheme` | the seeded `force-https` middleware |
-| `stripprefix` | route **rewrite** `/` — no middleware needed |
+| `redirectscheme` | the seeded `force-https` ([Force scheme](/docs/middlewares/redirect-scheme)) |
+| `redirectregex` for www ↔ apex | the seeded `redirect-to-www` / `redirect-to-apex` ([Redirect host](/docs/middlewares/redirect-host)) |
+| `redirectregex`, other | [Redirect (regex)](/docs/middlewares/redirect-regex) |
+| `stripprefix` | route **rewrite** `/`; no middleware needed |
 | `addprefix` | [Add path prefix](/docs/middlewares/add-prefix) |
-| `replacepathregex` | [Rewrite path (regex)](/docs/middlewares/rewrite-regex) |
-| `redirectregex` | [Redirect (regex)](/docs/middlewares/redirect-regex) |
-| `basicauth` | [Basic authentication](/docs/middlewares/basic-auth) — your existing htpasswd hashes work (bcrypt, APR1-MD5, SHA-1) |
-| `forwardauth` | [Forward authentication](/docs/middlewares/forward-auth) — Authelia and oauth2-proxy keep working |
-| `ratelimit` | [Rate limit](/docs/middlewares/rate-limit) |
+| `replacepath`, `replacepathregex` | [Rewrite path (regex)](/docs/middlewares/rewrite-regex) |
+| `compress` | the seeded `compression` ([Compression](/docs/middlewares/compress)), which adds Brotli and zstd |
+| `basicauth` | [Basic authentication](/docs/middlewares/basic-auth): existing htpasswd hashes work (bcrypt, APR1-MD5, SHA-1) |
+| `forwardauth` | [Forward authentication](/docs/middlewares/forward-auth): Authelia and oauth2-proxy keep working |
+| `forwardauth` to oauth2-proxy, only for SSO | [OpenID Connect](/docs/middlewares/oidc), at the gateway, with no proxy container to run |
+| JWT plugins | [JWT authentication](/docs/middlewares/jwt-auth) (shared secret, public key or JWKS) |
+| LDAP plugins | [LDAP authentication](/docs/middlewares/ldap-auth) |
+| `ratelimit` | [Rate limit](/docs/middlewares/rate-limit), or the seeded `rate-limit` |
 | `ipallowlist` / `ipwhitelist` | [IP access policy](/docs/middlewares/access-policy) |
-| `headers` (custom request headers) | [Request headers](/docs/middlewares/request-headers) |
-| `headers` (custom response headers, CORS, security headers) | [Response headers](/docs/middlewares/response-headers), or the seeded `security-headers` |
+| GeoIP / geoblock plugins | [Country access policy](/docs/middlewares/geo-block) |
+| `headers.customRequestHeaders` | [Request headers](/docs/middlewares/request-headers) |
+| `headers.customResponseHeaders`, CORS | [Response headers](/docs/middlewares/response-headers) |
+| `headers.stsSeconds`, `frameDeny`, `contentTypeNosniff` | the seeded `hsts` and `security-headers` |
 | `buffering.maxRequestBodyBytes` | [Request body limit](/docs/middlewares/body-limit) |
 | `errors` | [Error interceptor](/docs/middlewares/error-interceptor) |
 | `chain` | list the middlewares on the route in the same order |
-| `compress` | no equivalent — let the app compress its responses |
 | weighted services, mirroring | [canary deployments](/docs/applications/canary-deployments) |
 
 A basic-auth example carried over:
@@ -149,8 +178,12 @@ Compose escapes `$` as `$$`, so un-double them when you copy a hash out of a lab
 A Caddyfile:
 
 ```caddy
-example.com, www.example.com {
-    encode gzip
+www.example.com {
+    redir https://example.com{uri} permanent
+}
+
+example.com {
+    encode zstd gzip
     reverse_proxy frontend:8080
 
     handle_path /api/* {
@@ -163,7 +196,8 @@ example.com, www.example.com {
 }
 ```
 
-That is two routes on the same hosts, plus a basic-auth middleware scoped to `/admin`.
+That is two routes, a www redirect, compression and a basic-auth middleware scoped to `/admin`. The
+redirect needs no site block of its own: put both hosts on the route and attach `redirect-to-apex`.
 
 **In the console**
 
@@ -172,7 +206,8 @@ That is two routes on the same hosts, plus a basic-auth middleware scoped to `/a
 2. Route `site-api`: application `api`, port `3000`, same hosts, path `/api`, rewrite `/`.
 3. **Networking → Middlewares → New** → *Basic authentication*, named `admin-auth`, with **Paths**
    `^/admin/.*`. Paste the bcrypt hash as the password.
-4. Attach `force-https`, then `admin-auth`, to `site`.
+4. Attach `force-https`, `redirect-to-apex`, `admin-auth` and `compression` to `site`, in that
+   order, and `force-https`, `redirect-to-apex` and `compression` to `site-api`.
 
 **In a manifest**
 
@@ -195,7 +230,7 @@ spec:
   hosts: [example.com, www.example.com]
   app: frontend
   port: 8080
-  middlewares: [force-https, admin-auth]
+  middlewares: [force-https, redirect-to-apex, admin-auth, compression]
 ---
 apiVersion: miabi.io/v1
 kind: Route
@@ -206,7 +241,7 @@ spec:
   port: 3000
   path: /api
   rewrite: /
-  middlewares: [force-https]
+  middlewares: [force-https, redirect-to-apex, compression]
 ```
 
 The two Application documents are left out of this example; a real manifest declares `frontend`
@@ -215,23 +250,33 @@ and `api` alongside these routes.
 | Caddy | Miabi |
 |---|---|
 | site address | route hosts |
-| automatic HTTPS | TLS `acme` **plus** the `force-https` middleware |
-| `reverse_proxy app:PORT` | route application + target port |
+| automatic HTTPS | TLS ACME (the default) **plus** the `force-https` middleware |
+| `reverse_proxy app:PORT` | route application + port |
 | `handle /api/*` | route path `/api` |
 | `handle_path /api/*` | route path `/api`, rewrite `/` |
-| `redir` | [Redirect](/docs/middlewares/redirect) or [Redirect (regex)](/docs/middlewares/redirect-regex) |
-| `basicauth` | [Basic authentication](/docs/middlewares/basic-auth) — bcrypt hashes carry over |
+| `encode zstd gzip` | the seeded `compression` |
+| `redir` to www or the bare domain | the seeded `redirect-to-www` / `redirect-to-apex` |
+| `redir`, other | [Redirect](/docs/middlewares/redirect) or [Redirect (regex)](/docs/middlewares/redirect-regex) |
+| `uri strip_prefix` / `rewrite` | route rewrite, or [Rewrite path (regex)](/docs/middlewares/rewrite-regex) |
+| `basicauth` | [Basic authentication](/docs/middlewares/basic-auth): bcrypt hashes carry over |
 | `forward_auth` | [Forward authentication](/docs/middlewares/forward-auth) |
+| caddy-security / OIDC plugins | [OpenID Connect](/docs/middlewares/oidc) |
+| JWT plugins | [JWT authentication](/docs/middlewares/jwt-auth) |
 | `header` | [Response headers](/docs/middlewares/response-headers) |
 | `request_header` | [Request headers](/docs/middlewares/request-headers) |
 | `request_body max_size` | [Request body limit](/docs/middlewares/body-limit) |
+| `@bots header User-Agent …` + `respond 403` | [Block user agents](/docs/middlewares/user-agent-block) |
+| `remote_ip` matcher + `respond 403` | [IP access policy](/docs/middlewares/access-policy) |
 | `respond` with a status | [Block access](/docs/middlewares/access), or the route's [maintenance mode](/docs/networking/routing-and-middlewares#maintenance-mode) |
-| `tls internal` | a `tls.provider` pointing at an internal CA, or an uploaded certificate |
-| `encode gzip` | no equivalent — let the app compress |
+| `handle_errors` | [Error interceptor](/docs/middlewares/error-interceptor) |
+| `rate_limit` plugin | [Rate limit](/docs/middlewares/rate-limit) |
+| cache plugins | [HTTP cache](/docs/middlewares/http-cache) |
+| `tls internal` | `tls.provider` pointing at an internal CA, or an uploaded certificate in `tls.certificate` |
 | `file_server` | deploy the static files as an app (an nginx or Caddy image), then route to it |
 
 **caddy-docker-proxy** labels say the same things: `caddy: example.com` is the hosts,
-`caddy.reverse_proxy: "{{upstreams 8080}}"` is the target port.
+`caddy.reverse_proxy: "{{upstreams 8080}}"` is the port, and `caddy.encode: zstd gzip` is
+`compression`.
 
 ## From nginx
 
@@ -241,16 +286,26 @@ A server block, typically with certbot:
 server {
     listen 80;
     server_name example.com www.example.com;
-    return 301 https://$host$request_uri;
+    return 301 https://example.com$request_uri;
 }
 
 server {
     listen 443 ssl;
-    server_name example.com www.example.com;
+    server_name www.example.com;
+    ssl_certificate     /etc/letsencrypt/live/example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
+    return 301 https://example.com$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name example.com;
     ssl_certificate     /etc/letsencrypt/live/example.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
 
     client_max_body_size 50m;
+    gzip on;
+    gzip_types text/css application/javascript application/json;
 
     location / {
         proxy_pass http://127.0.0.1:8080;
@@ -271,17 +326,18 @@ server {
 }
 ```
 
-The port-80 server block becomes the `force-https` middleware. The certbot lines disappear, because
-the gateway issues certificates itself. The `/ws` location needs no route of its own: WebSocket
+The first two server blocks become `force-https` and `redirect-to-apex`. The certbot lines
+disappear, because the gateway issues certificates itself. `gzip` becomes `compression`, which
+already covers the usual text types. The `/ws` location needs no route of its own: WebSocket
 upgrades pass through the gateway on any route. What remains is two routes and a body limit.
 
 **In the console**
 
 1. **Networking → Middlewares → New** → *Request body limit*, named `body-50m`, limit 50 MB.
 2. Route `site`: application for the `:8080` service, hosts `example.com` and `www.example.com`,
-   TLS *ACME*, middlewares `force-https`, `body-50m`.
+   TLS *ACME*, middlewares `force-https`, `redirect-to-apex`, `body-50m`, `compression`.
 3. Route `site-api`: application for the `:3000` service, same hosts, path `/api`, rewrite `/`,
-   middleware `force-https`.
+   middlewares `force-https`, `redirect-to-apex`, `compression`.
 
 **In a manifest**
 
@@ -300,7 +356,7 @@ spec:
   hosts: [example.com, www.example.com]
   app: web
   port: 8080
-  middlewares: [force-https, body-50m]
+  middlewares: [force-https, redirect-to-apex, body-50m, compression]
 ---
 apiVersion: miabi.io/v1
 kind: Route
@@ -311,36 +367,59 @@ spec:
   port: 3000
   path: /api
   rewrite: /                # what the trailing slash in proxy_pass did
-  middlewares: [force-https]
+  middlewares: [force-https, redirect-to-apex, compression]
 ```
 
 | nginx | Miabi |
 |---|---|
 | `server_name` | route hosts |
 | `location /path` | route path `/path` |
-| `proxy_pass http://upstream:PORT` | route application + target port |
+| `limit_except GET POST` | route methods |
+| `proxy_pass http://upstream:PORT` | route application + port |
 | `proxy_pass http://upstream:PORT/` (trailing slash) | route path + rewrite `/` |
-| `return 301 https://…` | `force-https` middleware |
-| `ssl_certificate` from certbot | TLS `acme` — remove certbot |
-| `ssl_certificate` you bought | TLS `custom`, with the certificate uploaded |
-| WebSocket `Upgrade` / `Connection` headers | nothing — upgrades pass through |
+| `return 301 https://$host…` | `force-https` |
+| `return 301 https://example.com…` from `www` | `redirect-to-apex` (or `redirect-to-www` the other way) |
+| `ssl_certificate` from certbot | TLS ACME; remove certbot |
+| `ssl_certificate` you bought | `tls.certificate`, with the certificate uploaded under **Networking → Certificates** |
+| WebSocket `Upgrade` / `Connection` headers | nothing; upgrades pass through |
 | `proxy_set_header X-Forwarded-*`, `Host` | nothing for the standard headers; [Request headers](/docs/middlewares/request-headers) for your own |
-| `add_header` | [Response headers](/docs/middlewares/response-headers) |
+| `add_header` | [Response headers](/docs/middlewares/response-headers), or the seeded `hsts` / `security-headers` |
+| `gzip on`, `brotli on` | the seeded `compression` |
 | `client_max_body_size` | [Request body limit](/docs/middlewares/body-limit) |
-| `auth_basic` + `.htpasswd` | [Basic authentication](/docs/middlewares/basic-auth) — the htpasswd hashes carry over |
+| `auth_basic` + `.htpasswd` | [Basic authentication](/docs/middlewares/basic-auth): the htpasswd hashes carry over |
 | `auth_request` | [Forward authentication](/docs/middlewares/forward-auth) |
+| `auth_request` to oauth2-proxy, only for SSO | [OpenID Connect](/docs/middlewares/oidc) |
+| `auth_jwt` (NGINX Plus) | [JWT authentication](/docs/middlewares/jwt-auth) |
+| `auth_ldap` module | [LDAP authentication](/docs/middlewares/ldap-auth) |
 | `limit_req` | [Rate limit](/docs/middlewares/rate-limit) |
 | `allow` / `deny` | [IP access policy](/docs/middlewares/access-policy) |
+| `geoip2` + `map` + `return 403` | [Country access policy](/docs/middlewares/geo-block) |
+| `if ($http_user_agent ~* …) { return 403; }` | [Block user agents](/docs/middlewares/user-agent-block) |
+| `location /private { return 403; }` | [Block access](/docs/middlewares/access) |
 | `rewrite … redirect`/`permanent` | [Redirect (regex)](/docs/middlewares/redirect-regex) |
 | `rewrite … break` | [Rewrite path (regex)](/docs/middlewares/rewrite-regex) |
+| `error_page` | [Error interceptor](/docs/middlewares/error-interceptor) |
 | `proxy_cache` | [HTTP cache](/docs/middlewares/http-cache) |
 | `upstream` with several servers | run the app as a [replicated service](/docs/applications/scaling-and-resources); the gateway balances its replicas |
-| `gzip on` | no equivalent — let the app compress |
 | `root` / static files | deploy the files as an app (an nginx image), then route to it |
 
 **nginx-proxy** (`VIRTUAL_HOST` environment variables) maps the same way: `VIRTUAL_HOST` is the
-hosts, `VIRTUAL_PORT` the target port, `VIRTUAL_PATH` the path, and `LETSENCRYPT_HOST` means TLS
-`acme`.
+hosts, `VIRTUAL_PORT` the port, `VIRTUAL_PATH` the path, and `LETSENCRYPT_HOST` means TLS ACME.
+
+## Settings with no middleware
+
+Some settings sit on the route rather than in a middleware:
+
+- **Maintenance page.** A route's `maintenance` block answers with a 503 (or another 4xx/5xx) and
+  your message instead of the app. It replaces the nginx `if (-f maintenance.html)` trick and
+  Traefik's swap-the-router workflow. See
+  [Maintenance mode](/docs/networking/routing-and-middlewares#maintenance-mode).
+- **WAF-style filtering.** `security.exploitProtection` rejects common injection and traversal
+  signatures at the gateway, where you might have used ModSecurity or a Traefik WAF plugin. See
+  [Route security](/docs/networking/routing-and-middlewares#route-security).
+- **Anything else Goma supports.** A route's **Advanced** tab (`advancedConfig` in a manifest)
+  takes raw [Goma route YAML](/docs/routes/creating-routes#advanced-raw-goma-route-yaml) for gateway
+  options the form does not model. Miabi still owns the hosts, path, target and TLS.
 
 ## Verify before you switch
 
@@ -351,6 +430,7 @@ switch, test each host directly against the server:
 ```bash
 curl -I --resolve example.com:443:<server-ip> https://example.com/
 curl -I --resolve example.com:443:<server-ip> https://example.com/api/health
+curl -sI -H 'Accept-Encoding: zstd, br, gzip' --resolve example.com:443:<server-ip> https://example.com/ | grep -i content-encoding
 ```
 
 A `404` from the gateway means no route matches that host and path. See
@@ -358,11 +438,12 @@ A `404` from the gateway means no route matches that host and path. See
 
 ## What has no equivalent
 
-- **Response compression** (`compress`, `encode gzip`, `gzip on`) — the gateway does not compress.
-  Most frameworks can compress at the app.
-- **Matching on headers, query strings or regex hosts** — routes match on host, path prefix and
+- **Matching on headers, query strings or regex hosts.** Routes match on host, path prefix and
   method. A [canary](/docs/applications/canary-deployments) can pin traffic by header, cookie or
   query, but only between two releases of the same app.
-- **Proxying to something that is not an app** — a route always targets a Miabi application. To
-  front an external service, run a small proxy container as an app and route to it.
-- **Serving files from the host** — package them in an image and deploy it as an app.
+- **Proxying to something that is not an app.** A route always targets a Miabi application, even
+  with `advancedConfig`. To front an external service, run a small proxy container as an app and
+  route to it.
+- **Serving files from the host.** Package them in an image and deploy it as an app.
+- **TCP and UDP routing.** Publish a host port or use
+  [port forwarding](/docs/networking/port-forwarding).
