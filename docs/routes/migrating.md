@@ -16,6 +16,10 @@ If you are moving a whole server, read
 ports 80 and 443 and [importing the running containers](/docs/nodes/docker-import), and you then
 create the routes using this page.
 
+Routing is never imported for you. [Compose import](/docs/applications/stacks#importing-a-docker-compose-file)
+ignores `labels`, so `traefik.*` and `caddy.*` labels are dropped, and nginx config lives outside
+the containers. Bring the apps in first, then rebuild their routing with this page.
+
 ## The mental model
 
 | Concept | Traefik | Caddy | nginx | Miabi |
@@ -24,8 +28,10 @@ create the routes using this page.
 | Where they go | service + `loadbalancer.server.port` | `reverse_proxy app:3000` | `proxy_pass http://app:3000` | route **application** + **port** |
 | Certificates | `certresolver` | automatic | certbot | route **TLS**: ACME by default |
 | Request policies | middlewares | directives | directives | route **middlewares**, in order |
+| Shared policies | `@file` middlewares | snippets + `import` | `include` | workspace middlewares, listed by name on any route |
+| What is live | dashboard | admin API | `nginx -T` | **Networking → Routes**: each route is *live* or *offline* with a reason |
 
-Three differences matter in every migration:
+Four differences matter in every migration:
 
 - **You point at an application, not an address.** No container names, IPs or upstream blocks:
   Miabi resolves the app's containers itself, across redeploys, replicas and canaries. The port is
@@ -34,6 +40,8 @@ Three differences matter in every migration:
   workspace's **`force-https`** middleware, first in the chain.
 - **Hosts must be under a verified domain.** Register each domain under **Networking → Domains**
   and verify it before its routes go live. You can do this while the old proxy is still serving.
+- **A middleware is defined once and shared.** It belongs to the workspace, not to one route, so
+  the `admin-auth` you create for one app can protect ten. Editing it changes every route that lists it.
 
 ### Middlewares your workspace already has
 
@@ -53,6 +61,21 @@ They do nothing until a route lists them:
 Seeding happens once, when the workspace has no middlewares yet, so an older workspace may lack
 some of these. Create a missing one from the preset of the same name under
 **Networking → Middlewares → New**.
+
+### Ordering a chain
+
+Middlewares run in the order the route lists them, and any of them can answer before the next runs.
+Proxy configs rarely make the order this visible, so choose it on purpose:
+
+1. **Redirects**: `force-https`, then `redirect-to-www` or `redirect-to-apex`, so a visitor is
+   redirected once instead of being challenged on the wrong host first.
+2. **Cheap filters**: IP and country policies, user-agent blocks, rate limits, so unwanted traffic
+   is rejected before any authentication work.
+3. **Authentication**: basic, forward, OIDC, JWT or LDAP.
+4. **Everything that shapes the request or response**: headers, rewrites, body limits, caching,
+   compression.
+
+See [Order matters](/docs/middlewares/overview#order-matters) for a worked example.
 
 ## From Traefik
 
@@ -108,6 +131,16 @@ spec:
   port: 8080
   middlewares: [force-https, compression]
 ```
+
+### Certificate resolvers
+
+| Traefik | Miabi |
+|---|---|
+| `certresolver` with `httpchallenge` or `tlschallenge` | nothing: ACME HTTP-01 is the route default |
+| `certresolver` with `dnschallenge` | connect a [DNS provider](/docs/networking/dns-providers), then issue a [managed wildcard certificate](/docs/networking/tls-certificates#2-managed-wildcard--dns-01-certificates); routes under it use it |
+| `tls.domains[0].main=example.com`, `sans=*.example.com` | the same managed wildcard certificate |
+| several resolvers (public + internal CA) | named providers in the gateway's `certManager`, picked per route with `tls.provider` |
+| a file-provider certificate | upload it under **Networking → Certificates**, then set `tls.certificate` |
 
 ### Rules
 
@@ -272,6 +305,7 @@ and `api` alongside these routes.
 | `rate_limit` plugin | [Rate limit](/docs/middlewares/rate-limit) |
 | cache plugins | [HTTP cache](/docs/middlewares/http-cache) |
 | `tls internal` | `tls.provider` pointing at an internal CA, or an uploaded certificate in `tls.certificate` |
+| `tls { dns <provider> … }`, wildcard sites | a [DNS provider](/docs/networking/dns-providers) and a [managed wildcard certificate](/docs/networking/tls-certificates#2-managed-wildcard--dns-01-certificates) |
 | `file_server` | deploy the static files as an app (an nginx or Caddy image), then route to it |
 
 **caddy-docker-proxy** labels say the same things: `caddy: example.com` is the hosts,
@@ -380,6 +414,7 @@ spec:
 | `return 301 https://$host…` | `force-https` |
 | `return 301 https://example.com…` from `www` | `redirect-to-apex` (or `redirect-to-www` the other way) |
 | `ssl_certificate` from certbot | TLS ACME; remove certbot |
+| certbot `--dns-<provider>` for a wildcard | a [DNS provider](/docs/networking/dns-providers) and a [managed wildcard certificate](/docs/networking/tls-certificates#2-managed-wildcard--dns-01-certificates) |
 | `ssl_certificate` you bought | `tls.certificate`, with the certificate uploaded under **Networking → Certificates** |
 | WebSocket `Upgrade` / `Connection` headers | nothing; upgrades pass through |
 | `proxy_set_header X-Forwarded-*`, `Host` | nothing for the standard headers; [Request headers](/docs/middlewares/request-headers) for your own |
@@ -421,11 +456,27 @@ Some settings sit on the route rather than in a middleware:
   takes raw [Goma route YAML](/docs/routes/creating-routes#advanced-raw-goma-route-yaml) for gateway
   options the form does not model. Miabi still owns the hosts, path, target and TLS.
 
-## Verify before you switch
+## Switching over
 
-If the old proxy still holds ports 80 and 443, you cannot browse to the new routes yet. Domain
-verification and route creation do not need those ports, so do both first. Then, right after the
-switch, test each host directly against the server:
+**1. Check the app before its routing.** Turn on
+[one-click external access](/docs/applications/exposing-your-app#method-1--one-click-external-access)
+for the app's port. It gives the app a working HTTPS URL on the cluster's domain, with no domain or
+route of your own, so a broken app is not mistaken for a broken route. Turn it off once your routes
+work.
+
+**2. Create the routes.** Domain verification and route creation do not need ports 80 and 443, so
+do both while the old proxy still serves. From a manifest, preview the changes first:
+
+```bash
+miabi apply -f migration.yaml --dry-run
+miabi apply -f migration.yaml
+```
+
+A manifest describes its routes completely: once a route is managed by a manifest, a console edit
+lasts only until the next apply. Pick one place to manage each route.
+
+**3. Switch and test.** Stop the old proxy so the gateway takes ports 80 and 443, then test each host
+directly against the server:
 
 ```bash
 curl -I --resolve example.com:443:<server-ip> https://example.com/
@@ -435,6 +486,11 @@ curl -sI -H 'Accept-Encoding: zstd, br, gzip' --resolve example.com:443:<server-
 
 A `404` from the gateway means no route matches that host and path. See
 [Checking your work](/docs/routes/creating-routes#checking-your-work) for the other answers.
+Keep the old proxy's config until every host answers: starting it again is your rollback.
+
+**4. Watch it.** **Networking → Routes** replaces the proxy dashboard: a route stuck *offline* says
+why, most often an unverified domain. [Workspace Analytics](/docs/operations/analytics) replaces
+access logs and proxy metrics, with requests, status codes, latency and visitors, filterable by app.
 
 ## What has no equivalent
 
