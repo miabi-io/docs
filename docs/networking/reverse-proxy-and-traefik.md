@@ -104,6 +104,13 @@ for traffic visibility instead.
 - **Choose Traefik** if you already run Traefik as your edge and prefer label-based routing, and you
   can accept manual per-app labels and the Recreate deploy strategy.
 
+Raw performance should not decide it either way. In our
+[reproducible benchmark of Goma Gateway vs Traefik](https://github.com/jkaninda/goma-gateway-vs-traefik),
+neither proxy wins across the board: Traefik has higher throughput at moderate concurrency (100
+connections), Goma at high concurrency (500 connections), latency is about the same below
+saturation, and Goma uses 3–4× less memory. The repository has the full method, raw data and
+scripts, so you can rerun it on your own hardware.
+
 ## Securing the Miabi console route
 
 On the default Goma stack, the route that serves the Miabi console and API is not managed from the
