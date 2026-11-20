@@ -104,12 +104,35 @@ for traffic visibility instead.
 - **Choose Traefik** if you already run Traefik as your edge and prefer label-based routing, and you
   can accept manual per-app labels and the Recreate deploy strategy.
 
-Raw performance should not decide it either way. In our
-[reproducible benchmark of Goma Gateway vs Traefik](https://github.com/jkaninda/goma-gateway-vs-traefik),
-neither proxy wins across the board: Traefik has higher throughput at moderate concurrency (100
-connections), Goma at high concurrency (500 connections), latency is about the same below
-saturation, and Goma uses 3–4× less memory. The repository has the full method, raw data and
-scripts, so you can rerun it on your own hardware.
+### Performance
+
+Raw throughput should not decide it either way. Two reproducible benchmarks, each with its full
+method, raw data and scripts so you can rerun them on your own hardware, compare Goma Gateway 1.2.1
+with Traefik 3.7:
+
+- **[Goma Gateway vs Traefik](https://github.com/jkaninda/goma-gateway-vs-traefik)** measures
+  proxying. Neither wins across the board: Traefik has higher throughput at moderate concurrency
+  (100 connections), Goma at high concurrency (500 connections), latency is about the same below
+  saturation, and Goma uses 3–4× less memory.
+- **[Goma Gateway benchmark](https://github.com/jkaninda/goma-gateway-benchmark)** adds nginx and
+  HAProxy, and measures what a platform does all day: changing routes and losing backends.
+
+The second one shows where the difference really lies:
+
+| | Goma | Traefik |
+|---|---|---|
+| One of four backends down, 22 s at a time | 0.05% of requests failed | 17% failed, for the whole outage |
+| New route answering, default settings | about 0.5 s | about 1.9 s |
+| CPU after 1,000 route changes have stopped | about 0 | about 1.4 cores, until the routes are deleted |
+| Memory at rest, one route | about 22 MB | about 93 MB |
+
+On raw proxying the two Go gateways are level, and both are 4–5× behind nginx and HAProxy per CPU
+core. Miabi drives Goma through its file provider with the default settings, so the default Goma
+figures above are the ones a Miabi install sees.
+
+Moving the other way, from an existing Traefik setup to Goma? Each router, middleware and
+certificate resolver has a Miabi equivalent; see
+[Migrating from Traefik, Caddy and nginx](/docs/routes/migrating).
 
 ## Securing the Miabi console route
 
