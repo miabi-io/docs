@@ -107,7 +107,7 @@ spec:
   healthcheck:                # when a release counts as up; omit to keep the app's check
     type: http                # http | command | image (default) | none
     path: /healthz            # http: the URL path probed
-    port: 8080                # http: defaults to the app's first port
+    port: 8080                # http: defaults to the app's primary port
     intervalSeconds: 10       # default 30
     timeoutSeconds: 5         # default 5
     retries: 3                # default 3
@@ -118,6 +118,7 @@ spec:
       scheme: http            # http | https (default http) — how the proxy talks to it
       protocol: tcp           # tcp | udp (default tcp)
       externalAccess: true    # public HTTPS URL through the reverse proxy
+      primary: true           # MIABI_PORT, MIABI_INTERNAL_URL, route default (default: the first port)
     - container: 9090
       publish: true           # bind to a host port, like `docker -p`
       hostPort: 19090         # omit or 0 to auto-allocate
@@ -138,6 +139,9 @@ spec:
       mode: "0444"
   reloadPolicy: restart       # restart (default) | none — on a mounted config's change
   miabiEnv: true              # false: Miabi sets no MIABI_* variables; omit to keep the current choice
+  reconcile:                  # what the control manager does when the app changes outside Miabi
+    policy: inherit           # inherit | off | observe | enforce
+    restartExternalStops: false # true: start it again after a docker stop outside Miabi
   resources:
     memory: 512Mi             # Ki/Mi/Gi; empty = unlimited
     cpu: "0.5"                # cores; empty = unlimited
@@ -169,6 +173,8 @@ spec:
 | `mounts` | Exactly one of `volume` or `config`, and both must be declared in the same bundle. `key` and `mode` are valid only with a `config` — setting them on a volume mount is an error, not a silent no-op. A config mount is always read-only. Privileged host binds are **not** manifest-expressible. |
 | `reloadPolicy` | `restart` (default) redeploys the app when a mounted [`Config`](#config)'s content changes; `none` leaves it running, for apps that watch their own config file. |
 | `miabiEnv` | `false` stops Miabi setting its [`MIABI_*` variables](/docs/applications/environment-variables#variables-miabi-sets) in the app and its jobs. Omit it to keep the choice made in the console; stated, a change converges at the next deploy. |
+| `reconcile.policy` | The app's [control manager](/docs/operations/reconciliation#per-app-override) override: `inherit` (default) follows the platform, `off`, `observe` or `enforce`. Omit it to keep the console's choice. |
+| `reconcile.restartExternalStops` | `true` lets an enforcing control manager start the app's container again after it is [stopped outside Miabi](/docs/operations/reconciliation#containers-stopped-outside-miabi). Omit it to keep the console's choice. |
 | `security.runAsUser` | The account the container runs as — `uid`, `uid:gid`, `name` or `name:group` — like `docker run --user`. Omit to keep the image's own user. A workspace under the [restricted security profile](/docs/security/container-security-profile) must give a non-root **numeric** uid; a name is refused there, since the image decides what it maps to. Attached volumes are chowned to it on deploy. |
 | `security.readOnlyRootFilesystem` | Mounts the container's root filesystem read-only. Volumes stay writable, so an image that writes elsewhere, such as `/tmp`, needs a volume there or it fails to start. One-off jobs keep a writable filesystem. |
 | `security.noNewPrivileges` | Stops a process gaining privileges through setuid binaries. The restricted security profile always sets it, so `false` is refused there rather than silently overridden. |
@@ -257,7 +263,7 @@ spec:
 
 | `type` | Healthy when | Needs |
 |---|---|---|
-| `http` | A `GET` of `path` on `port` (default: the app's first port) answers `2xx` or `3xx`. | Nothing in the image for a `container` app: Miabi copies a small probe in, so distroless and scratch images work. A `service`, or a read-only root filesystem, probes with the image's `curl`, `wget` or `bash` instead. |
+| `http` | A `GET` of `path` on `port` (default: the app's primary port) answers `2xx` or `3xx`. | Nothing in the image for a `container` app: Miabi copies a small probe in, so distroless and scratch images work. A `service`, or a read-only root filesystem, probes with the image's `curl`, `wget` or `bash` instead. |
 | `command` | `command` exits `0`, e.g. `pg_isready`. | A shell in the image; the command runs through it. |
 | `image` | The image's own `HEALTHCHECK`, if it declares one. The **default**. | Nothing. Deploys don't wait for it: its timing is the image's. |
 | `none` | — | No check at all: the image's own `HEALTHCHECK` is turned off too. Use it for queue workers and schedulers built from a web image, whose baked-in HTTP check would otherwise fail and get a Swarm task replaced in a loop. |
@@ -330,6 +336,13 @@ The two exposure knobs are orthogonal, and a port may use either, both, or neith
 
 A port with neither is reachable only from inside the app's networks — which is what you want when a
 [label-driven proxy](/docs/networking/reverse-proxy-and-traefik) fronts it.
+
+### Primary port
+
+`primary: true` marks the port behind `MIABI_PORT` and `MIABI_INTERNAL_URL`, the bare
+external-access hostname, and the default for routes and HTTP health checks. Set it on one port
+when the app declares several; without it the first port is primary, and reordering the list moves
+it. Marking two ports is refused.
 
 ---
 
@@ -935,7 +948,7 @@ serving your notice.
 `port` is the container port the route sends traffic to. It takes a number, or the `name` of one
 of the target application's `ports`, so a route keeps working when the port number changes in one
 place. A name is resolved when the manifest is parsed, and one the application does not declare is
-refused. Omitted, the route uses the application's first port.
+refused. Omitted, the route uses the application's primary port.
 
 Port names are lowercase letters, digits and dashes, contain at least one letter, and are unique
 within the application; a port that serves both `tcp` and `udp` may use one name for both. A name

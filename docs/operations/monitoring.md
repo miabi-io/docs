@@ -79,10 +79,10 @@ aggregation, or alerting that ties into your existing on-call tooling. Miabi exp
 | `miabi_gpu_devices_total` / `miabi_gpu_devices_enabled` / `miabi_gpu_allocated` | GPU inventory and allocation — see [GPUs](/docs/applications/gpus) |
 | `miabi_analytics_ingested_events_total{node}` / `miabi_analytics_rejected_events_total{node}` | Gateway request events accepted from edge nodes, and events dropped because the node does not serve the route they claim |
 | `miabi_control_manager_sweep_duration_seconds` | Duration of a reconciliation sweep |
-| `miabi_control_manager_drift_items{class,kind}` | Workloads and volumes the last sweep confirmed missing or replaced |
+| `miabi_control_manager_drift_items{class,kind}` | Workloads and volumes the last sweep confirmed missing, replaced or stopped outside Miabi |
 | `miabi_control_manager_blocked_apps` | Apps blocked from redeploying because their data volume is gone |
 | `miabi_control_manager_unobserved{scope}` | Nodes and clusters the last sweep could not check |
-| `miabi_control_manager_actions_total{action,result}` | What enforcement did, by action and outcome |
+| `miabi_control_manager_actions_total{action,result,trigger}` | What enforcement did, by action, outcome and whether the sweep or a container event found the drift |
 
 The control-manager metrics are described in [Reconciliation](/docs/operations/reconciliation).
 

@@ -40,6 +40,7 @@ one line. Each links to the resource and, where possible, an action.
 | App OOM-killed | critical | a container is OOM-killed | it recovers |
 | App unhealthy | warning | the health check fails | it reports healthy |
 | Workload missing | warning | an app's container or swarm service disappeared from its node or cluster | it exists again |
+| Stopped outside Miabi | warning | an app's container was stopped with `docker stop` or the node's Docker page | it runs again |
 | Cannot be brought back | critical | the control manager gave up redeploying a missing app | the workload exists again |
 | Data volume lost | critical | the volume holding an app's or database's data is gone, or was recreated outside Miabi | the volume exists again |
 | Volume near full | warning → critical | usage ≥ 85% / ≥ 95% | usage drops back |

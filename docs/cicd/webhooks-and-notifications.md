@@ -21,7 +21,7 @@ Webhooks and notification channels subscribe to the same set of events:
 | `container.died` · `container.oom` | An app's container exits unexpectedly, or is killed for running out of memory |
 | `container.removed` | An app's container is removed |
 | `drift.detected` · `drift.resolved` | An app's workload goes missing from its node, or comes back — see [Housekeeping](/docs/nodes/housekeeping#continuous-reconciliation) |
-| `reconcile.redeploy` · `reconcile.breaker_open` | Miabi redeployed a missing app automatically, or gave up after repeated failures |
+| `reconcile.redeploy` · `reconcile.started` · `reconcile.breaker_open` | Miabi redeployed a missing app, or started a container stopped outside Miabi, automatically; or gave up after repeated failures |
 | `database.provisioned` · `database.provision_failed` | A database finishes provisioning, or fails to |
 | `database.upgraded` · `database.upgrade_failed` | A database version upgrade succeeds or fails |
 | `backup.succeeded` · `backup.failed` · `restore.succeeded` · `restore.failed` | A database backup or restore finishes, whether a single database or a whole recovery point |
