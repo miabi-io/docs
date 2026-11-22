@@ -8,6 +8,8 @@ description: See how a request travels through a route — hosts, gateway, middl
 
 A route's **Flow** tab draws how a request travels through it, from the visitor to the app:
 
+![A route's Flow tab during a canary: visitors, the platform gateway, three middlewares in order, the traffic split paused at 30%, and the stable and canary releases with live traffic](/img/screenshots/route-flow.png)
+
 | Stage | What it shows |
 |---|---|
 | **Visitors** | The route's hosts, each with its domain's state (verified, not verified, suspended) and, for a stored certificate, whether that certificate covers the host. Auto-generated hosts are marked as such. |
