@@ -26,6 +26,8 @@ The common case: `guestbook.example.com` to the `guestbook` app on port 8080, wi
 1. **Networking → Routes → New route**, or the app's **Routes** tab.
 2. **Name** `guestbook`, **Application** `guestbook`, **Target port** `8080`.
 3. **Hosts**: subdomain `guestbook`, domain `example.com`. Use **Add host** for `www` or other names.
+   Hosts are checked as you type, and **Answers at** lists the URLs the route will serve (see
+   [Host checks in the form](#host-checks-in-the-form)).
 4. **TLS**: *ACME (automatic)*.
 5. **Middlewares**: tick `force-https` so plain-HTTP visitors are redirected.
 6. Save. The route is **live** within seconds.
@@ -59,6 +61,20 @@ miabi apply -f guestbook.yaml
 
 A route's `app` must be an Application **in the same manifest**. To route an app you created in the
 console, declare it in the manifest too, or create the route in the console.
+
+### Host checks in the form
+
+The form checks each host before you save:
+
+| Shown in | Means | Saving |
+|---|---|---|
+| Red | The host has a scheme (`https://`), a path or a port, or is not a valid name | Blocked: enter the bare host name |
+| Red | No domain of the workspace covers it, or its domain is suspended | Blocked: [add the domain](/docs/networking/domains) first |
+| Amber | Its domain is not verified yet | Allowed: the route stays offline until the domain is verified |
+| Amber | The host is listed twice | Allowed: it is saved once |
+
+The checks follow the **Simple** tab. Hosts written in the **Advanced** YAML are checked by the
+server when you save.
 
 ## Several apps on one hostname
 
@@ -170,7 +186,8 @@ first, then name it.
 
 ## Advanced: raw Goma route YAML
 
-The route form has a **Simple** and an **Advanced** tab. Advanced takes the route as
+The route form has a **Simple** and an **Advanced** tab, and new routes open on the tab you used
+last. Advanced takes the route as
 [Goma route YAML](https://goma.jkaninda.dev), for a gateway feature the form does not model. In a
 manifest the same thing is `advancedConfig`.
 
