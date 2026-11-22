@@ -1,5 +1,5 @@
 ---
-sidebar_position: 3
+sidebar_position: 4
 title: Migrating from Traefik, Caddy and nginx
 description: Translate Traefik labels, Caddyfiles and nginx server blocks into Miabi routes and middlewares, in the console or in a manifest.
 ---

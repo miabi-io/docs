@@ -34,12 +34,26 @@ both is an error.
 The **first** deploy of an app is always a straight rollout, whatever the setting says: a canary
 splits traffic against the running release, and on a first deploy there is none.
 
+An app running as a [Swarm service](/docs/applications/scaling-and-resources#replicas) gets its canary as a
+**separate service**, named after the app's with `-canary`, with one replica. Only the gateway reaches
+it: other apps calling yours over the internal network by its name keep reaching the stable service.
+Promoting updates the stable service to the canary's image and removes the canary service; aborting
+removes it.
+
 While a canary is live, the Deployments tab shows the current split and offers **Promote** (the
 canary becomes stable and takes all traffic) and **Abort** (the canary is stopped and discarded, and
 everything returns to stable).
 
-Whatever the mode, a canary whose container dies is aborted automatically and traffic returns to
-stable.
+Whatever the mode, a canary whose container dies, or whose service's tasks keep crashing, is aborted
+automatically and traffic returns to stable.
+
+### Watching a rollout
+
+The rollout card's **See traffic flow** opens the [request flow](/docs/routes/request-flow) of the
+app's route: the split between the two releases as it moves, with Pause, Resume, Promote and Abort
+next to it. With [Workspace Analytics](/docs/operations/analytics) on and a gateway that reports
+which backend answered, it shows the measured split and each release's requests, latency and 5xx
+rate.
 
 ## Automatic mode
 
@@ -53,6 +67,8 @@ By default the platform drives the rollout on a timer. Three settings control it
 
 The weight climbs until it reaches 100%, at which point the canary is promoted automatically. You
 can watch it and step in with Promote or Abort at any time, but the ramp decides when traffic moves.
+The [request flow](/docs/routes/request-flow) counts down to the next step: *Next: 50% in 0:40*, or
+*Promotes to stable in …* before the last one.
 
 ### Pausing the ramp
 
@@ -61,6 +77,25 @@ stops adding to it. **Resume** hands the rollout back to the ramp from the same 
 recorded on the app's timeline, and the panel shows how long the rollout has been paused. Pausing is
 part of the automatic ramp, so it is available in Community; to hold a canary with no intention of
 ramping it, use manual mode below.
+
+### Pausing on errors
+
+Before each step, the ramp compares the canary's 5xx rate with the stable release's since the canary
+started. When the canary fails clearly more often, it **pauses itself** rather than give the canary
+more traffic:
+
+- both releases have served at least 50 requests, and
+- the canary's 5xx rate is at least one percentage point above stable's.
+
+The pause is recorded on the app's timeline with both rates, and the rollout card and the request
+flow say the ramp paused itself. It never aborts on its own: you decide. **Abort** sends everything
+back to stable. **Resume** continues the ramp anyway, and the check then stays off for the rest of that
+rollout, so a known, accepted error rate does not stop it again.
+
+This needs [Workspace Analytics](/docs/operations/analytics) and a gateway that reports which
+backend answered each request; without them the ramp never pauses itself. The check reads per-minute
+traffic, which is counted once the minute is over, so with a short step interval it can react a step
+late.
 
 ## Manual mode
 

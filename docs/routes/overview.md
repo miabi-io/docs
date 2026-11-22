@@ -109,8 +109,9 @@ An app's **Routes** tab lists that app's routes with their hosts, status and bad
 the route, whose back link returns to the app. **Manage routes** opens the workspace list filtered
 to the app.
 
-On a route's page, the **Overview** or **Settings** tab is kept in the address too, so a reload or a
-shared link opens the same tab.
+On a route's page, the **Overview**, **Flow** or **Settings** tab is kept in the address too, so a
+reload or a shared link opens the same tab. **Flow** draws how a request travels through the route;
+see [Request flow](/docs/routes/request-flow).
 
 ## Route status
 
@@ -133,5 +134,7 @@ before the gateway answers for it. See [Domains](/docs/networking/domains).
 
 - **[Creating routes](/docs/routes/creating-routes)** — in the console and in a manifest, side by
   side.
+- **[Request flow](/docs/routes/request-flow)** — see a route's path from visitor to app, trace a
+  request through it, and watch its live traffic.
 - **[Migrating from Traefik, Caddy and nginx](/docs/routes/migrating)** — translating your existing
   configuration.

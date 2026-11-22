@@ -120,6 +120,18 @@ lighter summary endpoint than the full dashboards, so it costs a fraction of a
 report, and it hides itself if analytics isn't reachable rather than showing an
 error on an otherwise-working dashboard.
 
+## On a route
+
+A route's [request flow](/docs/routes/request-flow) shows that route's last 15 minutes on its
+drawing: request rate, visitors, time spent in the gateway, p95 and 5xx, and the requests its
+middlewares answered early (`26 × 301`, `38 × 401`). Status codes are kept per exact code for 3xx,
+4xx and 5xx from this version on; traffic recorded before shows only the classes.
+
+During a [canary](/docs/applications/canary-deployments), traffic is also kept per release when the
+gateway reports which backend answered each request. The route then shows the measured split and
+each release's errors, and an automatic rollout uses the same numbers to [pause itself on
+errors](/docs/applications/canary-deployments#pausing-on-errors).
+
 ## Apps on edge-gateway nodes
 
 An app served by a node's own [edge gateway](/docs/nodes/adding-a-node) is counted too. That gateway
