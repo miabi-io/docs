@@ -196,6 +196,10 @@ applications:
 Mark at most one application `primary: true` — that's the app the catalog links to and the install
 surfaces first. A single-application template's app is primary automatically.
 
+An application with several ports can mark one of them `primary: true` too. That port sets the
+app's `MIABI_PORT` and `MIABI_INTERNAL_URL` and is the default for its routes; without it the first
+port is primary. A template that marks a port needs `metadata.minMiabi: "1.10.31"` or later.
+
 :::tip
 A template is a packaged version of a [GitOps project](/docs/cicd/gitops). If you already have a
 working `Project` manifest, turning it into a template is mostly a matter of replacing hardcoded

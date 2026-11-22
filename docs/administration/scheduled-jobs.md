@@ -25,7 +25,7 @@ one entry each.
 
 | Job | Schedule (control plane `TZ`) | What it does |
 |---|---|---|
-| `control-manager` | every minute | Checks that apps, swarm services, node gateways and data volumes still exist. See [Reconciliation](/docs/operations/reconciliation). |
+| `control-manager` | every minute | Checks that apps, swarm services, node gateways and data volumes still exist, and finishes stops and deletes a restart interrupted. Container events trigger extra checks of a single app between sweeps. See [Reconciliation](/docs/operations/reconciliation). |
 | `node-health` | every minute | Probes each connected agent tunnel and drops ones that stopped responding |
 | `runner-lease-sweep` | every minute | Releases build-runner leases whose job died without releasing them |
 | `announcements` | every minute | Publishes scheduled announcements |

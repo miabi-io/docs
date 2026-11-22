@@ -114,8 +114,8 @@ copying values by hand.
 | `MIABI_VERSION` / `MIABI_IMAGE_TAG` | The [version](/docs/cicd/versioning) (`1.4.2`) and its tag (`v1.4.2`), when a version policy produced the image |
 | `MIABI_COMMIT` / `MIABI_BRANCH` | Source commit and branch, for apps built from Git |
 | `MIABI_IMAGE` / `MIABI_IMAGE_DIGEST` | The image reference and its `sha256:…` digest |
-| `MIABI_PORT` | The app's main container port |
-| `MIABI_INTERNAL_URL` | `http://<app>:<port>`, how other apps in the workspace reach it |
+| `MIABI_PORT` | The app's [primary container port](/docs/applications/exposing-your-app#the-primary-port) |
+| `MIABI_INTERNAL_URL` | `http://<app>:<port>` on that port, how other apps in the workspace reach it |
 | `MIABI_PUBLIC_URL` / `MIABI_PUBLIC_HOST` | The app's [public address](#an-applications-public-address) |
 | `MIABI_LOCATION` | The [location](/docs/nodes/cluster-mode#locations) it runs in |
 | `MIABI_NODE` | The [node](/docs/nodes/node-placement#node-names) it runs on |
@@ -125,7 +125,8 @@ copying values by hand.
 | `MIABI_MEMORY_LIMIT_MB` | Memory limit in MiB |
 
 A variable without a value is left out, never set empty: an app with no route has no
-`MIABI_PUBLIC_URL`, and an app without limits has no `MIABI_CPU_LIMIT`. These names are a stable
+`MIABI_PUBLIC_URL`, an app that declares no port, such as a worker, has no `MIABI_PORT` or
+`MIABI_INTERNAL_URL`, and an app without limits has no `MIABI_CPU_LIMIT`. These names are a stable
 contract: new ones may be added, none are renamed or removed.
 
 A [Swarm service](/docs/nodes/cluster-mode) shares one environment across its tasks, so
@@ -134,14 +135,16 @@ only when it is [pinned to a node](/docs/nodes/node-placement); otherwise read `
 
 **Your variables win.** A variable of the same name set on the app or its stack replaces Miabi's, and
 the **Environment** tab marks it *Replaces a Miabi variable*. The tab also lists, under **Set by
-Miabi**, the values the next deploy sets.
+Miabi**, the values the next deploy sets; `MIABI_RELEASE` there is the running release, and the next
+successful deploy gets the next number.
 
 **Turning them off.** Clear **Set MIABI_\* variables** in the **Environment** tab, or set
 `miabiEnv: false` in the app's [manifest](/docs/cicd/manifest-reference#application). Jobs follow
 their app. The change applies at the next deploy.
 
-Values change only at a deploy. When the app's public address changes or its workspace is renamed, the
-app is marked **redeploy required** instead of being restarted.
+Values change only at a deploy. When its workspace is renamed, the app is marked **redeploy
+required** instead of being restarted. A change to its own routes or external access does not mark
+it: routing applies live, and `MIABI_PUBLIC_URL` follows at the next deploy.
 
 :::note Not the pipeline set
 [Pipeline steps](/docs/cicd/pipelines#provided-by-the-runner) get their own `MIABI_*` variables. Some

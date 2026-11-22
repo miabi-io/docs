@@ -26,7 +26,7 @@ a Caddy site block, or an nginx `server` + `location` with a `proxy_pass`. See
 | **Hosts** | The hostnames the route answers, such as `example.com` and `www.example.com`. Each must sit under a [domain](/docs/networking/domains) registered in the workspace. |
 | **Path** | The path prefix the route covers. Defaults to `/`, the whole host. |
 | **Application** | The app that receives the traffic. A route always points at exactly one app. |
-| **Target port** | Which of the app's [declared container ports](/docs/applications/exposing-your-app#first-declare-a-container-port) receives the request. Blank means the app's first port. |
+| **Target port** | Which of the app's [declared container ports](/docs/applications/exposing-your-app#first-declare-a-container-port) receives the request. Blank means the app's [primary port](/docs/applications/exposing-your-app#the-primary-port). |
 | **Rewrite** | Replaces the matched path prefix before the app sees the request. |
 | **Methods** | Restricts the route to some HTTP methods. Blank accepts all. |
 | **TLS** | `acme` (an automatic certificate), `custom` (one you [uploaded](/docs/networking/tls-certificates)) or none (plain HTTP). |

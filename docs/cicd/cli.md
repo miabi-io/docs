@@ -342,6 +342,27 @@ marked `--sensitive` additionally requires `--reveal` to print.
 Mounting a config into an app is declarative — see the
 [manifest reference](/docs/cicd/manifest-reference#config).
 
+### Container registry
+
+The workspace's [built-in registry](/docs/registry/overview). Repositories may contain a slash
+(`team/api`).
+
+```bash
+miabi registry ls                                    # repositories, tag counts, sizes
+miabi registry usage                                 # storage used, quota, size per repository
+miabi registry tags ls api                           # tags, digest, size, build time, in use
+miabi registry tags rm api v1.2.0 v1.3.0             # delete named tags
+miabi registry tags rm api --keep 5                  # keep the newest 5 images, delete the rest
+miabi registry tags rm api --older-than 30d --dry-run
+miabi registry rm old-api [--yes]                    # a whole repository (workspace admin)
+```
+
+A registry deletes images, not tags: every tag on the same image goes with it. `tags rm` always previews
+first, naming those tags, what is left alone (in use, not found) and the space freed, then asks to
+confirm. `--dry-run` stops after the preview and `--yes` skips the question. `--keep` and `--older-than`
+(`30d`, `2w`) pick images by build time; together, both must hold. Images in use and images with no known
+build time are never picked. `registry rm` deletes nothing if any of the repository's images is in use.
+
 ### AI agents
 
 `miabi mcp` runs a [Model Context Protocol](https://modelcontextprotocol.io) server, so an AI agent

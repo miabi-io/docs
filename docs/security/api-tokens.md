@@ -98,11 +98,15 @@ Scopes are checked according to `MIABI_API_KEY_SCOPE_ENFORCEMENT`:
 | `warn` | the request succeeds, and the violation is recorded as an `api_key.scope_violation` [audit event](/docs/operations/audit-log) with the same response header |
 | `off` | no check |
 
-Earlier releases stored scopes but did not check them, so a key created with the default **Read**
-scope may have been writing for months. An install upgraded with API keys already issued therefore
-stays on `warn` until you set the variable, and logs a warning at startup. Run on `warn` until the
-audit log is quiet, then set `MIABI_API_KEY_SCOPE_ENFORCEMENT=enforce`. The log names the key, the
-user, the route and the scope it needed, so you can re-issue each key with the right scopes first.
+Every install enforces scopes unless you set the variable. Before 1.10.31, an install upgraded with
+API keys already issued stayed on `warn`; upgrading turns enforcement on there too. If a key or
+script still relies on a scope it lacks, set `MIABI_API_KEY_SCOPE_ENFORCEMENT=warn` while you
+re-issue it: the `api_key.scope_violation` audit events name the key, the user, the route and the
+scope it needed. A non-default value logs a warning at startup.
+
+The token `miabi login` stores never carries `admin`. Revealing secrets and configs, reading database
+credentials and other `admin` actions need an API key with the `admin` scope, created in the web
+console and passed with `MIABI_TOKEN` or `miabi login --token`.
 :::
 
 ## Using a key with the API

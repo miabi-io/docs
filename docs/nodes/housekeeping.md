@@ -59,7 +59,7 @@ Open Housekeeping after manual Docker work or a node rebuild, and reclaim dangli
 
 ## Continuous reconciliation
 
-Housekeeping is on demand, one node at a time. The **control manager** watches every node in the background: it reports apps whose container or service disappeared and volumes whose data is gone, and — when set to enforce — redeploys a missing app in place. Each app can opt out or in from its settings (**If this app disappears**). See [Reconciliation](/docs/operations/reconciliation).
+Housekeeping is on demand, one node at a time. The **control manager** watches every node in the background, every minute and on container events: it reports apps whose container or service disappeared, containers stopped outside Miabi and volumes whose data is gone, and — when set to enforce — redeploys a missing app in place, usually within seconds of its container being removed. Each app can opt out or in from its settings (**If this app disappears**). See [Reconciliation](/docs/operations/reconciliation).
 
 ## Related
 

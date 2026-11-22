@@ -30,10 +30,18 @@ Node app, `8080` for many Java services, `80` for nginx.
 
 ![Declaring a container port in application settings](/img/screenshots/app-ports-declare.png)
 
+### The primary port
+
+With several ports, one is the **primary**: the first one declared, unless you pick another
+with **Make primary** in the **Ports** tab (or **Primary** when creating the app). The primary
+port sets `MIABI_PORT` and `MIABI_INTERNAL_URL`, gets the bare external-access hostname, and is
+the default for routes and HTTP health checks without a port of their own. Changing it applies
+on the next deploy.
+
 :::tip
 If your app reads a `PORT` environment variable, set it in
 [Environment variables](/docs/applications/environment-variables) and declare the same
-number here. The two must agree. Miabi also passes the main port to the container as
+number here. The two must agree. Miabi also passes the primary port to the container as
 [`MIABI_PORT`](/docs/applications/environment-variables#variables-miabi-sets).
 :::
 
@@ -77,7 +85,9 @@ An app that needs its own public URL, for OAuth callbacks or links in emails, fi
 [`MIABI_PUBLIC_URL`](/docs/applications/environment-variables#variables-miabi-sets), set at each
 deploy. To pass it under a name of your choice, or to give one app another's URL, use
 [`${{ applications.<name>.public_url }}`](/docs/applications/environment-variables#an-applications-public-address).
-Turning external access on or off marks those apps **redeploy required**.
+Turning external access on or off marks the apps that use such a reference **redeploy required**.
+The app's own `MIABI_PUBLIC_URL` does not: routing changes apply live, and the variable picks up
+the new address at the next deploy.
 
 ### If the card says it is unavailable
 
