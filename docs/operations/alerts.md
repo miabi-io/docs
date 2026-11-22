@@ -57,6 +57,9 @@ one line. Each links to the resource and, where possible, an action.
 | Node offline | critical | an agent tunnel drops | the node reconnects |
 | Runner offline | warning | a runner tunnel drops | the runner reconnects |
 
+Deleting an application closes every alert still open about it. Its inbox items read **Closed** and are
+not marked unread again, since the delete was yours.
+
 The workload-missing, cannot-be-brought-back and data-volume-lost alerts come from
 [Reconciliation](/docs/operations/reconciliation); they fire unless the control manager is off (or the
 app is set to **Leave this app alone**).

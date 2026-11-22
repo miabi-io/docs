@@ -65,9 +65,47 @@ Images are **stored** under your workspace's immutable id while you **address** 
 
 A token can only push or pull within its own workspace's namespace. A token for workspace **A** cannot read or write under workspace **B** (`403`), and a read-only token cannot push. The raw registry catalog is not exposed to tenants — your repositories are listed through Miabi instead.
 
-## Browsing & deleting
+## Browsing & storage used
 
-The **Developers → Container Registry** page lists your repositories and their tags. Members with **developer** role or higher can **delete a tag** (this removes its manifest from the registry). Tag deletion and space reclamation require the admin to enable deletes — see [Administration → Garbage collection](/docs/registry/administration#garbage-collection).
+The **Developers → Container Registry** page lists your repositories and their tags, with:
+
+- **Storage used** by the workspace, against the quota if there is one. Layers shared between images and
+  repositories count once.
+- A **size** per repository; its tooltip says how much deleting the repository would free.
+
+At 90% of the quota, workspace admins get an **Approaching quota** alert. Past the quota, pushes are refused.
+Space from deleted tags is reclaimed at the next nightly [garbage collection](/docs/registry/administration#garbage-collection),
+so the usage figure drops at once but the disk only then.
+
+## Deleting tags
+
+Members with the **developer** role or higher can delete tags. Deletion must be enabled by the platform
+admin, see [Administration → Garbage collection](/docs/registry/administration#garbage-collection).
+
+**A registry deletes images, not tags.** Every tag pointing at the same image goes with it: deleting `v1.4.2`
+also removes `latest` if both point at that image. The tag list marks such tags (*Same image as …*), and every
+delete shows a preview first, naming the tags that go too and the space freed.
+
+- **Several at once:** tick the tags and choose **Delete selected**. Each tag reports its own outcome, so one
+  in-use tag doesn't stop the rest.
+- **By rule:** **Select by rule…** ticks the tags of images outside the newest *N*, or older than *N* days. Age
+  comes from Miabi's build record, else the image's creation time. Images with no known age are never picked.
+- **A whole repository:** workspace **admins** can delete a repository from its Overview tab, after typing its
+  name. It is refused if any of its images is in use.
+
+Images used by a running deployment or a pinned release can't be deleted, whether the release names the image by
+digest or by tag.
+
+The same operations are in the CLI, as `miabi registry` (see [CLI → Container registry](/docs/cicd/cli#container-registry)),
+and in the API: `POST …/registry/repository/tags/delete` (with `dry_run`),
+`POST …/registry/repository/tags/select`, `DELETE …/registry/repository?name=` and `GET …/registry/usage`.
+
+## Automatic cleanup
+
+When the platform admin turns on the [retention policy](/docs/registry/administration#retention-policy), old
+images are deleted nightly, keeping the newest ones in each repository. The Registry page says what the policy
+keeps. Workspace admins can choose to **follow the platform**, **keep more images**, or **never clean this
+workspace**.
 
 ## Image distribution
 

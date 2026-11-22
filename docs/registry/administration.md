@@ -128,6 +128,36 @@ Selecting `s3` with no bucket is refused the same way.
 Changing the storage driver **recreates** the registry; existing images are **not** copied between drivers. Miabi asks you to confirm when the registry already holds images, and names how many. Plan a migration (re-push) if you switch.
 :::
 
+## Usage
+
+The **Usage** tab lists every workspace's registry storage, largest first, against the per-workspace quota.
+Layers shared between workspaces count once per workspace, so the disk holds less than the sum. Workspaces not
+counted since the last restart show *Counting…* and fill in within seconds.
+
+## Retention policy
+
+The **Retention** tab sets one policy for every workspace's registry. It is **off** until you enable it.
+
+| Setting | Default | Meaning |
+|---|---|---|
+| Keep the newest images per repository | 5 | Tags on one image count as one image |
+| Never delete images younger than | 7 days | So a burst of builds isn't pruned the same day |
+| Keep the images of each app's last releases | 5 | So rolling back to a recent release still finds its image |
+| Protected tags | `latest` | Globs; an image carrying a matching tag is never deleted |
+
+Images used by a live deployment or a pinned release, and images with no known build time, are never deleted.
+Workspace admins can opt their workspace out or keep more images than the policy, never fewer.
+
+- **Preview** reports, per workspace, what the policy would delete and the space it would free. It runs whether
+  or not the policy is enabled.
+- **Run now** applies it immediately, after a confirmation. Run a preview first.
+- Enabled, it runs **nightly at 03:30**, half an hour before garbage collection, so the space is reclaimed the
+  same night. Only one run happens at a time.
+
+Each run's report stays under **Recent runs**. Every workspace a run deleted from gets a
+`registry.retention_delete` audit entry, and `miabi_registry_retention_deleted_tags_total` counts the deleted
+tags.
+
 ## Garbage collection
 
 Deleting a tag removes its manifest but not the underlying blobs. **Garbage collection** reclaims that space. Because collecting while images are being pushed is unsafe, Miabi runs it with the registry in **read-only mode** — pulls keep working, pushes pause briefly — then restores read-write automatically.
