@@ -94,6 +94,25 @@ redirect happens before anything else runs.
 
 All three render the same way and show up in the same list.
 
+## Finding a route
+
+**Networking → Routes** lists every route in the workspace:
+
+- **Search** by name, host or path, and **filter** by application, status (*live*, *failing*,
+  *pending*, *disabled*, *in maintenance*) and kind (*custom* or *auto-generated*). The *failing*
+  filter shows how many routes need attention.
+- **Sort** by route, application or status. Sorting by status puts failing routes first.
+- Filters, sort and page are kept in the address, so a filtered list can be bookmarked or shared,
+  and **Back** from a route returns to the list as you left it.
+
+An app's **Routes** tab lists that app's routes with their hosts, status and badges. A row opens
+the route, whose back link returns to the app. **Manage routes** opens the workspace list filtered
+to the app.
+
+On a route's page, the **Overview**, **Flow** or **Settings** tab is kept in the address too, so a
+reload or a shared link opens the same tab. **Flow** draws how a request travels through the route;
+see [Request flow](/docs/routes/request-flow).
+
 ## Route status
 
 The route list shows whether the gateway is actually serving each route:
@@ -101,8 +120,12 @@ The route list shows whether the gateway is actually serving each route:
 | Status | Meaning |
 |---|---|
 | **live** | The gateway is serving it. |
+| **pending** | Saved, and not yet confirmed by the gateway. |
 | **offline** | Stored but not served, with the reason on the route — most often *domain not verified*. It comes online by itself once the reason is fixed. |
+| **error** | The gateway could not apply it, with the reason on the route. |
 | **maintenance** badge | Live, but answering with the maintenance notice. |
+
+Hover a status to see its reason. The list's *failing* filter covers **offline** and **error**.
 
 A route on an unverified domain is deliberately kept offline: proving the domain is yours comes
 before the gateway answers for it. See [Domains](/docs/networking/domains).
@@ -111,5 +134,7 @@ before the gateway answers for it. See [Domains](/docs/networking/domains).
 
 - **[Creating routes](/docs/routes/creating-routes)** — in the console and in a manifest, side by
   side.
+- **[Request flow](/docs/routes/request-flow)** — see a route's path from visitor to app, trace a
+  request through it, and watch its live traffic.
 - **[Migrating from Traefik, Caddy and nginx](/docs/routes/migrating)** — translating your existing
   configuration.

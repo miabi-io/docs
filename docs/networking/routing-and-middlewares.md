@@ -51,13 +51,18 @@ The app keeps running — this is a gateway-level switch, not a stop. A deploy, 
 or a restart happens behind a stable, deliberate response instead of a connection error, and traffic
 resumes the moment you turn it off. No redeploy is involved either way.
 
+Maintenance is switched on and off, and its response edited, only on the route's **Settings** tab.
+The route list and the app's **Routes** tab show a *maintenance* badge; on the route's own page the
+badge opens Settings.
+
 Leave the response blank and the gateway replies **503** with a short default message. Set your own
-status and text when you want something more specific:
+status, text and page when you want something more specific:
 
 | Field | Notes |
 |---|---|
 | **Status code** | Must be 4xx or 5xx. Miabi rejects a 2xx or 3xx: a parked route answering `200` tells uptime monitors the site is healthy and invites search engines to index the placeholder. |
 | **Message** | Up to 1024 characters, returned as the body — as plain text, JSON, or XML depending on who is asking. |
+| **HTML page for browsers** | Optional, up to 64 KB. Served to browsers instead of the message; API clients still get the message. See [An HTML page for browsers](#an-html-page-for-browsers). |
 
 ### The response format follows the caller
 
@@ -66,14 +71,15 @@ to `Content-Type`). The same parked route can answer a browser and an API client
 
 | The caller asks for | It gets |
 |---|---|
+| `Accept` containing `text/html` (every browser), **when the route has an HTML page** | The page, as `text/html; charset=utf-8` with your status code |
 | `application/json` | `Content-Type: application/json`. **If your message is itself valid JSON it is returned verbatim** — so an API can keep answering in its own error shape. Otherwise the gateway wraps it: `{"success":false,"statusCode":503,"error":"…"}` |
 | `application/xml`, `text/xml`, `application/xhtml+xml` | An `<error>` document containing the status and your message. XML is **always** wrapped and escaped — unlike JSON, a hand-written XML message is not passed through, it is escaped into the envelope |
 | anything else | Plain text (`text/plain`), the message as written |
 
 Two consequences worth planning around. A **browser** sends
-`Accept: text/html,application/xhtml+xml,…` — matched as a whole string, that is none of the cases
-above, so browsers land in the plain-text branch. Write the message for a human reading plain text,
-and let JSON clients get the structured form.
+`Accept: text/html,application/xhtml+xml,…`. With an HTML page set, that gets the page. Without one,
+it is matched as a whole string, is none of the other cases, and lands in the plain-text branch: write
+the message for a human reading plain text, and let JSON clients get the structured form.
 
 And if you want a JSON body, **make the message valid JSON on its own**:
 
@@ -83,6 +89,23 @@ And if you want a JSON body, **make the message valid JSON on its own**:
 
 Anything that does not parse is treated as prose and wrapped in the gateway's envelope instead —
 which is a fine outcome, just not the one you wrote.
+
+### An HTML page for browsers
+
+The **HTML page for browsers** field turns the plain-text notice into a real page for visitors,
+while API clients keep getting the message as JSON or XML.
+
+- **Start from a template** inserts a ready page: a card with the heading, your message and a
+  *Check again* button, in light and dark, refreshing itself every minute, with a small *Hosted on Miabi* line you can remove. It is self-contained (inline
+  styles, no scripts, nothing loaded from the network), so edit it freely.
+- The **Browser** preview shows the page as visitors will see it. The preview runs in a sandbox with
+  scripts off; on your hosts the page runs exactly as written, scripts included.
+- Keep the page **self-contained**. While the route is parked, every request to it gets this page,
+  including `/logo.png` or `/styles.css`, so a page that loads assets from its own route gets HTML back
+  for each of them. Inline the CSS and images, or load them from another host.
+- The page is stored with the route and kept when maintenance is turned off, ready for next time.
+- Serving the page needs a Goma Gateway release with `maintenance.html`. An older gateway ignores the
+  page and keeps serving the message to browsers as plain text.
 
 Maintenance is a per-route switch, so a workspace can park its public site while an internal
 admin host on a different route stays reachable. A parked route is badged **maintenance** in the

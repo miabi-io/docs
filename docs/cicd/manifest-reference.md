@@ -931,6 +931,11 @@ spec:
     enabled: true
     statusCode: 503         # 4xx or 5xx; omit for the gateway's 503
     message: Back at 14:00 UTC
+    html: |                 # optional page for browsers, 64 KB max; API clients still get message
+      <!doctype html>
+      <title>Back soon</title>
+      <h1>We'll be right back</h1>
+      <p>Back at 14:00 UTC.</p>
 ```
 
 **`maintenance`** parks the route: the gateway answers every request itself and never reaches the
@@ -939,6 +944,11 @@ response. Because a manifest is the desired state, **removing the block resumes 
 apply un-parks a route that was parked by hand in the console. Details, including how the response
 is rendered as plain text, JSON, or XML depending on the caller, are in
 [Routing & middlewares](/docs/networking/routing-and-middlewares#maintenance-mode).
+
+**`maintenance.html`** is the page browsers get instead of `message`. It is compared with surrounding
+whitespace trimmed, so a YAML block scalar's trailing newline is not a change, and a plan shows it as
+a size and hash rather than printing the page. See
+[An HTML page for browsers](/docs/networking/routing-and-middlewares#an-html-page-for-browsers).
 
 A parked route still reports its sync status as *live*: the gateway is serving it, it is simply
 serving your notice.
