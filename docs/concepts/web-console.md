@@ -83,7 +83,8 @@ browsers:
 - **Accent** — the console's accent colour. When an operator enforces the brand accent, the choice
   is locked for every account.
 - **Time zone** — how times are displayed; they are always stored in UTC.
-- **Language** — English or French; the whole console is translated.
+- **Language** — English, French, German, Spanish, Italian, Portuguese, Simplified Chinese,
+  Traditional Chinese, Japanese or Korean; the whole console is translated.
 
 ## Everything is an API
 
