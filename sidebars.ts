@@ -89,6 +89,7 @@ const sidebars: SidebarsConfig = {
       items: [
         'routes/overview',
         'routes/creating-routes',
+        'routes/request-flow',
         'routes/migrating',
       ],
     },
@@ -109,9 +110,11 @@ const sidebars: SidebarsConfig = {
         'middlewares/rate-limit',
         'middlewares/redirect-scheme',
         'middlewares/redirect',
+        'middlewares/redirect-host',
         'middlewares/redirect-regex',
         'middlewares/rewrite-regex',
         'middlewares/http-cache',
+        'middlewares/compress',
         'middlewares/add-prefix',
         'middlewares/user-agent-block',
         'middlewares/request-headers',
@@ -229,6 +232,7 @@ const sidebars: SidebarsConfig = {
       items: [
         'security/authentication',
         'security/api-tokens',
+        'security/service-accounts',
         'security/two-factor-auth',
         'security/passkeys',
         'security/sso',
@@ -236,6 +240,7 @@ const sidebars: SidebarsConfig = {
         'security/siem',
         'security/encryption',
         'security/container-security-profile',
+        'security/security-center',
       ],
     },
     {
