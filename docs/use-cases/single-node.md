@@ -38,6 +38,25 @@ If the server has more disks than the system one, register each as a
 [storage class](/docs/storage/storage-classes) so volumes and databases land on the fast or the large
 disk instead of the operating-system drive.
 
+## Laying out workspaces
+
+A workspace has its own network, secrets, members and quotas. On one server, two layouts cover most
+needs, and you can mix them:
+
+| Layout | Fits when | What you get |
+|---|---|---|
+| **A workspace per stage**: `dev`, `staging`, `production` | One product, or a few that ship together | The same manifests apply to each workspace, and `${{ secrets.DATABASE_URL }}` resolves to that stage's value. Each stage has its own network, so staging cannot reach the production database |
+| **A workspace per project**: `blog`, `shop`, `bot` | Unrelated side projects | Each project is self-contained: back it up, [migrate](/docs/operations/migration) it, share it with a collaborator or delete it without touching the others |
+| **Stages as workspaces, holding every project** | Many small projects run by one person | Three workspaces and one manifest folder per stage. Projects in the same stage share a network and quotas, and one project cannot be shared or moved on its own |
+
+Every stage runs on the same CPU and memory here. Give `dev` and `staging` a tighter
+[plan](/docs/workspaces/plans-and-quotas), so a runaway test hits a quota before it slows production.
+How many workspaces one user may own can be capped by the platform's
+[workspace limits](/docs/workspaces/organizations#workspace-limits).
+
+[Environments](/docs/applications/environments) do not replace a workspace per stage: they add
+approval gates and release promotion to an application, but the application keeps one configuration.
+
 ## What one server gives you
 
 Everything in the core platform: Git and image deploys, zero-downtime rolling updates, canary

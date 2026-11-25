@@ -1,5 +1,5 @@
 ---
-sidebar_position: 8
+sidebar_position: 9
 title: Platform backup & disaster recovery
 description: Back up the Miabi control plane, rebuild a whole platform on a fresh host with `miabi restore`, and recover a locked-out admin.
 ---

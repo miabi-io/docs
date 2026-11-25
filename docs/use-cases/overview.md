@@ -13,16 +13,28 @@ about it:
 1. **Where it runs** — one server, a cluster of servers, or several clusters in different places.
 2. **Who uses it** — one team, many teams, students, paying customers, or several organizations.
 
-The two are independent. A university can run on one large server; a two-person startup can run in
-three regions. Pick one answer from each column, then read the matching pages.
+The two are independent: any answer from the first list works with any answer from the second. A
+university can run on one large server; a two-person startup can run in three regions. Pick one of
+each, then read the matching pages.
 
-| Where it runs | Who uses it |
+**Where it runs**
+
+| Setup | Fits when |
 |---|---|
-| [One server](/docs/use-cases/single-node) | [Teams and companies](/docs/use-cases/teams) |
-| [One cluster, several servers](/docs/use-cases/swarm-cluster) | [Universities and training](/docs/use-cases/education) |
-| [Several clusters as regions](/docs/use-cases/multi-region) | [Hosting providers and agencies](/docs/use-cases/hosting-providers) |
-| [Highly available apps with replicated storage](/docs/use-cases/replicated-storage) | [Several organizations on one instance](/docs/use-cases/multiple-organizations) |
-| [A homelab](/docs/use-cases/homelab) | |
+| [One server](/docs/use-cases/single-node) | Everything fits on one machine and a short outage during maintenance is acceptable |
+| [One cluster, several servers](/docs/use-cases/swarm-cluster) | Apps need replicas, or must keep running when a server fails, and the servers share one site |
+| [Several clusters as regions](/docs/use-cases/multi-region) | Servers are in different regions, providers or offices, or some sit behind NAT |
+| [Highly available apps with replicated storage](/docs/use-cases/replicated-storage) | Stateful apps and databases must survive a node failure with their data |
+| [A homelab](/docs/use-cases/homelab) | Machines at home, with a VPS in front for public apps |
+
+**Who uses it**
+
+| Users | Fits when |
+|---|---|
+| [Teams and companies](/docs/use-cases/teams) | An internal platform: workspaces per team or environment, SSO, GitOps, and production kept apart from staging |
+| [Universities and training](/docs/use-cases/education) | A workspace per student or course, sign-in through the university, plans that keep a class within the hardware |
+| [Hosting providers and agencies](/docs/use-cases/hosting-providers) | Plans sold as products, customers isolated from each other, white-label branding |
+| [Several organizations on one instance](/docs/use-cases/multiple-organizations) | Several companies or faculties, each with its own users, identity provider and optionally its own servers |
 
 ## The building blocks
 
@@ -79,6 +91,8 @@ Some common combinations, each covered by one page from each column:
 | A developer with side projects | One server | One personal workspace |
 | A homelab, with a VPS for public apps | A VPS control plane, home machines as nodes | [Homelab](/docs/use-cases/homelab) |
 | A startup with staging and production | One cluster, or two clusters to keep production apart | [Teams and companies](/docs/use-cases/teams) |
+| A company running internal tools and customer apps | One cluster, so a server can fail without an outage | [Teams and companies](/docs/use-cases/teams) |
+| A company with on-premises sites and a cloud region | Several clusters, one per site; on-premises nodes can sit behind NAT | [Teams and companies](/docs/use-cases/teams) |
 | A university course | One large server or one cluster | [Universities and training](/docs/use-cases/education) |
 | A hosting provider | Several clusters, with node pools per tier | [Hosting providers](/docs/use-cases/hosting-providers) |
 | A group of companies | Several clusters, some dedicated to one company | [Several organizations](/docs/use-cases/multiple-organizations) |

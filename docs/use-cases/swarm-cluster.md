@@ -14,6 +14,9 @@ overlay network.
 **Good for:** production apps that must stay up through a node failure or a reboot, more capacity
 than one server has, and teams in one data center, one cloud region or one rack.
 
+**Typical users:** companies running customer-facing apps or an internal platform, SaaS products,
+hosting providers and agencies, and universities whose classes outgrow one server.
+
 ![The default cluster: Goma Gateway on the control-plane node sends traffic over the encrypted overlay to replicas on three workers; when a node fails its replicas start on the others](/img/diagrams/uc-swarm-cluster.png)
 
 The control plane's gateway serves every app in the cluster: traffic enters there and crosses the

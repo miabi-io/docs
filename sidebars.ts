@@ -12,7 +12,6 @@ const sidebars: SidebarsConfig = {
         'getting-started/configuration',
         'getting-started/quickstart',
         'getting-started/existing-server',
-        'getting-started/air-gapped',
       ],
     },
     {
@@ -258,6 +257,7 @@ const sidebars: SidebarsConfig = {
         'administration/branding',
         'administration/announcements',
         'administration/install-manifest',
+        'administration/air-gapped',
         'administration/platform-backup',
         'administration/miabi-console',
       ],

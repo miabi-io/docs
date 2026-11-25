@@ -276,8 +276,6 @@ function QuickStart() {
           <Link to="/docs/getting-started/installation">Full installation guide</Link>
           <span aria-hidden="true">·</span>
           <Link to="/docs/getting-started/existing-server">Install on a server you already use</Link>
-          <span aria-hidden="true">·</span>
-          <Link to="/docs/getting-started/air-gapped">Air-gapped install</Link>
         </div>
       </div>
     </section>

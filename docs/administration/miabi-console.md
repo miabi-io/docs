@@ -1,5 +1,5 @@
 ---
-sidebar_position: 9
+sidebar_position: 10
 title: Miabi Console
 description: Connect a Miabi instance to Miabi Console (Enterprise, Billing add-on).
 ---
