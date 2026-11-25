@@ -93,8 +93,8 @@ subcommand — when deploy volume warrants it. See
 HTTP-01, applies middlewares, and routes to app containers over the shared proxy network, which an
 app joins only while it has a route (a replicated service is reached over the cluster's ingress
 overlay instead). Miabi writes per-route YAML into Goma's provider directory; Goma watches it and
-hot-reloads. A standalone node, or a remote swarm's ingress node, runs its own Goma that pulls the
-routes it serves over HTTP. See
+hot-reloads. A standalone node, or a remote swarm's gateway node and additional gateways, runs its
+own Goma that pulls its cluster's routes over HTTP. See
 [Routing & Middlewares](/docs/networking/routing-and-middlewares).
 
 ### Control manager

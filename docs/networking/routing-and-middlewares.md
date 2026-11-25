@@ -206,8 +206,9 @@ Not every node runs a gateway. Apps in the **default cluster** are served by the
 gateway, through the file-provider directory described above; nodes joined to it never run one of their
 own. A standalone node outside it has **edge-gateway** connectivity: it runs its own Goma instance, with
 its own public ingress and TLS, for the apps placed there. A **swarm in another cluster** is served by
-the gateway on its ingress node. These gateways pull their routes from the control plane over HTTP
-rather than from a directory.
+the gateway on its gateway node, and by any [additional gateways](/docs/nodes/cluster-mode#additional-gateways-high-availability)
+on other members. These gateways pull their cluster's routes from the control plane over HTTP rather
+than from a directory.
 
 Routing and middleware definitions stay workspace-level either way; Miabi renders them for whichever
 gateway serves the app. See [Adding a node](/docs/nodes/adding-a-node#connectivity) and

@@ -515,7 +515,7 @@ git clone https://github.com/miabi-io/miabi && cd miabi/examples/compose
 cp .env.example .env
 # Optional but recommended: pre-create the shared app network with a roomy CIDR so
 # it isn't capped by Docker's small default pool. Compose creates it for you
-# otherwise. See Networks & Subnets.
+# otherwise. See Networks overview.
 docker network create --driver bridge --subnet 10.63.0.0/16 miabi-proxy || true
 docker compose up -d
 docker compose logs -f miabi

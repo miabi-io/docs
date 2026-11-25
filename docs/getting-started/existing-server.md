@@ -60,7 +60,7 @@ existing containers untouched.
 Miabi uses `10.62.0.0/16` and `10.63.0.0/16` for its own networks and carves workspace networks
 from `10.64.0.0/12`. If your existing Docker networks or VPN use those ranges, pick others with
 `MIABI_INTERNAL_SUBNET` and `MIABI_SUBNET` — see [Install options](/docs/getting-started/installation#install-options)
-and [Networks & Subnets](/docs/networking/networks-and-subnets).
+and [Networks overview](/docs/networking/networks-and-subnets).
 :::
 
 ## 4. Import your containers

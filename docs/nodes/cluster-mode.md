@@ -83,11 +83,99 @@ it, or enable Swarm on an empty node in that location instead.
 Each cluster has its own agent service and token, and deploys to a slow cluster cannot take every
 worker slot while deploys to other clusters wait.
 
-A swarm outside the default cluster serves its own public traffic: the gateway on its **ingress node**,
-by default its manager, serves every route in the cluster, and DNS records for those routes point at
-the cluster's public address. The ingress node must run its own gateway (edge-gateway connectivity). To
-use another node, open the cluster and choose **Gateway → Change**. Nodes of the default cluster never run
-a gateway of their own: the control plane's gateway serves every app there.
+A swarm outside the default cluster serves its own public traffic through its own gateways; see
+[Gateways in a swarm cluster](#gateways-in-a-swarm-cluster). Nodes of the default cluster never run a
+gateway of their own: the control plane's gateway serves every app there.
+
+## Gateways in a swarm cluster
+
+### The gateway node
+
+One member of a remote swarm, by default its manager, is the cluster's **gateway node**. Its Goma
+gateway serves every route of the cluster and reaches the apps over the [ingress
+overlay](/docs/networking/networks-and-subnets#the-ingress-overlay), wherever Swarm placed them. DNS
+records for the cluster's routes point at its [public address](#public-address).
+
+Connectivity follows that choice: the gateway node is **Edge gateway** and every other member is
+**Cluster gateway**, including nodes you joined by hand. A node page refuses a change that contradicts
+it, and names the cluster page as the place to change it.
+
+To move the gateway, open the cluster and choose **Gateway → Change**, then pick any member that has
+joined the swarm. Miabi deploys the gateway on the new node first, then removes it from the old one,
+and rotates the cluster's gateway token, so the old node stops receiving the cluster's config even
+while it is offline. Point DNS, or your load balancer, at the new node if its address differs.
+
+### Polling gateways
+
+Every gateway fetches its cluster's routes from the control plane, at
+`/api/v1/providers/<cluster>` with the cluster's gateway token. **Polling gateways**, on the cluster's
+page, lists each one that did:
+
+| Status | Meaning |
+|---|---|
+| **In sync** | Holds the config the cluster would serve it now |
+| **Syncing** | Polling, but holds an older config; it picks up the change on its next poll |
+| **Offline** | Has not polled for over two minutes |
+| **Not serving** | Still polling from a node that is no longer one of the cluster's gateways |
+
+A route change reloads every gateway that polled in the last two minutes, so they all switch together.
+
+### Additional gateways (high availability)
+
+A single gateway node is a single point of failure for the cluster's traffic. To remove it, run
+**additional gateways** on other members: each one serves the same routes from the same config, so
+any of them can take a visitor.
+
+```mermaid
+flowchart TB
+    Visitor(["Visitors"]) --> LB{{"Load balancer, VIP<br/>or DNS round-robin<br/>= the cluster's public address"}}
+    LB --> G1
+    LB --> G2
+    LB --> G3
+
+    subgraph cluster["Remote swarm cluster · eu-west"]
+        direction TB
+        G1["node-1 · <b>gateway node</b><br/>Goma, orders certificates"]
+        G2["node-2 · additional gateway<br/>Goma, no ACME"]
+        G3["node-3 · additional gateway<br/>Goma, no ACME"]
+        Overlay(["miabi-ingress · encrypted overlay"])
+        A1["app replicas"]
+        A2["app replicas"]
+        G1 --- Overlay
+        G2 --- Overlay
+        G3 --- Overlay
+        Overlay --- A1
+        Overlay --- A2
+    end
+
+    CP["Miabi control plane"]
+    G1 -. "GET /api/v1/providers/eu-west<br/>cluster gateway token" .-> CP
+    G2 -.-> CP
+    G3 -.-> CP
+```
+
+To add one, open a swarm member's page (not the gateway node), choose **Change connectivity** and set
+it to **Edge gateway**. Miabi deploys a gateway there that polls the cluster's config with the shared
+cluster token, joins the ingress overlay and reports on the cluster's page as an **additional
+gateway**. Setting the node back to **Cluster gateway** removes it.
+
+What an additional gateway does not do:
+
+- **It orders no certificates.** Two gateways solving ACME HTTP-01 for the same hosts would fail
+  whenever the CA reaches the other one, so only the gateway node runs ACME. An additional gateway
+  serves valid TLS only for routes whose certificate it receives with the config:
+  [managed DNS-01 certificates](/docs/networking/tls-certificates#2-managed-wildcard--dns-01-certificates),
+  [uploaded certificates](/docs/networking/tls-certificates#3-uploaded-custom-certificates), and the
+  cluster's external domain when it has a certificate provider. Use those for every host the cluster
+  serves before sending traffic to more than one gateway.
+- **It does not change DNS.** Records still point at the cluster's public address. Make that address a
+  load balancer, a virtual IP (for example keepalived) or a hostname that resolves to every gateway,
+  and set it under [Public address](#public-address).
+- **It does not health-check.** Taking a failed gateway out of rotation is the load balancer's job.
+
+The gateway node itself cannot become an additional gateway: move the gateway first. Additional
+gateways exist only in remote swarm clusters; the default cluster is served by the control plane's
+gateway.
 
 ## Locations
 
@@ -327,5 +415,5 @@ IPv4 even with IPv6 switched on.
 
 - [Nodes overview](/docs/nodes/overview)
 - [Node agent](/docs/nodes/agent)
-- [Networks & subnets](/docs/networking/networks-and-subnets)
+- [Networks overview](/docs/networking/networks-and-subnets)
 - [Architecture](/docs/architecture/overview)
