@@ -20,7 +20,7 @@ A job also gets the app's CPU and memory limits and its [GPU request](/docs/appl
 
 | Task | Example |
 |------|---------|
-| **Database migrations** | Apply schema changes after a deploy |
+| **Database migrations** | Apply schema changes before each release starts. See [Before each release](#before-each-release) |
 | **Maintenance** | Clear a cache, reindex, backfill data |
 | **One-off scripts** | Run a data fix or admin command |
 | **Diagnostics** | Run a read-only command to inspect state |
@@ -30,7 +30,8 @@ a shell into a running container, use the app's terminal instead — workspace A
 plan that allows shell access.
 
 :::tip
-Run migrations as a job right after a deploy, or wire them into your [pipeline](/docs/cicd/pipelines) so they run automatically on the way to production.
+Run migrations as a [pre-release command](#before-each-release), so a failed migration stops the deploy
+instead of leaving the new code running against the old schema.
 :::
 
 ## Running a job
@@ -68,6 +69,27 @@ Miabi sets (`MIABI_KIND` is `job` or `cronjob`). On top of those it can have **i
 and the `MIABI_*` set — not the app's or the stack's. Use it when a job runs a **third-party image**,
 such as a cloud CLI or a backup tool, that should not see the app's database password or API keys.
 Volumes, networks and the run-as user are unchanged: only the environment is narrowed.
+
+## Before each release
+
+:::info Miabi 1.10.32
+Pre-release commands and `runPolicy: beforeRelease` need Miabi 1.10.32 or later.
+:::
+
+An app's **Settings → Pre-release command** runs a command in each deploy's new image before the
+release starts, such as your framework's migrate command.
+
+- If the command fails, the deployment fails and the current release keeps serving.
+- **Timeout** is required, because the deploy waits for the command. **Retries** run inside the same
+  deploy. Timeout × (retries + 1) must stay within 30 minutes.
+- It runs once per deployment, never per replica or on a restart. Rollbacks and canary promotions skip it.
+- A deployment's **Deployments** tab lists its **Pre-release** runs, and the deployment log shows
+  their output.
+
+The command is stored as a declared Job named `<app>-pre-release` with run policy **before each
+release**. In a manifest, the same thing is a `kind: Job` with
+[`runPolicy: beforeRelease`](/docs/cicd/manifest-reference#before-each-release). An app a Git
+source or the marketplace manages takes its Jobs from there, so this setting is read-only.
 
 ## Scheduled jobs
 

@@ -60,7 +60,7 @@ workspaces and apply to the whole instance.
 | Platform | **Maintenance mode** (`maintenance_mode`) | API requests are refused with **HTTP 503**, except sign-in, health checks and the platform admin endpoints, so admins can still operate the platform |
 | | **Allow custom container labels** (`custom_labels_enabled`) | Fleet-wide kill-switch for [custom container labels](/docs/applications/container-labels). When off, the feature is disabled everywhere regardless of any plan capability; when on, the per-plan capability decides |
 | | **Allow pipelines from .miabi/pipeline.yaml** (`repo_pipelines_enabled`) | Fleet-wide kill-switch for adopting a pipeline from a repository; when off, git apps always build directly |
-| | **Control manager** (`control_manager_mode`) | `off`, `observe` (default) or `enforce` — see [Reconciliation](/docs/operations/reconciliation) |
+| | **Control manager** (`control_manager_mode`) | `off`, `observe` or `enforce` (the default on a new install) — see [Reconciliation](/docs/operations/reconciliation) |
 | Limits & retention | **Default max workspaces per user — owned** / **— joined as member** | The per-user caps for the whole install. With an Enterprise licence an [organization](/docs/workspaces/organizations#workspace-limits) may carry its own instead. Defaults: `10` owned, unlimited joined. `-1` = unlimited, `0` = none |
 | | **Audit log retention (days)** (`audit_log_retention_days`) | See [Audit Log](/docs/operations/audit-log#retention) (default `90`; `0` keeps entries forever) |
 | Resource limits | **Max CPU cores per app** / **Max memory per app, MB** | Per-application caps (`0` = unlimited) |
@@ -77,8 +77,8 @@ Some keys are handled specially:
   & access card shows them read-only — see [Authentication](/docs/security/authentication).
 - **Read-only.** The **Install ID** is system-managed and shown under **Deployment**. The
   **Encryption** and **Networking** cards are read-only too: they report what boot configuration
-  produced — encryption posture, and the address family, subnet pool and shared proxy network of
-  [Networks & subnets](/docs/networking/networks-and-subnets#seeing-what-a-network-actually-got).
+  produced — encryption posture, and the address family, subnet pool and shared proxy network. **Open
+  Networks** leads to [Admin → Networks](/docs/administration/networks), which has the full view.
 - **Reserved.** Keys named `cluster_name` or starting with `app.`, `image.` or `brand.` belong to other
   admin pages. They are hidden from this list and refused by the settings API.
 

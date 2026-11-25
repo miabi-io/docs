@@ -1132,9 +1132,8 @@ metadata:
 spec:
   app: shop-api
   command: ["./shop-api", "migrate", "up"]
-  runPolicy: onRelease       # onChange (default) | once | onRelease
-  waitForDeploy: true        # onChange only; default true
-  timeoutSeconds: 600
+  runPolicy: beforeRelease   # onChange (default) | once | onRelease | beforeRelease
+  timeoutSeconds: 600        # required for beforeRelease
   historyLimit: 5
   backoffLimit: 2            # retries of a failed run, 0-10; default 0
   security:
@@ -1148,15 +1147,51 @@ spec:
 |---|---|---|
 | `onChange` | It is created, and whenever `command`, `entrypoint`, `image`, `registry`, `runAsUser`, `timeoutSeconds`, `env` or `inheritEnv` change | A one-off data fix: edit the command to run it again |
 | `once` | It is created. Editing those fields afterwards is refused | Seeds and bootstrap: rename the Job to run a new one |
-| `onRelease` | A new release of the app becomes active — from a sync, the console, a pipeline or a rollback. A new Job also runs against the current release | Database migrations |
+| `beforeRelease` | Inside each deploy of the app, in the new image, before the release starts. Applying it runs nothing | Database migrations |
+| `onRelease` | A new release of the app becomes active — from a sync, the console, a pipeline or a rollback. A new Job also runs against the current release | Cache warmers, reindexing, notifications |
 
 **Waiting for a deploy.** An `onChange` Job applied in the same sync as an image change would
 otherwise run on the old release. With `waitForDeploy` (the default) its run waits for the app's
 deploy and starts on the release that deploy activates. If the deploy fails, the run is marked
 **skipped**.
 
-**`onRelease` runs after the new release is live.** For a moment the new code runs against the old
-schema, which is fine for additive migrations. Make destructive changes in two releases.
+### Before each release
+
+:::info Miabi 1.10.32
+`beforeRelease` needs Miabi 1.10.32 or later.
+:::
+
+A `beforeRelease` Job is a step of the deploy. Once the new image is built or pulled, and before any
+container starts or stops, the deploy runs the Job in that image with the environment the new release
+will get. `MIABI_RELEASE`, `MIABI_IMAGE` and `MIABI_DEPLOYMENT_ID` describe the upcoming release.
+
+- **A failure fails the deploy.** Nothing has started or stopped yet, so the current release keeps
+  serving, even with the recreate strategy. The deployment log shows the Job's output, prefixed with
+  its name.
+- **`timeoutSeconds` is required**, because the deploy waits for the Job. `backoffLimit` retries run
+  inside the same deploy. `timeoutSeconds × (backoffLimit + 1)` must stay within 1800 seconds.
+- **It runs once per deployment**, never per replica, and never on a restart or a scale. A service with
+  three replicas runs it once.
+- **Every new release runs it**, including a redeploy with an unchanged image after an environment
+  change, so keep migrations idempotent.
+- **Rollbacks, canary promotions, restarts of the active release, recoveries and location moves skip
+  it.** These put back an image that already passed its pre-release step. The skip is logged.
+- A canary deploy runs it once, before the canary container starts.
+- Several `beforeRelease` Jobs on one app run one after another in name order, and the first failure
+  stops the deploy. Name them `10-migrate` and `20-seed` to set the order.
+- An `image` runs that image instead of the release's. The plan warns that the Job then doesn't test
+  the new code.
+- `waitForDeploy` and `miabi.io/skip-initial-run` don't apply and are refused.
+
+On the first apply of a new app together with its `beforeRelease` Job, Miabi holds back the app's
+deploy until the Job is stored, so the migration runs before the first container exists. If the Job
+fails to apply, the app is not deployed.
+
+Keep each migration compatible with the release that is still serving while it runs: add columns
+before the code that needs them, and drop them a release later.
+
+**`onRelease` runs after the new release is live.** It is best effort: a failure doesn't stop the
+release. Use it for work that should follow traffic.
 
 **Adopting a job that already ran.** Set the annotation `miabi.io/skip-initial-run: "true"` and the
 Job is created without running.

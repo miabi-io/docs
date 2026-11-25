@@ -1,53 +1,69 @@
 ---
-sidebar_position: 7
-title: Networks & Subnets
-description: Workspace Docker networks, the platform-managed default network, and Miabi's own subnet (CIDR) allocation.
+sidebar_position: 8
+title: Networks overview
+description: Every network Miabi creates — workspace networks, the shared proxy network, the platform's private network and a swarm's ingress overlay — and the subnet pool they come from.
 ---
 
-# Networks & Subnets
+# Networks overview
 
-Every workspace's containers talk to each other over **Docker networks**. Miabi manages these for
-you — you rarely need to think about them — and allocates their IP subnets from its own pool so a
-busy host never runs out of address space.
+Miabi creates and addresses every Docker network it needs, so a workspace never deals with drivers,
+subnets or nodes. There are two families:
+
+- **Workspace networks** belong to a workspace: its default network, the custom networks its members
+  create, and each stack's private network. Members manage them under **Networks**; see
+  [Workspace networks](/docs/networking/workspace-networks).
+- **Platform networks** belong to the install: the proxy network the gateway shares with routed apps,
+  the private network of Miabi's own components, and in a swarm cluster the ingress overlay. Platform
+  admins see them, and every subnet, under [Admin → Networks](/docs/administration/networks).
+
+```mermaid
+flowchart TB
+    Visitor(["Visitors"]) --> GW
+
+    subgraph host["Control-plane host"]
+        direction TB
+        GW["miabi-gateway"]
+        subgraph internal["miabi-internal · 10.62.0.0/16 · private"]
+            Miabi["miabi"]
+            PG[("miabi-postgres")]
+            Redis[("miabi-redis")]
+            Reg["mb-registry"]
+        end
+        subgraph proxy["miabi-proxy · 10.63.0.0/16 · shared"]
+            A1["routed app: web"]
+            A2["routed app: shop"]
+        end
+        subgraph wsA["workspace acme · default network · pool slice"]
+            W1["web"]
+            D1[("postgres")]
+        end
+    end
+
+    GW --- internal
+    GW --- proxy
+    A1 -. same container .- W1
+    W1 --> D1
+```
+
+*The gateway is the only container on both platform networks. A routed app joins `miabi-proxy` beside
+its workspace network; an app without a route stays on its workspace network only.*
+
+| Network | Family | Driver | Who joins it | Subnet |
+|---|---|---|---|---|
+| Workspace default | Workspace | bridge, or overlay in a swarm | Every app, database and job of the workspace | From the pool |
+| Workspace custom | Workspace | bridge, or overlay in a swarm | What a member attaches | From the pool |
+| Stack network | Workspace | bridge, or overlay in a swarm | The stack's apps | From the pool |
+| `miabi-proxy` | Platform | bridge, one per node running a gateway | The gateway and every routed app | `MIABI_PROXY_SUBNET`, default `10.63.0.0/16` |
+| `miabi-internal` | Platform | bridge, control-plane host only | Miabi, its database, Redis, the registry, the gateway | `10.62.0.0/16` |
+| `miabi-ingress` | Platform | encrypted overlay, one per swarm cluster | The cluster's gateways and its routed apps | From the pool |
 
 ## Workspace networks
 
-Each workspace gets a **default network** the moment it is created. It is fully platform-managed:
-
-- Every **application**, **database**, and **job** in the workspace is automatically attached to it,
-  so they can reach each other by name. Each container answers to its resource's own name, which is
-  what `{{ .applications.<name>.host }}` resolves to in a
-  [manifest](/docs/cicd/manifest-reference#addressing-another-application).
-- You **cannot detach** a resource from the default network, and you **cannot delete** it — it is
-  the shared backbone the workspace relies on.
-
-You can also create **additional networks** to further segment traffic (for example, isolating a
-group of apps). Attach apps to them alongside the always-present default. Custom networks count
-against your plan's network quota; the default network does not.
-
-### Bridge on one node, overlay across a cluster
-
-The default network's **driver** depends on whether [cluster mode](/docs/nodes/cluster-mode) is on,
-and this is what decides whether a workspace can span hosts at all:
-
-| | Driver | Reach |
-|---|---|---|
-| **Single node / no cluster** | `bridge` | Node-local. Recreated on each node with the same name and subnet, but as **disconnected islands** — an app on one node cannot reach a database on another, and Miabi refuses to attach them. |
-| **Cluster mode** | `overlay` | Spans every node, attachable and **encrypted**. An app on one node reaches a database on another **by name**, with no published ports. |
-
-Because every app and database already joins the workspace default, that one change is the whole
-mechanism for cross-node connectivity — nothing else has to be reconfigured, and no connection string
-changes (they address a database by its alias, not by its network).
-
-Enabling cluster mode converts existing workspaces for you. Containers are **not** restarted: each is
-attached to the overlay, carrying its DNS aliases across, and then detached from the bridge. See
+Each workspace gets a default network that every app, database and job joins, and members can add
+custom ones. In a swarm cluster they are encrypted overlays spanning the nodes; elsewhere they are
+node-local bridges. [Workspace networks](/docs/networking/workspace-networks) covers creating,
+attaching and reading them. Enabling cluster mode converts existing workspaces; see
 [Applying it to existing workspaces](/docs/nodes/cluster-mode#applying-it-to-existing-workspaces).
-
-:::note
-The reverse-proxy (gateway) network is separate: only apps exposed by a [route](/docs/networking/routing-and-middlewares)
-join it, keeping unexposed apps off the public path. See
-[Reverse proxy](/docs/networking/reverse-proxy-and-traefik).
-:::
 
 ## The shared gateway network
 
@@ -59,6 +75,12 @@ per-workspace networks above:
 - **A roomy, explicit CIDR on a managed install.** `install.sh` and `miabi setup` create it with
   `10.63.0.0/16` (~65k addresses) instead of a slice of Docker's small default pool. Choose another
   range with `MIABI_SUBNET` or `--subnet` — see [Changing the subnets](#changing-the-subnets).
+- **The same subnet on every node.** A remote node that runs a gateway creates its own `miabi-proxy`
+  with the subnet in `MIABI_PROXY_SUBNET`, which `miabi setup` writes from the manifest. Unset, nodes
+  copy the control plane's proxy network, and without one they use `10.63.0.0/16`. Only that unset
+  default yields to Docker's pool on a host where it overlaps another network; a subnet you set is never
+  second-guessed. [Admin → Networks](/docs/administration/networks#configuration) shows which source
+  is in force.
 - **Distinct from the workspace pool.** Its CIDR must not overlap `MIABI_NETWORK_POOL_CIDR` (the
   `10.64.0.0/12` pool below) or your LAN. The default `10.63.0.0/16` sits just outside the pool.
 
@@ -128,6 +150,11 @@ port range (`hostPorts`), the **default cluster's** wildcard domain for one-clic
 [Cluster mode](/docs/nodes/cluster-mode#external-access)) and the managed-DNS
 interval (`dns`) — see the [Install Manifest](/docs/administration/install-manifest).
 
+On a remote node that runs a gateway, `miabi-proxy` takes `MIABI_PROXY_SUBNET`. Set it, or
+`spec.networking.proxy.subnet` in the manifest, so every node uses the range you chose. A node created
+before the change keeps its old subnet until its proxy network is recreated;
+[Admin → Networks](/docs/administration/networks#node-network-check) lists such nodes.
+
 :::note Upgrading an existing install
 The split happens on your next `miabi upgrade`. The private network is created, every component is
 attached to it **while still running**, and only then are the containers recreated on their final
@@ -161,6 +188,19 @@ networks:
 ```
 :::
 
+## The ingress overlay
+
+In a [swarm cluster](/docs/nodes/cluster-mode), apps run on any member, but the cluster's gateways run
+on a few. Miabi connects them with one encrypted overlay per cluster, `miabi-ingress`:
+
+- the cluster's gateways and every routed app of the cluster join it, under an alias only the gateway
+  uses, so workspace names never collide on it;
+- unrouted apps stay off it, as they stay off `miabi-proxy`;
+- its subnet comes from the pool, so it cannot clash with a workspace network.
+
+To put your own reverse proxy in front of a swarm's apps, attach it to the ingress overlay. The
+cluster's page shows the command under **Gateway**.
+
 ## Managed subnet allocation
 
 Docker's built-in address pools are small and shared across every network on a host. A platform
@@ -192,8 +232,12 @@ How it behaves:
 - **Overlap-safe** — at start-up Miabi reserves the subnets of any pre-existing Docker networks so
   it never hands out a colliding one; if a chosen subnet still collides it is skipped automatically.
 - **Reclaimed** — deleting a network returns its subnet to the pool.
-- **Consistent across nodes** — a workspace network keeps the same subnet on every node it is
-  recreated on.
+- **Consistent across nodes** — a subnet is pinned to its network, not to a node, so a workspace or
+  stack network gets the same range on every node it is created on, and a swarm's ingress overlay is
+  carved from the pool too.
+
+[Admin → Networks](/docs/administration/networks#subnet-allocations) lists every allocation, and its
+node check flags a network created outside the pool or on another subnet.
 
 :::tip
 Pick a pool CIDR that doesn't overlap your LAN, VPN, or other private ranges on the host. The
@@ -246,13 +290,13 @@ they are recreated, and the containers on them have no IPv6 address until then.
 The stored record says what Miabi *asked* for; the engine decides what exists. Two places show the
 engine's answer:
 
-- **A workspace's Networks page** — the info action on a row opens the network's details: driver and
-  scope, the IPv4 subnet and gateway, whether IPv6 is on, and the IPv6 subnet and gateway. The same
-  action sits on an application's **Networks** table.
-- **Admin → Platform Settings → Networking** — whether IPv6 is on for the install, how each `/64` is
-  chosen, the workspace subnet pool and the shared proxy network. It distinguishes **requested** from
-  **active**: with `MIABI_NETWORK_IPV6=true` on an engine that cannot honour it, the page says so
-  rather than showing a switch that looks stuck.
+- **A network's page** in the workspace: its IPv4 subnet and gateway, whether IPv6 is on, the IPv6
+  subnet and gateway, and on which nodes it exists. See
+  [A network's page](/docs/networking/workspace-networks#a-networks-page).
+- **[Admin → Networks](/docs/administration/networks#configuration)** — whether IPv6 is on for the
+  install, how each `/64` is chosen, the subnet pool and the shared proxy network. It distinguishes
+  **requested** from **active**: with `MIABI_NETWORK_IPV6=true` on an engine that cannot honour it, the
+  page says so rather than showing a switch that looks stuck.
 
 A cluster overlay only exists on a node once one of its containers attaches there, so a network whose
 details read "not present on the control-plane node" is ordinary rather than broken.
@@ -299,8 +343,8 @@ address family on any host.
 
 ## Monitoring the pool
 
-Pool utilization is visible on the **admin dashboard** (a *Subnet pool* panel showing used vs.
-total subnets, with a warning as it nears capacity) and via Prometheus:
+Pool usage shows on [Admin → Networks](/docs/administration/networks#configuration), with a warning
+from 85%, on the **admin dashboard**, and in Prometheus:
 
 | Metric | Meaning |
 |--------|---------|

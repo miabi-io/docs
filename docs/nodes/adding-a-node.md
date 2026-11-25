@@ -47,7 +47,9 @@ Prefer **Agent**. Use **Docker API** only on a trusted network, with TLS: anyone
 Connectivity decides how a node's apps are served:
 
 - **Edge gateway** — the node runs its own gateway, which publishes ports `80` and `443` and terminates TLS for the routes of apps placed there. Every node you add starts this way.
-- **Cluster gateway** — the node runs no gateway of its own; its swarm cluster's gateway serves its apps over the overlay. Only swarm members can use it: switch a node to it with **Change connectivity** on its page once it has joined a [swarm](/docs/nodes/cluster-mode).
+- **Cluster gateway** — the node runs no gateway of its own; its swarm cluster's gateway serves its apps over the overlay. Only swarm members use it, and Miabi sets it when a node joins a [swarm](/docs/nodes/cluster-mode): in a swarm, only the cluster's [gateway node](/docs/nodes/cluster-mode#the-gateway-node) stays on **Edge gateway**.
+
+Setting a member of a remote swarm back to **Edge gateway** makes it an [additional gateway](/docs/nodes/cluster-mode#additional-gateways-high-availability) for high availability. A node of the default cluster cannot run a gateway of its own.
 
 :::note Port-forward connectivity is retired
 Earlier versions offered a **port-forward** mode, where the central gateway reached apps through published host ports. It is gone. On upgrade, the control-plane node and swarm members move to the cluster gateway, and any other port-forward node becomes an edge gateway. Its cluster page then asks you to confirm that (**Keep its own gateway**) or to join the node to a swarm cluster instead.

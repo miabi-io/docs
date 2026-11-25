@@ -24,7 +24,7 @@ Adding a node to the fleet is a separate workflow — see [Adding a Node](/docs/
 | **Cluster** | The [cluster](/docs/nodes/cluster-mode) it belongs to |
 | **Role** | `manager` for the control-plane host, otherwise its role in the cluster |
 | **Access** | How Miabi reaches its Docker engine: local socket, agent, or Docker API |
-| **Connectivity** | Whether its traffic comes in through the cluster gateway or its own edge gateway |
+| **Connectivity** | Whether its traffic comes in through the cluster gateway or its own edge gateway. A node running a gateway has a **gateway** badge, or **additional gateway** in a swarm with [several](/docs/nodes/cluster-mode#additional-gateways-high-availability) |
 | **Status** | Reachability, below |
 | **Swarm** | The Swarm state, when any node is in a swarm |
 | **Agent** | The agent version, for agent-mode nodes |

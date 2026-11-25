@@ -42,6 +42,19 @@ came from a configuration change, revert that change as well.
 Rollback is the fastest way to recover from a bad deploy. There's no need to rebuild — the prior image is already available.
 :::
 
+A rollback doesn't run the app's [pre-release command](/docs/applications/jobs#before-each-release):
+the old image already passed it, and running an old `migrate up` against a newer schema does
+nothing useful. Migrations are never rolled back, so keep each one compatible with the release
+before it.
+
+## Migrations before a release
+
+A database migration should finish before the code that needs it starts. Set the app's
+[pre-release command](/docs/applications/jobs#before-each-release), or declare a Job with
+[`runPolicy: beforeRelease`](/docs/cicd/manifest-reference#before-each-release). Each deploy then
+runs it in the new image before the release starts, and a failure fails the deploy while the
+current release keeps serving.
+
 Old releases can be deleted from the **Releases** tab. **Pin** a release to protect it: a pinned
 release, like the active one, cannot be deleted.
 

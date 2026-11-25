@@ -134,12 +134,13 @@ Off by default. See [GPUs](/docs/applications/gpus) for the full workflow.
 | `MIABI_METRICS_SCRAPE_SECONDS` | `60` | Metrics sampling interval |
 | `MIABI_METRICS_RETENTION_HOURS` | `24` | Metrics history window |
 | `MIABI_PROXY_NETWORK` | *(discovered)* | Docker network shared by the gateway and app containers so the proxy can reach backends (legacy alias: `MIABI_GOMA_NETWORK`). Unset, Miabi uses the network labelled `io.miabi.role=control-plane`, else an existing `miabi` network from before the rename, else creates `miabi-proxy` |
+| `MIABI_PROXY_SUBNET` | *(unset)* | Subnet every node creates the proxy network with. `miabi setup` writes it from `spec.networking.proxy.subnet`. Unset, remote nodes copy the control plane's proxy network, else use `10.63.0.0/16`; see [the shared gateway network](/docs/networking/networks-and-subnets#the-shared-gateway-network) |
 | `MIABI_INTERNAL_NETWORK` | `miabi-internal` | The platform's [private network](/docs/networking/networks-and-subnets#the-platforms-private-network), where the control-plane database and cache live. `miabi setup` writes it from `spec.networking.internal`; on a Compose stack it is the network `compose.yaml` creates |
 | `MIABI_GOMA_PROVIDER_DIR` | `/etc/goma/providers` | Directory where Miabi writes per-route Goma config files that the gateway hot-reloads |
 | `MIABI_WEB_DIR` | — | Directory of the built web UI; when set, Miabi serves it as an SPA at `/`. The official image serves the UI from the embedded binary |
 | `DOCKER_HOST` | `unix:///var/run/docker.sock` | Docker Engine endpoint |
 | `MIABI_WORKER_HEALTH_ENABLED` | `true` | A dedicated `miabi worker` serves `/healthz` and `/readyz` on `MIABI_PORT`. Set `false` when a worker runs beside the server on one host, where both would bind the same port |
-| `MIABI_CONTROL_MANAGER_MODE` | — | How far [reconciliation](/docs/operations/reconciliation) goes when a workload disappears: `observe` reports it, `enforce` also redeploys it in place, `off` stops watching. Unset leaves it to **Platform Settings → Control manager** (default `observe`); set here it is pinned |
+| `MIABI_CONTROL_MANAGER_MODE` | — | How far [reconciliation](/docs/operations/reconciliation) goes when a workload disappears: `observe` reports it, `enforce` also redeploys it in place, `off` stops watching. Unset leaves it to **Platform Settings → Control manager** (`enforce` on a new install); set here it is pinned |
 
 :::note On a managed install, the manifest sets these for you
 Many of the variables on this page have a field in the [install manifest](/docs/administration/install-manifest)

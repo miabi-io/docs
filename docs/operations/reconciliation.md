@@ -102,8 +102,10 @@ stayed up for a while.
 | Mode | Behaviour |
 |---|---|
 | `off` | Nothing is watched or reported. |
-| `observe` | **Default.** Findings become timeline events, alerts, metrics and the admin report. Nothing is acted on. |
-| `enforce` | As observe, plus missing apps are redeployed in place and missing Miabi-deployed node gateways are recreated. |
+| `observe` | Findings become timeline events, alerts, metrics and the admin report. Nothing is acted on. |
+| `enforce` | **Default on new installs.** As observe, plus missing apps are redeployed in place and missing Miabi-deployed node gateways are recreated. |
+
+An install created before 1.10.30 keeps the mode it had, `observe` unless someone changed it.
 
 Set the platform mode under **Admin → Platform Settings → Platform → Control manager**
 (`control_manager_mode`). To pin it from the environment, set `MIABI_CONTROL_MANAGER_MODE`
